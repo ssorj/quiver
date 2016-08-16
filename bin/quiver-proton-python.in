@@ -1,0 +1,146 @@
+#!/usr/bin/python
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
+
+import os
+import sys
+
+default = os.path.normpath("@quiver_home@")
+home = os.environ.get("QUIVER_HOME", default)
+
+sys.path.insert(0, os.path.join(home, "python"))
+
+from collections import defaultdict
+from proton import Message, Url
+from proton.handlers import MessagingHandler
+from proton.reactor import Container
+
+class _Handler(MessagingHandler):
+    def __init__(self, operation, address,
+                 nconnections, nsessions, nlinks, nmessages, nbytes):
+        super(_Handler, self).__init__()
+
+        self.operation = operation
+        self.address = address
+
+        url = Url(self.address)
+
+        self.address_host_port = "{}:{}".format(url.host, url.port)
+        self.address_path = url.path
+        
+        self.nconnections = nconnections
+        self.nsessions = nsessions
+        self.nlinks = nlinks
+        self.nmessages = nmessages
+        self.nbytes = nbytes
+
+        self.connections = list()
+        self.sessions = list()
+        self.links = list()
+
+        self.sessions_by_connection = defaultdict(list)
+        self.links_by_session = defaultdict(list)
+
+        self.ntransfers = 0
+        
+    def on_start(self, event):
+        for i in range(self.nconnections):
+            conn = event.container.connect(self.address_host_port)
+
+            self.connections.append(conn)
+
+        for i in range(self.nsessions):
+            conn = self.connections[self.nconnections % (i + 1)]
+            session = conn.session()
+
+            self.sessions.append(session)
+            self.sessions_by_connection[conn].append(session)
+
+        for i in range(self.nlinks):
+            session = self.sessions[self.nsessions % (i + 1)]
+
+            if self.operation == "send":
+                link = session.sender(self.address_path)
+            elif self.operation == "receive":
+                link = ssession.receiver(self.address_path)
+            else:
+                raise Exception()
+
+            self.links.append(link)
+            self.links_by_session[session].append(link)
+            
+    def on_connection_opened(self, event):
+        print(event)
+
+        for session in self.sessions_by_connection[event.connection]:
+            session.open()
+        
+    def on_session_opened(self, event):
+        print(event)
+
+        for link in self.links_by_session[event.session]:
+            link.open()
+
+    def on_link_opened(self, event):
+        print(event)
+
+    def on_sendable(self, event):
+        if self.operation != "send":
+            return
+
+        if self.ntransfers == self.nmessages:
+            return
+
+        message = Message("x" * 100)
+        event.sender.send(message)
+
+        self.ntransfers += 1
+
+        if self.ntransfers == self.nmessages:
+            for conn in self.connections:
+                conn.close()
+
+    def on_message(self, event):
+        if self.operation != "receive":
+            return
+        
+        
+def main():
+    operation, address = sys.argv[1:3]
+    counts = map(int, sys.argv[3:8])
+
+    #print(operation)
+    #print(address)
+    #print(counts)
+    
+    handler = _Handler(operation, address, *counts)
+    container = Container(handler)
+
+    container.run()
+    
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
