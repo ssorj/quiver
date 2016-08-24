@@ -147,10 +147,10 @@ def main():
                 receive_times.append(receive_time)
                 latencies.append(latency)
 
-        duration = max(*receive_times) - min(*send_times)
+        duration = max(receive_times) - min(send_times)
         transfer_count = len(receive_times)
         transfer_rate = int(round(transfer_count / duration))
-        max_latency = int(round(max(*latencies) * 1000))
+        max_latency = int(round(max(latencies) * 1000))
                 
         print("-" * 80)
         print("{:16}  {:8.1f} s".format("Duration:", duration))
@@ -159,7 +159,7 @@ def main():
         print("{:16}  {:8,} ms".format("Max latency:", max_latency))
         print("-" * 80)
 
-        os.remove(results_file)
+        #os.remove(results_file)
         
 if __name__ == "__main__":
     try:

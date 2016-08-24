@@ -23,10 +23,8 @@ set -eux
 IMPL=$1
 ADDRESS=$2
 
-quiver --impl $IMPL receive $ADDRESS -n 1000 --sessions 2 &
-quiver --impl $IMPL send $ADDRESS -n 1000 --sessions 2
-
-# XXX This stalls waiting for the receiver to finish
+quiver --impl $IMPL receive $ADDRESS -n 100000 &
+quiver --impl $IMPL send $ADDRESS -n 100000
 
 wait
 

@@ -31,10 +31,10 @@ home = os.environ.get("QUIVER_HOME", default)
 
 sys.path.insert(0, os.path.join(home, "python"))
 
+import collections
 import time
 import uuid
 
-from collections import defaultdict
 from proton import Message, Url
 from proton.handlers import MessagingHandler
 from proton.reactor import Container
@@ -62,7 +62,7 @@ class BaseHandler(MessagingHandler):
     def stop(self):
         raise NotImplementedError()
 
-    def save_results(self):
+    def save(self):
         pass
 
 class SendHandler(BaseHandler):
@@ -114,7 +114,7 @@ class ReceiveHandler(BaseHandler):
         if self.transfer_count == self.ntransfers:
             self.stop()
 
-    def save_results(self):
+    def save(self):
         with open(self.results_file, "w") as f:
             for result in self.results:
                 f.write("{},{:.9f},{:.9f}\r\n".format(*result))
@@ -131,8 +131,8 @@ class ClientHandler(BaseHandler):
         self.sessions = list()
         self.links = list()
 
-        self.sessions_by_connection = defaultdict(list)
-        self.links_by_session = defaultdict(list)
+        self.sessions_by_connection = collections.defaultdict(list)
+        self.links_by_session = collections.defaultdict(list)
 
     def on_start(self, event):
         super(ClientHandler, self).on_start(event)
@@ -188,7 +188,7 @@ class ServerHandler(BaseHandler):
     def stop(self):
         # XXX Need to track and close connections?
         self.acceptor.close()
-        self.save_results()
+        self.save()
                  
 class ClientSendHandler(ClientHandler, SendHandler):
     def create_link(self, session, name):
@@ -245,7 +245,7 @@ def main():
     container = Container(handler)
     container.run()
 
-    handler.save_results()
+    handler.save()
     
 if __name__ == "__main__":
     try:

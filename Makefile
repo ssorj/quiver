@@ -26,6 +26,9 @@ build: build/libexec/quiver/quiver-qpid-messaging-cpp
 	scripts/configure-file bin/quiver-proton-python.in \
 		build/libexec/quiver/quiver-proton-python \
 		quiver_home ${QUIVER_HOME}
+	scripts/configure-file bin/quiver-qpid-messaging-python.in \
+		build/libexec/quiver/quiver-qpid-messaging-python \
+		quiver_home ${QUIVER_HOME}
 
 .PHONY: install
 install: build
@@ -34,11 +37,14 @@ install: build
 	scripts/install-executable build/bin/quiver ${DESTDIR}${PREFIX}/bin/quiver
 	scripts/install-executable build/libexec/quiver/quiver-proton-python \
 		${DESTDIR}${PREFIX}/libexec/quiver/quiver-proton-python
+	scripts/install-executable build/libexec/quiver/quiver-qpid-messaging-python \
+		${DESTDIR}${PREFIX}/libexec/quiver/quiver-qpid-messaging-python
 
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
 devel: clean install
-	scripts/smoke-test
+	scripts/test-external-server qpid-messaging-python q0
+#	scripts/smoke-test
 
 build/libexec/quiver/quiver-qpid-messaging-cpp: bin/quiver-qpid-messaging-cpp.cpp
 	mkdir -p build/libexec/quiver
