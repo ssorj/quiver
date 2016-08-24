@@ -22,7 +22,7 @@ clean:
 	rm -rf install
 
 .PHONY: build
-build:
+build: build/libexec/quiver/quiver-qpid-messaging-cpp
 	scripts/configure-file bin/quiver.in build/bin/quiver \
 		quiver_home ${QUIVER_HOME}
 	scripts/configure-file bin/quiver-proton-python.in \
@@ -31,7 +31,7 @@ build:
 
 .PHONY: install
 install: build
-	mkdir -p ${QUIVER_HOME} # XXX
+	mkdir -p ${QUIVER_HOME}
 	scripts/install-files python ${DESTDIR}${PREFIX}${QUIVER_HOME}/python \*.py
 	scripts/install-executable build/bin/quiver ${DESTDIR}${PREFIX}/bin/quiver
 	scripts/install-executable build/libexec/quiver/quiver-proton-python \
@@ -40,7 +40,8 @@ install: build
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
 devel: clean install
-	quiver send q0
+	scripts/smoke-test
 
-build/lib/quiver/%: cpp/%.cpp
+build/libexec/quiver/quiver-qpid-messaging-cpp: bin/quiver-qpid-messaging-cpp.cpp
+	mkdir -p build/libexec/quiver
 	gcc -std=c++11 -lqpidmessaging -lqpidtypes -lstdc++ $< -o $@

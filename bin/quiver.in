@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -22,6 +22,7 @@ from __future__ import print_function
 
 import os
 import sys
+import uuid
 
 default = os.path.normpath("@quiver_home@")
 home = os.environ.get("QUIVER_HOME", default)
@@ -44,8 +45,7 @@ def main():
              "  proton-python\n" \
              "\n" \
              "typical usage:\n" \
-             "  $ qpidd --auth no &\n" \
-             "  $ qpid-config add queue q0\n" \
+             "  $ qdrouterd &\n" \
              "  $ quiver receive q0 &\n" \
              "  $ quiver send q0\n" \
              "\n" \
@@ -53,52 +53,103 @@ def main():
     parser = ArgumentParser(description=description, epilog=epilog,
                             formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument("operation", metavar="OPERATION",
-                        choices=["send", "receive"])
-    parser.add_argument("address", metavar="ADDRESS")
+                        choices=["send", "receive"],
+                        help="Either 'send' or 'receive'")
+    parser.add_argument("address", metavar="ADDRESS",
+                        help="The address of an AMQP node")
+    parser.add_argument("--server", action="store_true",
+                        help="Accept incoming connections")
     parser.add_argument("--impl", metavar="IMPLEMENTATION",
-                        help="Use IMPL", default="proton-python")
-    parser.add_argument("-c", "--connections", metavar="COUNT",
+                        help="Use IMPLEMENTATION", default="proton-python")
+    parser.add_argument("--connections", metavar="COUNT",
                         help="Use COUNT connections", default=1, type=int)
-    parser.add_argument("-s", "--sessions", metavar="COUNT",
+    parser.add_argument("--sessions", metavar="COUNT",
                         help="Use COUNT sessions", default=1, type=int)
-    parser.add_argument("-l", "--links", metavar="COUNT",
+    parser.add_argument("--links", metavar="COUNT",
                         help="Use COUNT links", default=1, type=int)
-    parser.add_argument("-m", "--messages", metavar="COUNT",
+    parser.add_argument("-t", "--transfers", metavar="COUNT",
                         help="Send or receive COUNT messages",
-                        default=1000, type=int)
-    parser.add_argument("-b", "--bytes", metavar="COUNT",
-                        help="Send or receive COUNT bytes",
-                        default=100000, type=int)
-
+                        default=10000, type=int)
+    #parser.add_argument("-m", "--message")
+    
     args = parser.parse_args()
 
+    mode = "client"
+    operation = args.operation
     address = args.address
-
-    if "/" not in address:
-        address = "localhost:5672/{}".format(address)
-
+    transfers = str(args.transfers)
     connections = args.connections
     sessions = max(args.sessions, connections)
     links = max(args.links, sessions)
-    messages = max(args.messages, links)
-    bytes = max(args.bytes, messages)
+    results_file = "/tmp/quiver-{}.csv".format(uuid.uuid4())
+
+    if args.server:
+        mode = "server"
     
-    command_dir = os.path.normpath("{}/../../libexec/quiver".format(home))
-    command = (
-        "{}/quiver-{}".format(command_dir, args.impl),
-        args.operation,
+    if "/" not in address:
+        address = "localhost:5672/{}".format(address)
+    
+    libexec_dir = os.path.normpath("{}/../../libexec/quiver".format(home))
+    executable = "{}/quiver-{}".format(libexec_dir, args.impl)
+
+    if not os.path.exists(executable):
+        exit("Error: Can't find '{}'".format(executable))
+    
+    command = [
+        executable,
+        mode,
+        operation,
         address,
-        str(connections),
-        str(sessions),
-        str(links),
-        str(messages),
-        str(bytes),
-    )
+        transfers,
+    ]
+
+    if mode == "client":
+        command += [
+            "connections={}".format(connections),
+            "sessions={}".format(sessions),
+            "links={}".format(links),
+        ]
+
+    if operation == "receive":
+        command += [
+            "results-file={}".format(results_file),
+        ]
 
     print("Calling '{}'".format(" ".join(command)))
-    
+
     check_call(command)
 
+    if args.operation == "receive":
+        send_times = list()
+        receive_times = list()
+        latencies = list()
+        
+        with open(results_file, "r") as f:
+            for line in f:
+                message_id, send_time, receive_time = line.split(",", 2)
+
+                send_time = float(send_time)
+                receive_time = float(receive_time)
+                latency = receive_time - send_time
+
+                send_times.append(send_time)
+                receive_times.append(receive_time)
+                latencies.append(latency)
+
+        duration = max(*receive_times) - min(*send_times)
+        transfer_count = len(receive_times)
+        transfer_rate = int(round(transfer_count / duration))
+        max_latency = int(round(max(*latencies) * 1000))
+                
+        print("-" * 80)
+        print("{:16}  {:8.1f} s".format("Duration:", duration))
+        print("{:16}  {:8,} transfers".format("Transfer count:", transfer_count))
+        print("{:16}  {:8,} transfers/s".format("Transfer rate:", transfer_rate))
+        print("{:16}  {:8,} ms".format("Max latency:", max_latency))
+        print("-" * 80)
+
+        os.remove(results_file)
+        
 if __name__ == "__main__":
     try:
         main()
