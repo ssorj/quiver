@@ -27,4 +27,3 @@ quiver --impl $IMPL receive $ADDRESS -n 100000 &
 quiver --impl $IMPL send $ADDRESS -n 100000
 
 wait
-

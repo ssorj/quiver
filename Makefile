@@ -43,8 +43,8 @@ install: build
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
 devel: clean install
-	scripts/test-external-server qpid-messaging-python q0
-#	scripts/smoke-test
+#	scripts/test-external-server qpid-messaging-python q0
+	scripts/smoke-test
 
 build/libexec/quiver/quiver-qpid-messaging-cpp: bin/quiver-qpid-messaging-cpp.cpp
 	mkdir -p build/libexec/quiver

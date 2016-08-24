@@ -40,16 +40,12 @@ from proton.handlers import MessagingHandler
 from proton.reactor import Container
 
 class BaseHandler(MessagingHandler):
-    def __init__(self, address, ntransfers):
+    def __init__(self, host_port, address, ntransfers):
         super(BaseHandler, self).__init__()
 
+        self.host_port = host_port
         self.address = address
         self.ntransfers = ntransfers
-
-        url = Url(self.address)
-
-        self.address_host_port = "{}:{}".format(url.host, url.port)
-        self.address_path = url.path
         
         self.start_time = None
         self.batch_start_time = None
@@ -66,8 +62,8 @@ class BaseHandler(MessagingHandler):
         pass
 
 class SendHandler(BaseHandler):
-    def __init__(self, address, ntransfers):
-        super(SendHandler, self).__init__(address, ntransfers)
+    def __init__(self, host_port, address, ntransfers):
+        super(SendHandler, self).__init__(host_port, address, ntransfers)
         
         self.message = Message(b"x" * 1000)
         self.message.properties = dict()
@@ -87,8 +83,8 @@ class SendHandler(BaseHandler):
             self.stop()
             
 class ReceiveHandler(BaseHandler):
-    def __init__(self, address, ntransfers):
-        super(ReceiveHandler, self).__init__(address, ntransfers)
+    def __init__(self, host_port, address, ntransfers):
+        super(ReceiveHandler, self).__init__(host_port, address, ntransfers)
 
         self.results = list()
         self.results_file = None
@@ -120,8 +116,8 @@ class ReceiveHandler(BaseHandler):
                 f.write("{},{:.9f},{:.9f}\r\n".format(*result))
                 
 class ClientHandler(BaseHandler):
-    def __init__(self, address, ntransfers):
-        super(ClientHandler, self).__init__(address, ntransfers)
+    def __init__(self, host_port, address, ntransfers):
+        super(ClientHandler, self).__init__(host_port, address, ntransfers)
 
         self.nconnections = 1
         self.nsessions = 1
@@ -138,7 +134,7 @@ class ClientHandler(BaseHandler):
         super(ClientHandler, self).on_start(event)
         
         for i in range(self.nconnections):
-            conn = event.container.connect(self.address_host_port,
+            conn = event.container.connect(self.host_port,
                                            allowed_mechs=b"ANONYMOUS")
 
             self.connections.append(conn)
@@ -175,15 +171,15 @@ class ClientHandler(BaseHandler):
             conn.close()
 
 class ServerHandler(BaseHandler):
-    def __init__(self, address, ntransfers):
-        super(ServerHandler, self).__init__(address, ntransfers)
+    def __init__(self, host_port, address, ntransfers):
+        super(ServerHandler, self).__init__(host_port, address, ntransfers)
         
         self.acceptor = None
 
     def on_start(self, event):
         super(ServerHandler, self).on_start(event)
 
-        self.acceptor = event.container.listen(self.address_host_port)
+        self.acceptor = event.container.listen(self.host_port)
             
     def stop(self):
         # XXX Need to track and close connections?
@@ -193,14 +189,14 @@ class ServerHandler(BaseHandler):
 class ClientSendHandler(ClientHandler, SendHandler):
     def create_link(self, session, name):
         link = session.sender(name)
-        link.target.address = self.address_path
+        link.target.address = self.address
 
         return link
 
 class ClientReceiveHandler(ClientHandler, ReceiveHandler):
     def create_link(self, session, name):
         link = session.receiver(name)
-        link.source.address = self.address_path
+        link.source.address = self.address
 
         return link
 
@@ -211,19 +207,19 @@ class ServerReceiveHandler(ServerHandler, ReceiveHandler):
     pass
             
 def main():
-    mode, operation, address, transfers = sys.argv[1:5]
+    mode, operation, host_port, address, transfers = sys.argv[1:6]
     transfers = int(transfers)
     kwargs = dict()
 
-    for arg in sys.argv[5:]:
+    for arg in sys.argv[6:]:
         name, value = arg.split("=", 1)
         kwargs[name] = value
 
     if mode == "client":
         if operation == "send":
-            handler = ClientSendHandler(address, transfers)
+            handler = ClientSendHandler(host_port, address, transfers)
         elif operation == "receive":
-            handler = ClientReceiveHandler(address, transfers)
+            handler = ClientReceiveHandler(host_port, address, transfers)
             handler.results_file = kwargs["results-file"]
         else:
             raise Exception()
@@ -233,9 +229,9 @@ def main():
         handler.nlinks = int(kwargs["links"])
     elif mode == "server":
         if operation == "send":
-            handler = ServerSendHandler(address, transfers)
+            handler = ServerSendHandler(host_port, address, transfers)
         elif operation == "receive":
-            handler = ServerReceiveHandler(address, transfers)
+            handler = ServerReceiveHandler(host_port, address, transfers)
             handler.results_file = kwargs["results-file"]
         else:
             raise Exception()

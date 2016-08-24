@@ -42,6 +42,7 @@ def main():
              "\n" \
              "implementations:\n" \
              "  proton-python\n" \
+             "  qpid-messaging-python\n" \
              "\n" \
              "addresses:\n" \
              "  [HOST:PORT]/NODE-NAME\n" \
@@ -96,9 +97,11 @@ def main():
 
     if args.server:
         mode = "server"
-    
-    if "/" not in address:
-        address = "localhost:5672/{}".format(address)
+
+    if "/" in address:
+        host, address = args.address.split("/", 1)
+    else:
+        host, address = "localhost:5672", args.address
     
     libexec_dir = os.path.normpath("{}/../../libexec/quiver".format(home))
     executable = "{}/quiver-{}".format(libexec_dir, args.impl)
@@ -110,6 +113,7 @@ def main():
         executable,
         mode,
         operation,
+        host,
         address,
         transfers,
     ]
@@ -159,7 +163,7 @@ def main():
         print("{:16}  {:8,} ms".format("Max latency:", max_latency))
         print("-" * 80)
 
-        #os.remove(results_file)
+        os.remove(results_file)
         
 if __name__ == "__main__":
     try:

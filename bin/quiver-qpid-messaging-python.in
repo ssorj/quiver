@@ -35,21 +35,17 @@ import collections
 import time
 import uuid
 
-from proton import Url # XXX
 from qpid_messaging import *
 
 class Client(object):
-    def __init__(self, address, ntransfers, nconnections, nsessions, nlinks):
+    def __init__(self, host_port, address, ntransfers, nconnections, nsessions,
+                 nlinks):
+        self.host_port = host_port
         self.address = address
         self.ntransfers = ntransfers
         self.nconnections = nconnections
         self.nsessions = nsessions
         self.nlinks = nlinks
-
-        url = Url(self.address)
-
-        self.address_host_port = "{}:{}".format(url.host, url.port)
-        self.address_path = url.path
 
         self.connections = list()
         self.sessions = list()
@@ -67,7 +63,7 @@ class Client(object):
         self.batch_start_time = self.start_time
         
         for i in range(self.nconnections):
-            conn = Connection("localhost:5672", protocol=b"amqp1.0")
+            conn = Connection(self.host_port, protocol=b"amqp1.0")
             conn.open()
             
             self.connections.append(conn)
@@ -106,14 +102,15 @@ class Client(object):
         pass
                 
 class Sender(Client):
-    def __init__(self, address, ntransfers, nconnections, nsessions, nlinks):
-        super(Sender, self).__init__(address, ntransfers, nconnections,
-                                     nsessions, nlinks)
+    def __init__(self, host_port, address, ntransfers, nconnections, nsessions,
+                 nlinks):
+        super(Sender, self).__init__(host_port, address, ntransfers,
+                                     nconnections, nsessions, nlinks)
 
         self.message = Message(b"x" * 1000)
         
     def create_link(self, session):
-        return session.sender(self.address_path)
+        return session.sender(self.address)
 
     def transfer_message(self, link):
         self.message.id = str(self.transfer_count + 1)
@@ -124,14 +121,15 @@ class Sender(Client):
         self.transfer_count +=1
         
 class Receiver(Client):
-    def __init__(self, address, ntransfers, nconnections, nsessions, nlinks):
-        super(Receiver, self).__init__(address, ntransfers, nconnections,
-                                       nsessions, nlinks)
+    def __init__(self, host_port, address, ntransfers, nconnections, nsessions,
+                nlinks):
+        super(Receiver, self).__init__(host_port, address, ntransfers,
+                                       nconnections, nsessions, nlinks)
 
         self.results = list()
     
     def create_link(self, session):
-        return session.receiver(self.address_path)
+        return session.receiver(self.address)
 
     def transfer_message(self, link):
         if link.available() == 0:
@@ -214,11 +212,11 @@ class Operation(object):
         self.log("Received {} messages per second", rate)
 
 def main():
-    mode, operation, address, transfers = sys.argv[1:5]
+    mode, operation, host_port, address, transfers = sys.argv[1:6]
     transfers = int(transfers)
     kwargs = dict()
 
-    for arg in sys.argv[5:]:
+    for arg in sys.argv[6:]:
         name, value = arg.split("=", 1)
         kwargs[name] = value
 
@@ -230,9 +228,11 @@ def main():
     links = int(kwargs["links"])
     
     if operation == "send":
-        client = Sender(address, transfers, connections, sessions, links)
+        client = Sender(host_port, address, transfers, connections, sessions,
+                        links)
     elif operation == "receive":
-        client = Receiver(address, transfers, connections, sessions, links)
+        client = Receiver(host_port, address, transfers, connections, sessions,
+                          links)
         client.results_file = kwargs["results-file"]
     else:
         raise Exception()
