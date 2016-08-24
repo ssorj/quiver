@@ -22,8 +22,8 @@ set -eux
 
 ADDRESS=$1
 
-quiver receive $ADDRESS -t 1000 --sessions 2 &
-quiver send $ADDRESS -t 1000 --sessions 2
+quiver receive $ADDRESS -n 1000 --sessions 2 &
+quiver send $ADDRESS -n 1000 --sessions 2
 
 # XXX This stalls waiting for the receiver to finish
 

@@ -22,54 +22,65 @@ from __future__ import print_function
 
 import os
 import sys
-import uuid
 
 default = os.path.normpath("@quiver_home@")
 home = os.environ.get("QUIVER_HOME", default)
 
 sys.path.insert(0, os.path.join(home, "python"))
 
-from argparse import ArgumentParser
-from argparse import RawDescriptionHelpFormatter
-from subprocess import check_call
+import argparse
+import subprocess
+import uuid
 
 def main():
     description = "A tool for testing the performance of " \
                   "AMQP messaging APIs"
 
     epilog = "operations:\n" \
-             "  send                 Send messages\n" \
-             "  receive              Receive messages\n" \
+             "  send                  Send messages\n" \
+             "  receive               Receive messages\n" \
              "\n" \
              "implementations:\n" \
              "  proton-python\n" \
              "\n" \
-             "typical usage:\n" \
+             "addresses:\n" \
+             "  [HOST:PORT]/NODE-NAME\n" \
+             "  example.com/jobs\n" \
+             "  example.com:5672/jobs\n" \
+             "  10.0.0.101:56721/jobs\n" \
+             "  localhost/q0\n" \
+             "  q0\n" \
+             "\n" \
+             "example usage:\n" \
              "  $ qdrouterd &\n" \
              "  $ quiver receive q0 &\n" \
              "  $ quiver send q0\n" \
              "\n" \
 
-    parser = ArgumentParser(description=description, epilog=epilog,
-                            formatter_class=RawDescriptionHelpFormatter)
+    formatter = argparse.RawDescriptionHelpFormatter
+    parser = argparse.ArgumentParser(description=description,
+                                     epilog=epilog,
+                                     formatter_class=formatter)
+
     parser.add_argument("operation", metavar="OPERATION",
                         choices=["send", "receive"],
                         help="Either 'send' or 'receive'")
     parser.add_argument("address", metavar="ADDRESS",
                         help="The address of an AMQP node")
-    parser.add_argument("--server", action="store_true",
-                        help="Accept incoming connections")
-    parser.add_argument("--impl", metavar="IMPLEMENTATION",
-                        help="Use IMPLEMENTATION", default="proton-python")
-    parser.add_argument("--connections", metavar="COUNT",
-                        help="Use COUNT connections", default=1, type=int)
-    parser.add_argument("--sessions", metavar="COUNT",
-                        help="Use COUNT sessions", default=1, type=int)
-    parser.add_argument("--links", metavar="COUNT",
-                        help="Use COUNT links", default=1, type=int)
-    parser.add_argument("-t", "--transfers", metavar="COUNT",
+    parser.add_argument("-n", "--transfers", metavar="COUNT",
                         help="Send or receive COUNT messages",
                         default=10000, type=int)
+    parser.add_argument("--server", action="store_true",
+                        help="Operate in server mode")
+    parser.add_argument("--impl", metavar="NAME",
+                        help="Use the NAME implementation",
+                        default="proton-python")
+    parser.add_argument("--connections", metavar="COUNT",
+                        help="Create COUNT connections", default=1, type=int)
+    parser.add_argument("--sessions", metavar="COUNT",
+                        help="Create COUNT sessions", default=1, type=int)
+    parser.add_argument("--links", metavar="COUNT",
+                        help="Create COUNT links", default=1, type=int)
     #parser.add_argument("-m", "--message")
     
     args = parser.parse_args()
@@ -117,7 +128,7 @@ def main():
 
     print("Calling '{}'".format(" ".join(command)))
 
-    check_call(command)
+    subprocess.check_call(command)
 
     if args.operation == "receive":
         send_times = list()

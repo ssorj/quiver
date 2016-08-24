@@ -25,13 +25,14 @@ from __future__ import with_statement
 
 import os
 import sys
-import time
-import uuid
 
 default = os.path.normpath("@quiver_home@")
 home = os.environ.get("QUIVER_HOME", default)
 
 sys.path.insert(0, os.path.join(home, "python"))
+
+import time
+import uuid
 
 from collections import defaultdict
 from proton import Message, Url

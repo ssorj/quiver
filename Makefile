@@ -16,8 +16,6 @@ help:
 
 .PHONY: clean
 clean:
-	find python -type f -name \*.pyc -delete
-	find python -type d -name __pycache__ -delete
 	rm -rf build
 	rm -rf install
 

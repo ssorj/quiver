@@ -20,12 +20,12 @@
 
 set -eu
 
-quiver --server receive localhost:56721/q0 -t 1000 &
+quiver --server receive localhost:56721/q0 -n 1000 &
 sleep 0.1
-quiver send localhost:56721/q0 -t 1000 --connections 2 --sessions 4 --links 8
+quiver send localhost:56721/q0 -n 1000 --connections 2 --sessions 4 --links 8
 
-quiver --server send localhost:56722/q0 -t 1000 &
+quiver --server send localhost:56722/q0 -n 1000 &
 sleep 0.1
-quiver receive localhost:56722/q0 -t 1000 --connections 2 --sessions 4 --links 8
+quiver receive localhost:56722/q0 -n 1000 --connections 2 --sessions 4 --links 8
 
 wait
