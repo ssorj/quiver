@@ -20,12 +20,29 @@
 
 set -eu
 
-quiver --server receive localhost:56721/q0 -n 1000 &
-sleep 0.1
-quiver send localhost:56721/q0 -n 1000 --connections 2 --sessions 4 --links 8
+port=$(python -S -c "import random; print random.randrange(49152, 65535)")
+ready_file=$(mktemp -u)
 
-quiver --server send localhost:56722/q0 -n 1000 &
-sleep 0.1
-quiver receive localhost:56722/q0 -n 1000 --connections 2 --sessions 4 --links 8
+trap "rm $ready_file" EXIT
+
+quiver --server --ready-file $ready_file receive localhost:$port/q0 -n 100 &
+
+until [[ -f $ready_file ]]; do
+    sleep 0.01
+done
+
+quiver send localhost:$port/q0 -n 100 --connections 2 --sessions 4 --links 8
+
+wait
+
+rm $ready_file
+
+quiver --server --ready-file $ready_file send localhost:$port/q0 -n 100 &
+
+until [[ -f $ready_file ]]; do
+    sleep 0.01
+done
+
+quiver receive localhost:$port/q0 -n 100 --connections 2 --sessions 4 --links 8
 
 wait

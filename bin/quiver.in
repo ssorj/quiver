@@ -33,75 +33,78 @@ import subprocess
 import uuid
 
 def main():
-    description = "A tool for testing the performance of " \
-                  "AMQP messaging APIs"
-
+    description = "Test the performance of AMQP messaging APIs"
     epilog = "operations:\n" \
              "  send                  Send messages\n" \
              "  receive               Receive messages\n" \
              "\n" \
-             "implementations:\n" \
-             "  proton-python\n" \
-             "  qpid-messaging-python\n" \
-             "\n" \
-             "addresses:\n" \
-             "  [HOST:PORT]/NODE-NAME\n" \
+             "URLs:\n" \
+             "  [HOST:PORT]/ADDRESS\n" \
              "  example.com/jobs\n" \
              "  example.com:5672/jobs\n" \
-             "  10.0.0.101:56721/jobs\n" \
-             "  localhost/q0\n" \
+             "  10.0.0.101/jobs\n" \
+             "  localhost:56720/q0\n" \
              "  q0\n" \
              "\n" \
+             "implementations:\n" \
+             "  proton-python\n" \
+             "  qpid-messaging-python       Supports client mode only\n" \
+             "\n" \
              "example usage:\n" \
-             "  $ qdrouterd &\n" \
-             "  $ quiver receive q0 &\n" \
-             "  $ quiver send q0\n" \
+             "  $ qdrouterd &               # Start an AMQP server\n" \
+             "  $ quiver receive q0 &       # Start receiving\n" \
+             "  $ quiver send q0            # Start sending\n" \
              "\n" \
 
-    formatter = argparse.RawDescriptionHelpFormatter
+    class Formatter(argparse.ArgumentDefaultsHelpFormatter,
+                    argparse.RawDescriptionHelpFormatter):
+        pass
+
     parser = argparse.ArgumentParser(description=description,
                                      epilog=epilog,
-                                     formatter_class=formatter)
+                                     formatter_class=Formatter)
 
     parser.add_argument("operation", metavar="OPERATION",
                         choices=["send", "receive"],
                         help="Either 'send' or 'receive'")
-    parser.add_argument("address", metavar="ADDRESS",
-                        help="The address of an AMQP node")
-    parser.add_argument("-n", "--transfers", metavar="COUNT",
-                        help="Send or receive COUNT messages",
-                        default=10000, type=int)
-    parser.add_argument("--server", action="store_true",
-                        help="Operate in server mode")
+    parser.add_argument("url", metavar="URL",
+                        help="The location of an AMQP node")
     parser.add_argument("--impl", metavar="NAME",
                         help="Use the NAME implementation",
                         default="proton-python")
+    parser.add_argument("-n", "--transfers", metavar="COUNT",
+                        help="Send or receive COUNT messages",
+                        default=100000, type=int)
     parser.add_argument("--connections", metavar="COUNT",
                         help="Create COUNT connections", default=1, type=int)
     parser.add_argument("--sessions", metavar="COUNT",
                         help="Create COUNT sessions", default=1, type=int)
     parser.add_argument("--links", metavar="COUNT",
                         help="Create COUNT links", default=1, type=int)
+    parser.add_argument("--server", action="store_true",
+                        help="Operate in server mode")
+    parser.add_argument("--ready-file", metavar="FILE",
+                        help="Create FILE when the server is listening")
     #parser.add_argument("-m", "--message")
     
     args = parser.parse_args()
 
     mode = "client"
     operation = args.operation
-    address = args.address
     transfers = str(args.transfers)
     connections = args.connections
     sessions = max(args.sessions, connections)
     links = max(args.links, sessions)
+    ready_file = args.ready_file
     results_file = "/tmp/quiver-{}.csv".format(uuid.uuid4())
 
     if args.server:
         mode = "server"
 
-    if "/" in address:
-        host, address = args.address.split("/", 1)
+    if "/" in args.url:
+        host_port, address = args.url.split("/", 1)
     else:
-        host, address = "localhost:5672", args.address
+        host_port, address = "localhost:5672", args.url
     
     libexec_dir = os.path.normpath("{}/../../libexec/quiver".format(home))
     executable = "{}/quiver-{}".format(libexec_dir, args.impl)
@@ -113,7 +116,7 @@ def main():
         executable,
         mode,
         operation,
-        host,
+        host_port,
         address,
         transfers,
     ]
@@ -128,6 +131,11 @@ def main():
     if operation == "receive":
         command += [
             "results-file={}".format(results_file),
+        ]
+
+    if ready_file is not None:
+        command += [
+            "ready-file={}".format(ready_file),
         ]
 
     print("Calling '{}'".format(" ".join(command)))
