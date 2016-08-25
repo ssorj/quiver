@@ -33,7 +33,7 @@ import subprocess
 import uuid
 
 def main():
-    description = "Test the performance of AMQP messaging APIs"
+    description = "Test the performance of AMQP servers and messaging APIs"
     epilog = "operations:\n" \
              "  send                  Send messages\n" \
              "  receive               Receive messages\n" \
@@ -106,14 +106,14 @@ def main():
     else:
         host_port, address = "localhost:5672", args.url
     
-    libexec_dir = os.path.normpath("{}/../../libexec/quiver".format(home))
-    executable = "{}/quiver-{}".format(libexec_dir, args.impl)
+    impl_dir = os.path.normpath("{}/../../lib/quiver".format(home))
+    impl = "{}/quiver-{}".format(impl_dir, args.impl)
 
-    if not os.path.exists(executable):
-        exit("Error: Can't find '{}'".format(executable))
+    if not os.path.exists(impl):
+        exit("Error: Can't find '{}'".format(impl))
     
     command = [
-        executable,
+        impl,
         mode,
         operation,
         host_port,
