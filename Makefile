@@ -2,7 +2,7 @@ export PATH := ${PWD}/install/bin:${PATH}
 
 DESTDIR := ""
 PREFIX := ${HOME}/.local
-QUIVER_HOME = ${PREFIX}/share/quiver
+QUIVER_HOME = ${PREFIX}/lib/quiver
 
 .PHONY: default
 default: devel

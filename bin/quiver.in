@@ -106,8 +106,7 @@ def main():
     else:
         host_port, address = "localhost:5672", args.url
     
-    impl_dir = os.path.normpath("{}/../../lib/quiver".format(home))
-    impl = "{}/quiver-{}".format(impl_dir, args.impl)
+    impl = os.path.join(home, "quiver-{}".format(args.impl))
 
     if not os.path.exists(impl):
         exit("Error: Can't find '{}'".format(impl))
