@@ -88,3 +88,33 @@ Tools for testing the performance of AMQP servers and messaging APIs.
     $ quiver receive q0
 
 ## Implementations
+
+The `quiver` command is a wrapper that invokes an implementation
+executable using standard arguments.
+
+### Positional arguments
+
+Implementations must process these arguments.
+
+    [1] work_dir        A temporary work directory
+    [2] mode            'client' or 'server'
+    [3] operation       'send' or 'receive'
+    [4] host_port       <host>:<port>
+    [5] address         An AMQP node address
+    [6] transfers       An integral number of transfers
+
+### Keyword arguments
+
+Additional arguments are supplied as `<name>=<value>` pairs.  Some are
+required for certain modes and operations.
+
+    Mode 'client'       Requires connections=<n>, sessions=<n>, links=<n>
+    Operation 'send'    Requires message=<file>
+
+### Recording transfers
+
+Implementations must save received transfers to
+`<work-dir>/transfers.csv` in the following record format, one
+transfer per line.
+
+    <message-id>,<send-time>,<receive-time>\r\n
