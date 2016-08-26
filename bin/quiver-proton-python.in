@@ -72,15 +72,16 @@ class SendHandler(BaseHandler):
         if self.transfer_count == self.ntransfers:
             return
 
-        self.message.id = self.transfer_count + 1
-        self.message.properties["send-time"] = time.time()
+        while event.sender.credit > 0:
+            self.message.id = self.transfer_count + 1
+            self.message.properties["send-time"] = time.time()
 
-        event.sender.send(self.message)
+            event.sender.send(self.message)
 
-        self.transfer_count += 1
+            self.transfer_count += 1
 
-        if self.transfer_count == self.ntransfers:
-            self.stop()
+            if self.transfer_count == self.ntransfers:
+                self.stop()
             
 class ReceiveHandler(BaseHandler):
     def __init__(self, work_dir, host_port, address, ntransfers):

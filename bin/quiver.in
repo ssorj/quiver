@@ -148,8 +148,8 @@ def main():
     if operation == "receive":
         report(work_dir)
 
-    #print(work_dir)
-    shutil.rmtree(work_dir)
+    print(work_dir)
+    #shutil.rmtree(work_dir)
         
 def report(work_dir):
     transfers_file = os.path.join(work_dir, "transfers.csv")
@@ -179,10 +179,10 @@ def report(work_dir):
                                               latency_avg)
             
     print("-" * 80)
-    print("{:32} {:16.1f} s".format("Duration:", duration))
-    print("{:32} {:16,} transfers".format("Transfer count:", transfer_count))
-    print("{:32} {:16,} transfers/s".format("Transfer rate:", transfer_rate))
-    print("{:32} {:>16} ms".format("Latency (min, max, avg):", latency))
+    print("{:32} {:24.1f} s".format("Duration:", duration))
+    print("{:32} {:24,} transfers".format("Transfer count:", transfer_count))
+    print("{:32} {:24,} transfers/s".format("Transfer rate:", transfer_rate))
+    print("{:32} {:>24} ms".format("Latency (min, max, avg):", latency))
     print("-" * 80)
 
 if __name__ == "__main__":
