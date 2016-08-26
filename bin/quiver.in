@@ -18,7 +18,10 @@
 # under the License.
 #
 
+from __future__ import absolute_import
 from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
 
 import os
 import sys
@@ -29,8 +32,9 @@ home = os.environ.get("QUIVER_HOME", default)
 sys.path.insert(0, os.path.join(home, "python"))
 
 import argparse
+import shutil
 import subprocess
-import uuid
+import tempfile
 
 def main():
     description = "Test the performance of AMQP servers and messaging APIs"
@@ -75,6 +79,8 @@ def main():
     parser.add_argument("-n", "--transfers", metavar="COUNT",
                         help="Send or receive COUNT messages",
                         default=100000, type=int)
+    parser.add_argument("--message", metavar="FILE",
+                        help="Send the message stored in FILE")
     parser.add_argument("--connections", metavar="COUNT",
                         help="Create COUNT connections", default=1, type=int)
     parser.add_argument("--sessions", metavar="COUNT",
@@ -83,36 +89,33 @@ def main():
                         help="Create COUNT links", default=1, type=int)
     parser.add_argument("--server", action="store_true",
                         help="Operate in server mode")
-    parser.add_argument("--ready-file", metavar="FILE",
-                        help="Create FILE when the server is listening")
-    #parser.add_argument("-m", "--message")
     
     args = parser.parse_args()
 
-    mode = "client"
+    impl = os.path.join(home, "quiver-{}".format(args.impl))
+    work_dir = tempfile.mkdtemp(prefix="quiver-")
     operation = args.operation
     transfers = str(args.transfers)
     connections = args.connections
-    sessions = max(args.sessions, connections)
+    sessions = max(args.sessions, args.connections)
     links = max(args.links, sessions)
-    ready_file = args.ready_file
-    results_file = "/tmp/quiver-{}.csv".format(uuid.uuid4())
 
+    if not os.path.exists(impl):
+        exit("Error: Can't find '{}'".format(impl))
+    
     if args.server:
         mode = "server"
+    else:
+        mode = "client"
 
     if "/" in args.url:
         host_port, address = args.url.split("/", 1)
     else:
         host_port, address = "localhost:5672", args.url
     
-    impl = os.path.join(home, "quiver-{}".format(args.impl))
-
-    if not os.path.exists(impl):
-        exit("Error: Can't find '{}'".format(impl))
-    
     command = [
         impl,
+        work_dir,
         mode,
         operation,
         host_port,
@@ -127,51 +130,61 @@ def main():
             "links={}".format(links),
         ]
 
-    if operation == "receive":
-        command += [
-            "results-file={}".format(results_file),
-        ]
+    if operation == "send":
+        message_file = args.message
+        
+        if args.message is None:
+            message_file = subprocess.check_output("quiver-message")
 
-    if ready_file is not None:
-        command += [
-            "ready-file={}".format(ready_file),
-        ]
+            if message_file.endswith("\n"):
+                message_file = message_file[:-1]
+            
+        command.append("message={}".format(message_file))
 
     print("Calling '{}'".format(" ".join(command)))
 
     subprocess.check_call(command)
 
-    if args.operation == "receive":
-        send_times = list()
-        receive_times = list()
-        latencies = list()
+    if operation == "receive":
+        report(work_dir)
+
+    #print(work_dir)
+    shutil.rmtree(work_dir)
         
-        with open(results_file, "r") as f:
-            for line in f:
-                message_id, send_time, receive_time = line.split(",", 2)
+def report(work_dir):
+    transfers_file = os.path.join(work_dir, "transfers.csv")
+    send_times = list()
+    receive_times = list()
+    latencies = list()
+    
+    with open(transfers_file, "r") as f:
+        for line in f:
+            message_id, send_time, receive_time = line.split(",", 2)
 
-                send_time = float(send_time)
-                receive_time = float(receive_time)
-                latency = receive_time - send_time
+            send_time = float(send_time)
+            receive_time = float(receive_time)
+            latency = receive_time - send_time
 
-                send_times.append(send_time)
-                receive_times.append(receive_time)
-                latencies.append(latency)
+            send_times.append(send_time)
+            receive_times.append(receive_time)
+            latencies.append(latency)
 
-        duration = max(receive_times) - min(send_times)
-        transfer_count = len(receive_times)
-        transfer_rate = int(round(transfer_count / duration))
-        max_latency = int(round(max(latencies) * 1000))
-                
-        print("-" * 80)
-        print("{:16}  {:8.1f} s".format("Duration:", duration))
-        print("{:16}  {:8,} transfers".format("Transfer count:", transfer_count))
-        print("{:16}  {:8,} transfers/s".format("Transfer rate:", transfer_rate))
-        print("{:16}  {:8,} ms".format("Max latency:", max_latency))
-        print("-" * 80)
+    duration = max(receive_times) - min(send_times)
+    transfer_count = len(receive_times)
+    transfer_rate = int(round(transfer_count / duration))
+    latency_avg = sum(latencies) / transfer_count * 1000
+    latency_min = min(latencies) * 1000
+    latency_max = max(latencies) * 1000
+    latency = "{:.1f}, {:.1f}, {:.1f}".format(latency_min, latency_max,
+                                              latency_avg)
+            
+    print("-" * 80)
+    print("{:32} {:16.1f} s".format("Duration:", duration))
+    print("{:32} {:16,} transfers".format("Transfer count:", transfer_count))
+    print("{:32} {:16,} transfers/s".format("Transfer rate:", transfer_rate))
+    print("{:32} {:>16} ms".format("Latency (min, max, avg):", latency))
+    print("-" * 80)
 
-        os.remove(results_file)
-        
 if __name__ == "__main__":
     try:
         main()

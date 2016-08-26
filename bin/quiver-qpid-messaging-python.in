@@ -38,8 +38,9 @@ import uuid
 from qpid_messaging import *
 
 class Client(object):
-    def __init__(self, host_port, address, ntransfers, nconnections, nsessions,
-                 nlinks):
+    def __init__(self, work_dir, host_port, address, ntransfers,
+                 nconnections, nsessions, nlinks):
+        self.work_dir = work_dir
         self.host_port = host_port
         self.address = address
         self.ntransfers = ntransfers
@@ -102,12 +103,12 @@ class Client(object):
         pass
                 
 class Sender(Client):
-    def __init__(self, host_port, address, ntransfers, nconnections, nsessions,
-                 nlinks):
-        super(Sender, self).__init__(host_port, address, ntransfers,
+    def __init__(self, work_dir, host_port, address, ntransfers,
+                 nconnections, nsessions, nlinks):
+        super(Sender, self).__init__(work_dir, host_port, address, ntransfers,
                                      nconnections, nsessions, nlinks)
 
-        self.message = Message(b"x" * 1000)
+        self.message = Message("x" * 1000)
         
     def create_link(self, session):
         return session.sender(self.address)
@@ -121,12 +122,12 @@ class Sender(Client):
         self.transfer_count +=1
         
 class Receiver(Client):
-    def __init__(self, host_port, address, ntransfers, nconnections, nsessions,
-                nlinks):
-        super(Receiver, self).__init__(host_port, address, ntransfers,
+    def __init__(self, work_dir, host_port, address, ntransfers,
+                 nconnections, nsessions, nlinks):
+        super(Receiver, self).__init__(work_dir, host_port, address, ntransfers,
                                        nconnections, nsessions, nlinks)
 
-        self.results = list()
+        self.transfers = list()
     
     def create_link(self, session):
         return session.receiver(self.address)
@@ -142,7 +143,7 @@ class Receiver(Client):
         send_time = message.properties["send-time"]
         receive_time = time.time()
         
-        self.results.append((message.id, send_time, receive_time))
+        self.transfers.append((message.id, send_time, receive_time))
         
         self.transfer_count +=1
         
@@ -151,72 +152,23 @@ class Receiver(Client):
             curr_time = time.time()
             rate = int(round(5000 / (curr_time - prev_time)))
             
-            print("* {:8,} {:8,} transfers/s".format(self.transfer_count, rate))
+            print("* {:10,} {:8,} transfers/s".format(self.transfer_count, rate))
 
             self.batch_start_time = curr_time
             
     def save(self):
-        with open(self.results_file, "w") as f:
-            for result in self.results:
+        transfers_file = os.path.join(self.work_dir, "transfers.csv")
+        
+        with open(transfers_file, "w") as f:
+            for result in self.transfers:
                 f.write("{},{:.9f},{:.9f}\r\n".format(*result))
 
-class Operation(object):
-    def send(self):
-        self.log("Creating {} messages", self.nmessages)
-
-        content = self.size * "x"
-
-        for i in range(self.nmessages):
-            message = Message(content)
-            self.messages.append(message)
-
-        self.log("Sending {} messages", len(self.messages))
-        start = time.time()
-
-        for i, message in enumerate(self.messages):
-            link = self.links[i % len(self.links)]
-            link.send(message)
-
-        secs = time.time() - start
-        rate = int(len(self.messages) / secs)
-
-        self.log("Sent {} messages per second", rate)
-
-    def receive(self):
-        self.log("Receiving {} messages", self.nmessages)
-
-        def loop():
-            # XXX use self.messages
-            count = 0
-
-            while True:
-                for link in self.links:
-                    while link.available() > 0:
-                        message = link.get()
-                        count += 1
-
-                        assert len(message.content) == self.size
-
-                        link.session.acknowledge()
-
-                        if count == self.nmessages:
-                            return
-
-        start = time.time()
-
-        loop()
-
-        secs = time.time() - start
-        rate = int(self.nmessages / secs)
-
-        self.log("Received {} messages per second", rate)
-
 def main():
-    mode, operation, host_port, address, transfers = sys.argv[1:6]
-    transfers = int(transfers)
+    work_dir, mode, operation, host_port, address = sys.argv[1:6]
+    transfers = int(sys.argv[6])
     kwargs = dict()
 
-    for arg in sys.argv[6:]:
+    for arg in sys.argv[7:]:
         name, value = arg.split("=", 1)
         kwargs[name] = value
 
@@ -228,14 +180,11 @@ def main():
     links = int(kwargs["links"])
     
     if operation == "send":
-        client = Sender(host_port, address, transfers, connections, sessions,
-                        links)
-    elif operation == "receive":
-        client = Receiver(host_port, address, transfers, connections, sessions,
-                          links)
-        client.results_file = kwargs["results-file"]
-    else:
-        raise Exception()
+        client = Sender(work_dir, host_port, address, transfers,
+                        connections, sessions, links)
+    if operation == "receive":
+        client = Receiver(work_dir, host_port, address, transfers,
+                          connections, sessions, links)
 
     client.run()
     client.save()

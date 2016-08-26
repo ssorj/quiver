@@ -23,6 +23,8 @@ clean:
 build: build/lib/quiver/quiver-qpid-messaging-cpp
 	scripts/configure-file bin/quiver.in build/bin/quiver \
 		quiver_home ${QUIVER_HOME}
+	scripts/configure-file bin/quiver-message.in build/bin/quiver-message \
+		quiver_home ${QUIVER_HOME}
 	scripts/configure-file bin/quiver-proton-python.in \
 		build/lib/quiver/quiver-proton-python \
 		quiver_home ${QUIVER_HOME}
@@ -34,9 +36,14 @@ build: build/lib/quiver/quiver-qpid-messaging-cpp
 install: build
 	mkdir -p ${DESTDIR}${QUIVER_HOME}
 	scripts/install-files python ${DESTDIR}${QUIVER_HOME}/python \*.py
-	scripts/install-executable build/bin/quiver ${DESTDIR}${PREFIX}/bin/quiver
+	scripts/install-executable build/bin/quiver \
+		${DESTDIR}${PREFIX}/bin/quiver
+	scripts/install-executable build/bin/quiver-message \
+		${DESTDIR}${PREFIX}/bin/quiver-message
 	scripts/install-executable build/lib/quiver/quiver-proton-python \
 		${DESTDIR}${PREFIX}/lib/quiver/quiver-proton-python
+	scripts/install-executable build/lib/quiver/quiver-qpid-messaging-cpp \
+		${DESTDIR}${PREFIX}/lib/quiver/quiver-qpid-messaging-cpp
 	scripts/install-executable build/lib/quiver/quiver-qpid-messaging-python \
 		${DESTDIR}${PREFIX}/lib/quiver/quiver-qpid-messaging-python
 

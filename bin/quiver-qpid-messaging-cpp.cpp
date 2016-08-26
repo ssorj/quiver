@@ -30,21 +30,21 @@
 using namespace qpid::messaging;
 
 int main(int argc, char** argv) {
-    int nconnections = std::atoi(argv[1]);
-    int nsessions = std::atoi(argv[2]);
-    int nlinks = std::atoi(argv[3]);
-    int nmessages = std::atoi(argv[4]);
-    int nbytes = std::atoi(argv[5]);
+    std::string work_dir = argv[1];
+    std::string mode = argv[2];
+    std::string operation = argv[3];
+    std::string host_port = argv[4];
+    std::string address = argv[5];
+    int ntransfers = std::atoi(argv[6]);
 
-    std::string host = "localhost:5672";
-    std::string address = "test";
+    std::cerr << work_dir << std::endl;
+    std::cerr << mode << std::endl;
+    std::cerr << operation << std::endl;
+    std::cerr << host_port << std::endl;
+    std::cerr << address << std::endl;
+    std::cerr << ntransfers << std::endl;
 
-    std::cerr << nconnections << std::endl;
-    std::cerr << nsessions << std::endl;
-    std::cerr << nlinks << std::endl;
-    std::cerr << nmessages << std::endl;
-    std::cerr << nbytes << std::endl;
-
+    /*
     Connection connections[nconnections];
     Session sessions[nsessions];
     Sender links[nlinks];
@@ -91,4 +91,5 @@ int main(int argc, char** argv) {
         std::cerr << error.what() << std::endl;
         return 1;
     }
+    */
 }

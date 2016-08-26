@@ -33,16 +33,16 @@ sys.path.insert(0, os.path.join(home, "python"))
 
 import collections
 import time
-import uuid
 
-from proton import Message, Url
+from proton import Message
 from proton.handlers import MessagingHandler
 from proton.reactor import Container
 
 class BaseHandler(MessagingHandler):
-    def __init__(self, host_port, address, ntransfers):
+    def __init__(self, work_dir, host_port, address, ntransfers):
         super(BaseHandler, self).__init__()
 
+        self.work_dir = work_dir
         self.host_port = host_port
         self.address = address
         self.ntransfers = ntransfers
@@ -62,11 +62,11 @@ class BaseHandler(MessagingHandler):
         pass
 
 class SendHandler(BaseHandler):
-    def __init__(self, host_port, address, ntransfers):
-        super(SendHandler, self).__init__(host_port, address, ntransfers)
-        
-        self.message = Message(b"x" * 1000)
-        self.message.properties = dict()
+    def __init__(self, work_dir, host_port, address, ntransfers):
+        super(SendHandler, self).__init__(work_dir, host_port, address,
+                                          ntransfers)
+
+        self.message = None
 
     def on_sendable(self, event):
         if self.transfer_count == self.ntransfers:
@@ -83,27 +83,26 @@ class SendHandler(BaseHandler):
             self.stop()
             
 class ReceiveHandler(BaseHandler):
-    def __init__(self, host_port, address, ntransfers):
-        super(ReceiveHandler, self).__init__(host_port, address, ntransfers)
+    def __init__(self, work_dir, host_port, address, ntransfers):
+        super(ReceiveHandler, self).__init__(work_dir, host_port, address,
+                                             ntransfers)
 
-        self.results = list()
-        self.results_file = None
+        self.transfers = list()
     
     def on_message(self, event):
         message = event.message
         send_time = message.properties["send-time"]
         receive_time = time.time()
         
-        self.results.append((message.id, send_time, receive_time))
-
+        self.transfers.append((message.id, send_time, receive_time))
         self.transfer_count += 1
 
-        if self.transfer_count % 5000 == 0:
+        if self.transfer_count % 10000 == 0:
             prev_time = self.batch_start_time
             curr_time = time.time()
-            rate = int(round(5000 / (curr_time - prev_time)))
+            rate = int(round(10000 / (curr_time - prev_time)))
             
-            print("* {:8,} {:8,} transfers/s".format(self.transfer_count, rate))
+            print("* {:10,} {:8,} transfers/s".format(self.transfer_count, rate))
 
             self.batch_start_time = curr_time
             
@@ -111,13 +110,16 @@ class ReceiveHandler(BaseHandler):
             self.stop()
 
     def save(self):
-        with open(self.results_file, "w") as f:
-            for result in self.results:
-                f.write("{},{:.9f},{:.9f}\r\n".format(*result))
+        transfers_file = os.path.join(self.work_dir, "transfers.csv")
+        
+        with open(transfers_file, "w") as f:
+            for record in self.transfers:
+                f.write("{},{:.9f},{:.9f}\r\n".format(*record))
                 
 class ClientHandler(BaseHandler):
-    def __init__(self, host_port, address, ntransfers):
-        super(ClientHandler, self).__init__(host_port, address, ntransfers)
+    def __init__(self, work_dir, host_port, address, ntransfers):
+        super(ClientHandler, self).__init__(work_dir, host_port, address,
+                                            ntransfers)
 
         self.nconnections = 1
         self.nsessions = 1
@@ -171,8 +173,9 @@ class ClientHandler(BaseHandler):
             conn.close()
 
 class ServerHandler(BaseHandler):
-    def __init__(self, host_port, address, ntransfers):
-        super(ServerHandler, self).__init__(host_port, address, ntransfers)
+    def __init__(self, work_dir, host_port, address, ntransfers):
+        super(ServerHandler, self).__init__(work_dir, host_port, address,
+                                            ntransfers)
         
         self.acceptor = None
         self.ready_file = None
@@ -188,7 +191,6 @@ class ServerHandler(BaseHandler):
     def stop(self):
         # XXX Need to track and close connections?
         self.acceptor.close()
-        self.save()
                  
 class ClientSendHandler(ClientHandler, SendHandler):
     def create_link(self, session, name):
@@ -209,41 +211,39 @@ class ServerSendHandler(ServerHandler, SendHandler):
 
 class ServerReceiveHandler(ServerHandler, ReceiveHandler):
     pass
-            
+
+handler_classes = {
+    "client-send": ClientSendHandler,
+    "client-receive": ClientReceiveHandler,
+    "server-send": ServerSendHandler,
+    "server-receive": ServerReceiveHandler,
+}
+
 def main():
-    mode, operation, host_port, address, transfers = sys.argv[1:6]
-    transfers = int(transfers)
+    work_dir, mode, operation, host_port, address = sys.argv[1:6]
+    transfers = int(sys.argv[6])
     kwargs = dict()
 
-    for arg in sys.argv[6:]:
+    for arg in sys.argv[7:]:
         name, value = arg.split("=", 1)
         kwargs[name] = value
 
+    handler_key = "{}-{}".format(mode, operation)
+    handler_class = handler_classes[handler_key]
+    handler = handler_class(work_dir, host_port, address, transfers)
+    
     if mode == "client":
-        if operation == "send":
-            handler = ClientSendHandler(host_port, address, transfers)
-        elif operation == "receive":
-            handler = ClientReceiveHandler(host_port, address, transfers)
-            handler.results_file = kwargs["results-file"]
-        else:
-            raise Exception()
-
         handler.nconnections = int(kwargs["connections"])
         handler.nsessions = int(kwargs["sessions"])
         handler.nlinks = int(kwargs["links"])
-    elif mode == "server":
-        if operation == "send":
-            handler = ServerSendHandler(host_port, address, transfers)
-        elif operation == "receive":
-            handler = ServerReceiveHandler(host_port, address, transfers)
-            handler.results_file = kwargs["results-file"]
-        else:
-            raise Exception()
 
-        if "ready-file" in kwargs:
-            handler.ready_file = kwargs["ready-file"]
-    else:
-        raise Exception()
+    if operation == "send":
+        handler.message = Message()
+        
+        with open(kwargs["message"], "rb") as f:
+            handler.message.decode(f.read())
+
+        handler.message.properties = dict()
         
     container = Container(handler)
     container.run()

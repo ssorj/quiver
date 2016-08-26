@@ -20,28 +20,25 @@
 
 set -eu
 
+# until nc localhost $port 2> /dev/null < /dev/null; do
+#     sleep 0.1
+# done
+
 port=$(python -S -c "import random; print random.randrange(49152, 65535)")
-ready_file=$(mktemp -u)
 
-trap "rm $ready_file" EXIT
+quiver --server receive localhost:$port/q0 -n 100 &
 
-quiver --server --ready-file $ready_file receive localhost:$port/q0 -n 100 &
-
-until [[ -f $ready_file ]]; do
-    sleep 0.01
-done
+sleep 0.5
 
 quiver send localhost:$port/q0 -n 100 --connections 2 --sessions 4 --links 8
 
 wait
 
-rm $ready_file
+port=$(python -S -c "import random; print random.randrange(49152, 65535)")
 
-quiver --server --ready-file $ready_file send localhost:$port/q0 -n 100 &
+quiver --server send localhost:$port/q0 -n 100 &
 
-until [[ -f $ready_file ]]; do
-    sleep 0.01
-done
+sleep 0.5
 
 quiver receive localhost:$port/q0 -n 100 --connections 2 --sessions 4 --links 8
 
