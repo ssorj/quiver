@@ -24,6 +24,11 @@ If you don't have `dnf`, use the repo files at
 
 ### quiver
 
+`quiver` is the main entry point.  It sends and receives AMQP messages
+as fast as it can.  When the requested transfers are done, it reports
+the throughput and latency of the overall set, from the first send to
+the last receive.
+
     usage: quiver [-h] [--impl NAME] [-n COUNT] [--message FILE]
         [--connections COUNT] [--sessions COUNT] [--links COUNT] [--server]
         OPERATION URL
@@ -63,6 +68,9 @@ If you don't have `dnf`, use the repo files at
 
 ### quiver-message
 
+`quiver-message` creates AMQP message bytes for use by `quiver` via
+its `--message` argument.  It's currently very basic.
+
     usage: quiver-message [-h] [--bytes COUNT] [-o FILE]
 
     Generate an AMQP message and store it in a file
@@ -95,7 +103,7 @@ If you don't have `dnf`, use the repo files at
     $ quiver receive q0 &
     $ quiver send q0
 
-### Running Quiver Peer-to-Peer
+### Running Quiver peer-to-peer
 
     $ quiver --server receive q0 &
     $ quiver send q0
@@ -108,7 +116,11 @@ If you don't have `dnf`, use the repo files at
 ## Implementations
 
 The `quiver` command is a wrapper that invokes an implementation
-executable using standard arguments.
+executable using standard arguments.  `quiver` tries to take
+responsibility for 'cooking' its inputs so implementations can focus
+on mechanics.  By the same token, implementation outputs are
+intentionally left raw so `quiver` can do the work of presenting the
+results.
 
 ### Positional arguments
 
