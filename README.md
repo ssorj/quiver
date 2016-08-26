@@ -2,6 +2,24 @@
 
 Tools for testing the performance of AMQP servers and messaging APIs.
 
+## Installation
+
+### Installing from source
+
+By default, installs from source go to `$HOME/.local`.  Make sure
+`$HOME/.local/bin` is in your path.
+
+    $ cd quiver
+    $ make install
+
+### Using packages
+
+    $ sudo dnf enable jross/ssorj
+    $ sudo dnf install quiver
+
+If you don't have `dnf`, use the repo files at
+<https://copr.fedorainfracloud.org/coprs/jross/ssorj/>.
+
 ## Command-line interface
 
 ### quiver
