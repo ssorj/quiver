@@ -20,10 +20,8 @@ clean:
 	rm -rf install
 
 .PHONY: build
-build: build/lib/quiver/quiver-qpid-messaging-cpp
+build: build/lib/quiver/quiver-qpid-messaging-cpp build/lib/quiver/quiver-proton-cpp
 	scripts/configure-file bin/quiver.in build/bin/quiver \
-		quiver_home ${QUIVER_HOME}
-	scripts/configure-file bin/quiver-message.in build/bin/quiver-message \
 		quiver_home ${QUIVER_HOME}
 	scripts/configure-file bin/quiver-proton-python.in \
 		build/lib/quiver/quiver-proton-python \
@@ -38,8 +36,8 @@ install: build
 	scripts/install-files python ${DESTDIR}${QUIVER_HOME}/python \*.py
 	scripts/install-executable build/bin/quiver \
 		${DESTDIR}${PREFIX}/bin/quiver
-	scripts/install-executable build/bin/quiver-message \
-		${DESTDIR}${PREFIX}/bin/quiver-message
+	scripts/install-executable build/lib/quiver/quiver-proton-cpp \
+		${DESTDIR}${PREFIX}/lib/quiver/quiver-proton-cpp
 	scripts/install-executable build/lib/quiver/quiver-proton-python \
 		${DESTDIR}${PREFIX}/lib/quiver/quiver-proton-python
 	scripts/install-executable build/lib/quiver/quiver-qpid-messaging-cpp \
@@ -55,3 +53,7 @@ devel: clean install
 build/lib/quiver/quiver-qpid-messaging-cpp: bin/quiver-qpid-messaging-cpp.cpp
 	mkdir -p build/lib/quiver
 	gcc -std=c++11 -lqpidmessaging -lqpidtypes -lstdc++ $< -o $@
+
+build/lib/quiver/quiver-proton-cpp: bin/quiver-proton-cpp.cpp
+	mkdir -p build/lib/quiver
+	gcc -std=c++11 -lqpid-proton -lstdc++ $< -o $@

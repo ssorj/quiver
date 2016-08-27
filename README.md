@@ -36,12 +36,12 @@ the last receive.
 
     positional arguments:
       OPERATION             Either 'send' or 'receive'
-      URL                   The location of an AMQP node
+      ADDRESS               The location of an AMQP node
 
     optional arguments:
       -h, --help            show this help message and exit
       --impl NAME           Use the NAME implementation (default: proton-python)
-      -n COUNT, --transfers COUNT
+      -n COUNT, --messages  COUNT
                             Send or receive COUNT messages (default: 100000)
       --bytes COUNT         Send message bodies containing COUNT bytes (default: 1000)
       --credit COUNT        Sustain credit for COUNT incoming transfers (default: 100)
@@ -52,11 +52,10 @@ the last receive.
       receive               Receive messages
 
     URLs:
-      [HOST:PORT]/ADDRESS
-      example.com/jobs
-      example.com:5672/jobs
-      10.0.0.101/jobs
-      localhost:56720/q0
+      [//DOMAIN/]PATH
+      //example.net/jobs
+      //10.0.0.100:5672/jobs/alpha
+      //localhost/q0
       q0
 
 ## Examples
@@ -104,19 +103,19 @@ results.
 
 Implementations must process these arguments.
 
-    [1] work_dir        A temporary work directory
+    [1] output-dir      A temporary work directory
     [2] mode            'client' or 'server'
     [3] operation       'send' or 'receive'
-    [4] host_port       <host>:<port>
-    [5] address         An AMQP node address
-    [6] transfers       Number of transfers
-    [7] body_bytes      Length of generated message body
-    [8] credit_window   Credit to maintain
+    [4] domain          <host>[:<port>]
+    [5] path            An AMQP address path
+    [6] messages        Number of transfers
+    [7] bytes           Length of generated message body
+    [8] credit          Credit to maintain
 
 ### Recording transfers
 
 Implementations must save received transfers to
-`<work-dir>/transfers.csv` in the following record format, one
+`<output-dir>/transfers.csv` in the following record format, one
 transfer per line.
 
     <message-id>,<send-time>,<receive-time>\r\n
@@ -124,9 +123,6 @@ transfer per line.
 ## Todo
 
 - Consider periodic transfer data saves - period on time or messages?
-- --message-body "" <-- 
-- --entire-message-from-file <-- $(quiver-message)
-  - Means somewhat less message-contruction in the client impl <--
 - Offer aliases for frequently used impls
 - Send-and-receive operation
 - Save rusage info

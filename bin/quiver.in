@@ -42,12 +42,11 @@ def main():
              "  send                  Send messages\n" \
              "  receive               Receive messages\n" \
              "\n" \
-             "URLs:\n" \
-             "  [HOST:PORT]/ADDRESS\n" \
-             "  example.com/jobs\n" \
-             "  example.com:5672/jobs\n" \
-             "  10.0.0.101/jobs\n" \
-             "  localhost:56720/q0\n" \
+             "addresses:\n" \
+             "  [//DOMAIN/]PATH\n" \
+             "  //example.net/jobs\n" \
+             "  //10.0.0.10:5672/jobs/alpha\n" \
+             "  //localhost/q0\n" \
              "  q0\n" \
              "\n" \
              "implementations:\n" \
@@ -71,12 +70,12 @@ def main():
     parser.add_argument("operation", metavar="OPERATION",
                         choices=["send", "receive"],
                         help="Either 'send' or 'receive'")
-    parser.add_argument("url", metavar="URL",
+    parser.add_argument("address", metavar="ADDRESS",
                         help="The location of an AMQP node")
     parser.add_argument("--impl", metavar="NAME",
                         help="Use the NAME implementation",
                         default="proton-python")
-    parser.add_argument("-n", "--transfers", metavar="COUNT",
+    parser.add_argument("-n", "--messages", metavar="COUNT",
                         help="Send or receive COUNT messages",
                         default=100000, type=int)
     parser.add_argument("--bytes", metavar="COUNT",
@@ -91,35 +90,32 @@ def main():
     args = parser.parse_args()
 
     impl = os.path.join(home, "quiver-{}".format(args.impl))
-    work_dir = tempfile.mkdtemp(prefix="quiver-")
-    operation = args.operation
-    transfers = str(args.transfers)
-    body_bytes = str(args.bytes)
-    credit_window = str(args.credit)
 
     if not os.path.exists(impl):
         exit("Error: Can't find '{}'".format(impl))
     
-    if args.server:
-        mode = "server"
-    else:
-        mode = "client"
+    output_dir = tempfile.mkdtemp(prefix="quiver-")
+    mode = "server" if args.server else "client"
+    operation = args.operation
+    messages = str(args.messages)
+    bytes_ = str(args.bytes)
+    credit = str(args.credit)
 
-    if "/" in args.url:
-        host_port, address = args.url.split("/", 1)
+    if args.address.startswith("//"):
+        domain, path = args.address[2:].split("/", 1)
     else:
-        host_port, address = "localhost:5672", args.url
+        domain, path = "localhost:5672", args.address
     
     command = [
         impl,
-        work_dir,
+        output_dir,
         mode,
         operation,
-        host_port,
-        address,
-        transfers,
-        body_bytes,
-        credit_window,
+        domain,
+        path,
+        messages,
+        bytes_,
+        credit,
     ]
 
     print("Calling '{}'".format(" ".join(command)))
@@ -127,13 +123,13 @@ def main():
     subprocess.check_call(command)
 
     if operation == "receive":
-        report(work_dir)
+        report(output_dir)
 
-    #print(work_dir)
-    shutil.rmtree(work_dir)
+    #print(output_dir)
+    shutil.rmtree(output_dir)
         
-def report(work_dir):
-    transfers_file = os.path.join(work_dir, "transfers.csv")
+def report(output_dir):
+    transfers_file = os.path.join(output_dir, "transfers.csv")
     send_times = list()
     receive_times = list()
     latencies = list()
