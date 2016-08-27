@@ -24,21 +24,39 @@ set -eu
 #     sleep 0.1
 # done
 
-count=1000
+count=100
 port=$(python -S -c "import random; print random.randrange(49152, 65535)")
+url=localhost:$port/q0
 
-quiver --server receive localhost:$port/q0 -n $count &
-
-sleep 0.5
-
-quiver send localhost:$port/q0 -n $count --connections 2 --sessions 4 --links 8
-
-wait
-
-quiver --server send localhost:$port/q0 -n $count &
+quiver --server receive $url -n $count &
 
 sleep 0.5
 
-quiver receive localhost:$port/q0 -n $count --connections 2 --sessions 4 --links 8
+quiver send $url -n $count
 
 wait
+
+quiver --server send $url -n $count &
+
+sleep 0.5
+
+quiver receive $url -n $count
+
+wait
+
+# quiver --server receive $url -n $count &
+
+# sleep 0.5
+
+# quiver send --impl qpid-messaging-python $url -n $count
+
+# wait
+
+# quiver --server send $url -n $count &
+
+# sleep 0.5
+
+# quiver receive --impl qpid-messaging-python $url -n $count
+
+# wait
+

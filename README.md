@@ -148,3 +148,12 @@ Implementations must save received transfers to
 transfer per line.
 
     <message-id>,<send-time>,<receive-time>\r\n
+
+## Todo
+
+- Use gnu style "--name value" options
+- Consider periodic transfer data saves - period on time or messages?
+- --message-body "" <-- 
+- --entire-message-from-file <-- $(quiver-message)
+  - Means somewhat less message-contruction in the client impl <--
+- Offer aliases for frequently used impls

@@ -81,12 +81,6 @@ def main():
                         default=100000, type=int)
     parser.add_argument("--message", metavar="FILE",
                         help="Send the message stored in FILE")
-    parser.add_argument("--connections", metavar="COUNT",
-                        help="Create COUNT connections", default=1, type=int)
-    parser.add_argument("--sessions", metavar="COUNT",
-                        help="Create COUNT sessions", default=1, type=int)
-    parser.add_argument("--links", metavar="COUNT",
-                        help="Create COUNT links", default=1, type=int)
     parser.add_argument("--server", action="store_true",
                         help="Operate in server mode")
     
@@ -96,9 +90,6 @@ def main():
     work_dir = tempfile.mkdtemp(prefix="quiver-")
     operation = args.operation
     transfers = str(args.transfers)
-    connections = args.connections
-    sessions = max(args.sessions, args.connections)
-    links = max(args.links, sessions)
 
     if not os.path.exists(impl):
         exit("Error: Can't find '{}'".format(impl))
@@ -123,13 +114,6 @@ def main():
         transfers,
     ]
 
-    if mode == "client":
-        command += [
-            "connections={}".format(connections),
-            "sessions={}".format(sessions),
-            "links={}".format(links),
-        ]
-
     if operation == "send":
         message_file = args.message
         
@@ -148,8 +132,8 @@ def main():
     if operation == "receive":
         report(work_dir)
 
-    print(work_dir)
-    #shutil.rmtree(work_dir)
+    #print(work_dir)
+    shutil.rmtree(work_dir)
         
 def report(work_dir):
     transfers_file = os.path.join(work_dir, "transfers.csv")

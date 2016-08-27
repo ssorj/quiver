@@ -39,37 +39,75 @@ from proton.handlers import MessagingHandler
 from proton.reactor import Container
 
 class BaseHandler(MessagingHandler):
-    def __init__(self, work_dir, host_port, address, ntransfers):
+    def __init__(self, work_dir, host_port, address, transfers):
         super(BaseHandler, self).__init__()
 
         self.work_dir = work_dir
         self.host_port = host_port
         self.address = address
-        self.ntransfers = ntransfers
+        self.transfers = transfers
         
         self.start_time = None
         self.batch_start_time = None
         self.transfer_count = 0
+        self.stopping = False
 
     def on_start(self, event):
         self.start_time = time.time()
         self.batch_start_time = self.start_time
         
     def stop(self):
-        raise NotImplementedError()
+        self.stopping = True
 
     def save(self):
         pass
 
-class SendHandler(BaseHandler):
-    def __init__(self, work_dir, host_port, address, ntransfers):
-        super(SendHandler, self).__init__(work_dir, host_port, address,
-                                          ntransfers)
+class Client(BaseHandler):
+    def __init__(self, work_dir, host_port, address, transfers):
+        super(Client, self).__init__(work_dir, host_port, address, transfers)
+
+        self.connection = None
+
+    def on_start(self, event):
+        super(Client, self).on_start(event)
+        
+        self.connection = event.container.connect \
+            (self.host_port, allowed_mechs=b"ANONYMOUS")
+
+        self.create_link(event)
+
+    def create_link(self, session, name):
+        raise NotImplementedError()
+            
+    def stop(self):
+        super(Client, self).stop()
+        
+        self.connection.close()
+
+class Server(BaseHandler):
+    def __init__(self, work_dir, host_port, address, transfers):
+        super(Server, self).__init__(work_dir, host_port, address, transfers)
+        
+        self.acceptor = None
+
+    def on_start(self, event):
+        super(Server, self).on_start(event)
+
+        self.acceptor = event.container.listen(self.host_port)
+
+    def stop(self):
+        super(Server, self).stop()
+        
+        self.acceptor.close()
+                 
+class Sender(BaseHandler):
+    def __init__(self, work_dir, host_port, address, transfers):
+        super(Sender, self).__init__(work_dir, host_port, address, transfers)
 
         self.message = None
 
     def on_sendable(self, event):
-        if self.transfer_count == self.ntransfers:
+        if self.stopping:
             return
 
         while event.sender.credit > 0:
@@ -80,22 +118,25 @@ class SendHandler(BaseHandler):
 
             self.transfer_count += 1
 
-            if self.transfer_count == self.ntransfers:
+            if self.transfer_count == self.transfers:
                 self.stop()
             
-class ReceiveHandler(BaseHandler):
-    def __init__(self, work_dir, host_port, address, ntransfers):
-        super(ReceiveHandler, self).__init__(work_dir, host_port, address,
-                                             ntransfers)
+class Receiver(BaseHandler):
+    def __init__(self, work_dir, host_port, address, transfers):
+        super(Receiver, self).__init__(work_dir, host_port, address,
+                                             transfers)
 
-        self.transfers = list()
+        self.transfer_records = list()
     
     def on_message(self, event):
+        if self.stopping:
+            return
+        
         message = event.message
         send_time = message.properties["send-time"]
         receive_time = time.time()
         
-        self.transfers.append((message.id, send_time, receive_time))
+        self.transfer_records.append((message.id, send_time, receive_time))
         self.transfer_count += 1
 
         if self.transfer_count % 10000 == 0:
@@ -107,117 +148,35 @@ class ReceiveHandler(BaseHandler):
 
             self.batch_start_time = curr_time
             
-        if self.transfer_count == self.ntransfers:
+        if self.transfer_count == self.transfers:
             self.stop()
 
     def save(self):
         transfers_file = os.path.join(self.work_dir, "transfers.csv")
         
         with open(transfers_file, "w") as f:
-            for record in self.transfers:
+            for record in self.transfer_records:
                 f.write("{},{:.9f},{:.9f}\r\n".format(*record))
                 
-class ClientHandler(BaseHandler):
-    def __init__(self, work_dir, host_port, address, ntransfers):
-        super(ClientHandler, self).__init__(work_dir, host_port, address,
-                                            ntransfers)
+class ClientSender(Client, Sender):
+    def create_link(self, event):
+        return event.container.create_sender(self.connection, self.address)
 
-        self.nconnections = 1
-        self.nsessions = 1
-        self.nlinks = 1
+class ClientReceiver(Client, Receiver):
+    def create_link(self, event):
+        return event.container.create_receiver(self.connection, self.address)
 
-        self.connections = list()
-        self.sessions = list()
-        self.links = list()
-
-        self.sessions_by_connection = collections.defaultdict(list)
-        self.links_by_session = collections.defaultdict(list)
-
-    def on_start(self, event):
-        super(ClientHandler, self).on_start(event)
-        
-        for i in range(self.nconnections):
-            conn = event.container.connect(self.host_port,
-                                           allowed_mechs=b"ANONYMOUS")
-
-            self.connections.append(conn)
-
-        for i in range(self.nsessions):
-            conn = self.connections[i % self.nconnections]
-            session = conn.session()
-
-            self.sessions.append(session)
-            self.sessions_by_connection[conn].append(session)
-
-        for i in range(self.nlinks):
-            session = self.sessions[i % self.nsessions]
-            name = "link-{}".format(i)
-
-            link = self.create_link(session, name)
-            
-            self.links.append(link)
-            self.links_by_session[session].append(link)
-
-    def create_link(self, session, name):
-        raise NotImplementedError()
-            
-    def on_connection_opened(self, event):
-        for session in self.sessions_by_connection[event.connection]:
-            session.open()
-        
-    def on_session_opened(self, event):
-        for link in self.links_by_session[event.session]:
-            link.open()
-
-    def stop(self):
-        for conn in self.connections:
-            conn.close()
-
-class ServerHandler(BaseHandler):
-    def __init__(self, work_dir, host_port, address, ntransfers):
-        super(ServerHandler, self).__init__(work_dir, host_port, address,
-                                            ntransfers)
-        
-        self.acceptor = None
-        self.ready_file = None
-
-    def on_start(self, event):
-        super(ServerHandler, self).on_start(event)
-
-        self.acceptor = event.container.listen(self.host_port)
-
-        if self.ready_file is not None:
-            open(self.ready_file, "a").close()
-            
-    def stop(self):
-        # XXX Need to track and close connections?
-        self.acceptor.close()
-                 
-class ClientSendHandler(ClientHandler, SendHandler):
-    def create_link(self, session, name):
-        link = session.sender(name)
-        link.target.address = self.address
-
-        return link
-
-class ClientReceiveHandler(ClientHandler, ReceiveHandler):
-    def create_link(self, session, name):
-        link = session.receiver(name)
-        link.source.address = self.address
-
-        return link
-
-class ServerSendHandler(ServerHandler, SendHandler):
+class ServerSender(Server, Sender):
     pass
 
-class ServerReceiveHandler(ServerHandler, ReceiveHandler):
+class ServerReceiver(Server, Receiver):
     pass
 
 handler_classes = {
-    "client-send": ClientSendHandler,
-    "client-receive": ClientReceiveHandler,
-    "server-send": ServerSendHandler,
-    "server-receive": ServerReceiveHandler,
+    "client-send": ClientSender,
+    "client-receive": ClientReceiver,
+    "server-send": ServerSender,
+    "server-receive": ServerReceiver,
 }
 
 def main():
@@ -233,11 +192,6 @@ def main():
     handler_class = handler_classes[handler_key]
     handler = handler_class(work_dir, host_port, address, transfers)
     
-    if mode == "client":
-        handler.nconnections = int(kwargs["connections"])
-        handler.nsessions = int(kwargs["sessions"])
-        handler.nlinks = int(kwargs["links"])
-
     if operation == "send":
         handler.message = Message()
         

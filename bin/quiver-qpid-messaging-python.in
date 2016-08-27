@@ -31,29 +31,16 @@ home = os.environ.get("QUIVER_HOME", default)
 
 sys.path.insert(0, os.path.join(home, "python"))
 
-import collections
 import time
-import uuid
 
 from qpid_messaging import *
 
 class Client(object):
-    def __init__(self, work_dir, host_port, address, ntransfers,
-                 nconnections, nsessions, nlinks):
+    def __init__(self, work_dir, host_port, address, transfers):
         self.work_dir = work_dir
         self.host_port = host_port
         self.address = address
-        self.ntransfers = ntransfers
-        self.nconnections = nconnections
-        self.nsessions = nsessions
-        self.nlinks = nlinks
-
-        self.connections = list()
-        self.sessions = list()
-        self.links = list()
-        
-        self.sessions_by_connection = collections.defaultdict(list)
-        self.links_by_session = collections.defaultdict(list)
+        self.transfers = transfers
         
         self.start_time = None
         self.batch_start_time = None
@@ -62,35 +49,20 @@ class Client(object):
     def run(self):
         self.start_time = time.time()
         self.batch_start_time = self.start_time
-        
-        for i in range(self.nconnections):
-            conn = Connection(self.host_port, protocol=b"amqp1.0")
-            conn.open()
-            
-            self.connections.append(conn)
 
-        for i in range(self.nsessions):
-            conn = self.connections[i % self.nconnections]
+        conn = Connection(self.host_port, protocol=b"amqp1.0",
+                          sasl_mechanisms=b"ANONYMOUS")
+        conn.open()
+
+        try:
             session = conn.session()
-
-            self.sessions.append(session)
-            self.sessions_by_connection[conn].append(session)
-
-        for i in range(self.nlinks):
-            session = self.sessions[i % self.nsessions]
-            name = "link-{}".format(i)
 
             link = self.create_link(session)
             link.capacity = 500
-            
-            self.links.append(link)
-            self.links_by_session[session].append(link)
 
-        while self.transfer_count < self.ntransfers:
-            link = self.links[self.transfer_count % self.nlinks]
-            self.transfer_message(link)
-            
-        for conn in self.connections:
+            while self.transfer_count < self.transfers:
+                self.transfer_message(link)
+        finally:
             conn.close()
 
     def create_link(self, session):
@@ -103,12 +75,10 @@ class Client(object):
         pass
                 
 class Sender(Client):
-    def __init__(self, work_dir, host_port, address, ntransfers,
-                 nconnections, nsessions, nlinks):
-        super(Sender, self).__init__(work_dir, host_port, address, ntransfers,
-                                     nconnections, nsessions, nlinks)
+    def __init__(self, work_dir, host_port, address, transfers):
+        super(Sender, self).__init__(work_dir, host_port, address, transfers)
 
-        self.message = Message("x" * 1000)
+        self.message = Message(b"x" * 1000)
         
     def create_link(self, session):
         return session.sender(self.address)
@@ -118,16 +88,14 @@ class Sender(Client):
         self.message.properties[b"send-time"] = time.time()
 
         link.send(self.message)
-
+        
         self.transfer_count +=1
         
 class Receiver(Client):
-    def __init__(self, work_dir, host_port, address, ntransfers,
-                 nconnections, nsessions, nlinks):
-        super(Receiver, self).__init__(work_dir, host_port, address, ntransfers,
-                                       nconnections, nsessions, nlinks)
+    def __init__(self, work_dir, host_port, address, transfers):
+        super(Receiver, self).__init__(work_dir, host_port, address, transfers)
 
-        self.transfers = list()
+        self.transfer_records = list()
     
     def create_link(self, session):
         return session.receiver(self.address)
@@ -143,14 +111,14 @@ class Receiver(Client):
         send_time = message.properties["send-time"]
         receive_time = time.time()
         
-        self.transfers.append((message.id, send_time, receive_time))
+        self.transfer_records.append((message.id, send_time, receive_time))
         
         self.transfer_count +=1
         
         if self.transfer_count % 10000 == 0:
             prev_time = self.batch_start_time
             curr_time = time.time()
-            rate = int(round(5000 / (curr_time - prev_time)))
+            rate = int(round(10000 / (curr_time - prev_time)))
             
             print("* {:10,} {:8,} transfers/s".format(self.transfer_count, rate))
 
@@ -160,8 +128,8 @@ class Receiver(Client):
         transfers_file = os.path.join(self.work_dir, "transfers.csv")
         
         with open(transfers_file, "w") as f:
-            for result in self.transfers:
-                f.write("{},{:.9f},{:.9f}\r\n".format(*result))
+            for record in self.transfer_records:
+                f.write("{},{:.9f},{:.9f}\r\n".format(*record))
 
 def main():
     work_dir, mode, operation, host_port, address = sys.argv[1:6]
@@ -175,17 +143,11 @@ def main():
     if mode != "client":
         raise Exception("This implementation only supports client mode")
 
-    connections = int(kwargs["connections"])
-    sessions = int(kwargs["sessions"])
-    links = int(kwargs["links"])
-    
     if operation == "send":
-        client = Sender(work_dir, host_port, address, transfers,
-                        connections, sessions, links)
+        client = Sender(work_dir, host_port, address, transfers)
         
     if operation == "receive":
-        client = Receiver(work_dir, host_port, address, transfers,
-                          connections, sessions, links)
+        client = Receiver(work_dir, host_port, address, transfers)
 
     client.run()
     client.save()
