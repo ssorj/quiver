@@ -29,9 +29,8 @@ as fast as it can.  When the requested transfers are done, it reports
 the throughput and latency of the overall set, from the first send to
 the last receive.
 
-    usage: quiver [-h] [--impl NAME] [-n COUNT] [--message FILE]
-        [--connections COUNT] [--sessions COUNT] [--links COUNT] [--server]
-        OPERATION URL
+    usage: quiver [-h] [--impl NAME] [-n COUNT] [--bytes COUNT] [--credit COUNT]
+        [--server] OPERATION URL
 
     Test the performance of AMQP servers and messaging APIs
 
@@ -44,10 +43,8 @@ the last receive.
       --impl NAME           Use the NAME implementation (default: proton-python)
       -n COUNT, --transfers COUNT
                             Send or receive COUNT messages (default: 100000)
-      --message FILE        Send the message stored in FILE (default: None)
-      --connections COUNT   Create COUNT connections (default: 1)
-      --sessions COUNT      Create COUNT sessions (default: 1)
-      --links COUNT         Create COUNT links (default: 1)
+      --bytes COUNT         Send message bodies containing COUNT bytes (default: 1000)
+      --credit COUNT        Sustain credit for COUNT incoming transfers (default: 100)
       --server              Operate in server mode (default: False)
 
     operations:
@@ -62,25 +59,6 @@ the last receive.
       localhost:56720/q0
       q0
 
-    implementations:
-      proton-python
-      qpid-messaging-python       Supports client mode only
-
-### quiver-message
-
-`quiver-message` creates AMQP message bytes for use by `quiver` via
-its `--message` argument.  It's currently very basic.
-
-    usage: quiver-message [-h] [--bytes COUNT] [-o FILE]
-
-    Generate an AMQP message and store it in a file
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      --bytes COUNT         Create body with COUNT bytes (default: 1000)
-      -o FILE, --output FILE
-                            Save the message to FILE (default: None)
-
 ## Examples
 
 ### Running Quiver with Dispatch Router
@@ -91,7 +69,7 @@ its `--message` argument.  It's currently very basic.
 
 ### Running Quiver with Artemis
 
-    [Configure artemis with queue q0]
+    [Configure Artemis with queue q0]
     $ <instance-dir>/bin/artemis run
     $ quiver receive q0 &
     $ quiver send q0
@@ -131,15 +109,9 @@ Implementations must process these arguments.
     [3] operation       'send' or 'receive'
     [4] host_port       <host>:<port>
     [5] address         An AMQP node address
-    [6] transfers       An integral number of transfers
-
-### Keyword arguments
-
-Additional arguments are supplied as `<name>=<value>` pairs.  Some are
-required for certain modes and operations.
-
-    Mode 'client'       Requires connections=<n>, sessions=<n>, links=<n>
-    Operation 'send'    Requires message=<file>
+    [6] transfers       Number of transfers
+    [7] body_bytes      Length of generated message body
+    [8] credit_window   Credit to maintain
 
 ### Recording transfers
 
@@ -151,9 +123,10 @@ transfer per line.
 
 ## Todo
 
-- Use gnu style "--name value" options
 - Consider periodic transfer data saves - period on time or messages?
 - --message-body "" <-- 
 - --entire-message-from-file <-- $(quiver-message)
   - Means somewhat less message-contruction in the client impl <--
 - Offer aliases for frequently used impls
+- Send-and-receive operation
+- Save rusage info

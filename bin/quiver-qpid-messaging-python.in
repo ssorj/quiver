@@ -36,11 +36,14 @@ import time
 from qpid_messaging import *
 
 class Client(object):
-    def __init__(self, work_dir, host_port, address, transfers):
+    def __init__(self, work_dir, host_port, address, transfers, body_bytes,
+                 credit_window):
         self.work_dir = work_dir
         self.host_port = host_port
         self.address = address
         self.transfers = transfers
+        self.body_bytes = body_bytes
+        self.credit_window = credit_window
         
         self.start_time = None
         self.batch_start_time = None
@@ -58,7 +61,7 @@ class Client(object):
             session = conn.session()
 
             link = self.create_link(session)
-            link.capacity = 500
+            link.capacity = self.credit_window
 
             while self.transfer_count < self.transfers:
                 self.transfer_message(link)
@@ -75,10 +78,12 @@ class Client(object):
         pass
                 
 class Sender(Client):
-    def __init__(self, work_dir, host_port, address, transfers):
-        super(Sender, self).__init__(work_dir, host_port, address, transfers)
+    def __init__(self, work_dir, host_port, address, transfers, body_bytes,
+                 credit_window):
+        super(Sender, self).__init__(work_dir, host_port, address, transfers,
+                                     body_bytes, credit_window)
 
-        self.message = Message(b"x" * 1000)
+        self.message = Message(b"x" * self.body_bytes)
         
     def create_link(self, session):
         return session.sender(self.address)
@@ -92,8 +97,10 @@ class Sender(Client):
         self.transfer_count +=1
         
 class Receiver(Client):
-    def __init__(self, work_dir, host_port, address, transfers):
-        super(Receiver, self).__init__(work_dir, host_port, address, transfers)
+    def __init__(self, work_dir, host_port, address, transfers, body_bytes,
+                 credit_window):
+        super(Receiver, self).__init__(work_dir, host_port, address, transfers,
+                                       body_bytes, credit_window)
 
         self.transfer_records = list()
     
@@ -133,21 +140,18 @@ class Receiver(Client):
 
 def main():
     work_dir, mode, operation, host_port, address = sys.argv[1:6]
-    transfers = int(sys.argv[6])
-    kwargs = dict()
-
-    for arg in sys.argv[7:]:
-        name, value = arg.split("=", 1)
-        kwargs[name] = value
+    transfers, body_bytes, credit_window = map(int, sys.argv[6:9])
 
     if mode != "client":
         raise Exception("This implementation only supports client mode")
 
     if operation == "send":
-        client = Sender(work_dir, host_port, address, transfers)
+        client = Sender(work_dir, host_port, address, transfers, body_bytes,
+                        credit_window)
         
     if operation == "receive":
-        client = Receiver(work_dir, host_port, address, transfers)
+        client = Receiver(work_dir, host_port, address, transfers, body_bytes,
+                          credit_window)
 
     client.run()
     client.save()

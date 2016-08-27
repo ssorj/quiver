@@ -39,13 +39,15 @@ from proton.handlers import MessagingHandler
 from proton.reactor import Container
 
 class BaseHandler(MessagingHandler):
-    def __init__(self, work_dir, host_port, address, transfers):
-        super(BaseHandler, self).__init__()
+    def __init__(self, work_dir, host_port, address, transfers, body_bytes,
+                 credit_window):
+        super(BaseHandler, self).__init__(prefetch=credit_window)
 
         self.work_dir = work_dir
         self.host_port = host_port
         self.address = address
         self.transfers = transfers
+        self.body_bytes = body_bytes
         
         self.start_time = None
         self.batch_start_time = None
@@ -63,8 +65,10 @@ class BaseHandler(MessagingHandler):
         pass
 
 class Client(BaseHandler):
-    def __init__(self, work_dir, host_port, address, transfers):
-        super(Client, self).__init__(work_dir, host_port, address, transfers)
+    def __init__(self, work_dir, host_port, address, transfers, body_bytes,
+                 credit_window):
+        super(Client, self).__init__(work_dir, host_port, address, transfers,
+                                     body_bytes, credit_window)
 
         self.connection = None
 
@@ -85,8 +89,10 @@ class Client(BaseHandler):
         self.connection.close()
 
 class Server(BaseHandler):
-    def __init__(self, work_dir, host_port, address, transfers):
-        super(Server, self).__init__(work_dir, host_port, address, transfers)
+    def __init__(self, work_dir, host_port, address, transfers, body_bytes,
+                 credit_window):
+        super(Server, self).__init__(work_dir, host_port, address, transfers,
+                                     body_bytes, credit_window)
         
         self.acceptor = None
 
@@ -101,10 +107,13 @@ class Server(BaseHandler):
         self.acceptor.close()
                  
 class Sender(BaseHandler):
-    def __init__(self, work_dir, host_port, address, transfers):
-        super(Sender, self).__init__(work_dir, host_port, address, transfers)
+    def __init__(self, work_dir, host_port, address, transfers, body_bytes,
+                 credit_window):
+        super(Sender, self).__init__(work_dir, host_port, address, transfers,
+                                     body_bytes, credit_window)
 
-        self.message = None
+        self.message = Message(b"x" * self.body_bytes)
+        self.message.properties = dict()
 
     def on_sendable(self, event):
         if self.stopping:
@@ -122,9 +131,10 @@ class Sender(BaseHandler):
                 self.stop()
             
 class Receiver(BaseHandler):
-    def __init__(self, work_dir, host_port, address, transfers):
-        super(Receiver, self).__init__(work_dir, host_port, address,
-                                             transfers)
+    def __init__(self, work_dir, host_port, address, transfers, body_bytes,
+                 credit_window):
+        super(Receiver, self).__init__(work_dir, host_port, address, transfers,
+                                       body_bytes, credit_window)
 
         self.transfer_records = list()
     
@@ -181,24 +191,12 @@ handler_classes = {
 
 def main():
     work_dir, mode, operation, host_port, address = sys.argv[1:6]
-    transfers = int(sys.argv[6])
-    kwargs = dict()
-
-    for arg in sys.argv[7:]:
-        name, value = arg.split("=", 1)
-        kwargs[name] = value
+    transfers, body_bytes, credit_window = map(int, sys.argv[6:9])
 
     handler_key = "{}-{}".format(mode, operation)
     handler_class = handler_classes[handler_key]
-    handler = handler_class(work_dir, host_port, address, transfers)
-    
-    if operation == "send":
-        handler.message = Message()
-        
-        with open(kwargs["message"], "rb") as f:
-            handler.message.decode(f.read())
-
-        handler.message.properties = dict()
+    handler = handler_class(work_dir, host_port, address, transfers,
+                            body_bytes, credit_window)
         
     container = Container(handler)
     container.run()

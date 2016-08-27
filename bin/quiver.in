@@ -79,8 +79,12 @@ def main():
     parser.add_argument("-n", "--transfers", metavar="COUNT",
                         help="Send or receive COUNT messages",
                         default=100000, type=int)
-    parser.add_argument("--message", metavar="FILE",
-                        help="Send the message stored in FILE")
+    parser.add_argument("--bytes", metavar="COUNT",
+                        help="Send message bodies containing COUNT bytes",
+                        default=1000, type=int)
+    parser.add_argument("--credit", metavar="COUNT",
+                        help="Sustain credit for COUNT incoming transfers",
+                        default=100, type=int)
     parser.add_argument("--server", action="store_true",
                         help="Operate in server mode")
     
@@ -90,6 +94,8 @@ def main():
     work_dir = tempfile.mkdtemp(prefix="quiver-")
     operation = args.operation
     transfers = str(args.transfers)
+    body_bytes = str(args.bytes)
+    credit_window = str(args.credit)
 
     if not os.path.exists(impl):
         exit("Error: Can't find '{}'".format(impl))
@@ -112,18 +118,9 @@ def main():
         host_port,
         address,
         transfers,
+        body_bytes,
+        credit_window,
     ]
-
-    if operation == "send":
-        message_file = args.message
-        
-        if args.message is None:
-            message_file = subprocess.check_output("quiver-message")
-
-            if message_file.endswith("\n"):
-                message_file = message_file[:-1]
-            
-        command.append("message={}".format(message_file))
 
     print("Calling '{}'".format(" ".join(command)))
 
