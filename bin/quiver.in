@@ -72,8 +72,8 @@ def main():
                         help="Either 'send' or 'receive'")
     parser.add_argument("address", metavar="ADDRESS",
                         help="The location of an AMQP node")
-    parser.add_argument("--impl", metavar="NAME",
-                        help="Use the NAME implementation",
+    parser.add_argument("-i", "--impl", metavar="NAME",
+                        help="Use NAME implementation",
                         default="proton-python")
     parser.add_argument("-n", "--messages", metavar="COUNT",
                         help="Send or receive COUNT messages",
@@ -84,6 +84,9 @@ def main():
     parser.add_argument("--credit", metavar="COUNT",
                         help="Sustain credit for COUNT incoming transfers",
                         default=100, type=int)
+    parser.add_argument("--timeout", metavar="SECONDS",
+                        help="Fail after SECONDS without transfers",
+                        default=60, type=int)
     parser.add_argument("--server", action="store_true",
                         help="Operate in server mode")
     
@@ -100,6 +103,7 @@ def main():
     messages = str(args.messages)
     bytes_ = str(args.bytes)
     credit = str(args.credit)
+    timeout = str(args.timeout)
 
     if args.address.startswith("//"):
         domain, path = args.address[2:].split("/", 1)
@@ -116,17 +120,17 @@ def main():
         messages,
         bytes_,
         credit,
+        timeout,
     ]
 
-    print("Calling '{}'".format(" ".join(command)))
+    # print("Calling '{}'".format(" ".join(command)))
 
     subprocess.check_call(command)
 
     if operation == "receive":
         report(output_dir)
 
-    #print(output_dir)
-    shutil.rmtree(output_dir)
+    # shutil.rmtree(output_dir)
         
 def report(output_dir):
     transfers_file = os.path.join(output_dir, "transfers.csv")

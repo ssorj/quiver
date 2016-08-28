@@ -22,21 +22,23 @@
 #include <iostream>
 
 int main(int argc, char** argv) {
-    std::string work_dir = argv[1];
+    std::string output_dir = argv[1];
     std::string mode = argv[2];
     std::string operation = argv[3];
-    std::string host_port = argv[4];
-    std::string address = argv[5];
-    int transfers = std::atoi(argv[6]);
-    int body_bytes = std::atoi(argv[7]);
-    int credit_window = std::atoi(argv[8]);
+    std::string domain = argv[4];
+    std::string path = argv[5];
+    int messages = std::atoi(argv[6]);
+    int bytes = std::atoi(argv[7]);
+    int credit = std::atoi(argv[8]);
+    int timeout = std::atoi(argv[9]);
 
-    std::cerr << work_dir << std::endl;
+    std::cerr << output_dir << std::endl;
     std::cerr << mode << std::endl;
     std::cerr << operation << std::endl;
-    std::cerr << host_port << std::endl;
-    std::cerr << address << std::endl;
-    std::cerr << transfers << std::endl;
-    std::cerr << body_bytes << std::endl;
-    std::cerr << credit_window << std::endl;
+    std::cerr << domain << std::endl;
+    std::cerr << path << std::endl;
+    std::cerr << messages << std::endl;
+    std::cerr << bytes << std::endl;
+    std::cerr << credit << std::endl;
+    std::cerr << timeout << std::endl;
 }

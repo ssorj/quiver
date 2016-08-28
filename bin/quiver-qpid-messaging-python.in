@@ -36,24 +36,25 @@ import time
 from qpid_messaging import *
 
 class Client(object):
-    def __init__(self, work_dir, host_port, address, transfers, body_bytes,
-                 credit_window):
-        self.work_dir = work_dir
-        self.host_port = host_port
-        self.address = address
-        self.transfers = transfers
-        self.body_bytes = body_bytes
-        self.credit_window = credit_window
+    def __init__(self):
+        self.output_dir = None
+        self.domain = None
+        self.path = None
+        self.messages = None
+        self.bytes_ = None
+        self.credit = None
+        self.timeout = None
         
         self.start_time = None
         self.batch_start_time = None
         self.transfer_count = 0
-        
+        self.transfer_records = list()
+    
     def run(self):
         self.start_time = time.time()
         self.batch_start_time = self.start_time
 
-        conn = Connection(self.host_port, protocol=b"amqp1.0",
+        conn = Connection(self.domain, protocol=b"amqp1.0",
                           sasl_mechanisms=b"ANONYMOUS")
         conn.open()
 
@@ -61,9 +62,9 @@ class Client(object):
             session = conn.session()
 
             link = self.create_link(session)
-            link.capacity = self.credit_window
+            link.capacity = self.credit
 
-            while self.transfer_count < self.transfers:
+            while self.transfer_count < self.messages:
                 self.transfer_message(link)
         finally:
             conn.close()
@@ -78,34 +79,21 @@ class Client(object):
         pass
                 
 class Sender(Client):
-    def __init__(self, work_dir, host_port, address, transfers, body_bytes,
-                 credit_window):
-        super(Sender, self).__init__(work_dir, host_port, address, transfers,
-                                     body_bytes, credit_window)
-
-        self.message = Message(b"x" * self.body_bytes)
-        
     def create_link(self, session):
-        return session.sender(self.address)
+        return session.sender(self.path)
 
     def transfer_message(self, link):
-        self.message.id = str(self.transfer_count + 1)
-        self.message.properties[b"send-time"] = time.time()
+        message = Message(b"x" * self.bytes_)
+        message.id = str(self.transfer_count + 1)
+        message.properties[b"send-time"] = time.time()
 
-        link.send(self.message)
+        link.send(message)
         
         self.transfer_count +=1
         
 class Receiver(Client):
-    def __init__(self, work_dir, host_port, address, transfers, body_bytes,
-                 credit_window):
-        super(Receiver, self).__init__(work_dir, host_port, address, transfers,
-                                       body_bytes, credit_window)
-
-        self.transfer_records = list()
-    
     def create_link(self, session):
-        return session.receiver(self.address)
+        return session.receiver(self.path)
 
     def transfer_message(self, link):
         if link.available() == 0:
@@ -132,26 +120,33 @@ class Receiver(Client):
             self.batch_start_time = curr_time
             
     def save(self):
-        transfers_file = os.path.join(self.work_dir, "transfers.csv")
+        transfers_file = os.path.join(self.output_dir, "transfers.csv")
         
         with open(transfers_file, "w") as f:
             for record in self.transfer_records:
                 f.write("{},{:.9f},{:.9f}\r\n".format(*record))
 
 def main():
-    work_dir, mode, operation, host_port, address = sys.argv[1:6]
-    transfers, body_bytes, credit_window = map(int, sys.argv[6:9])
+    output_dir, mode, operation, domain, path = sys.argv[1:6]
+    messages, bytes_, credit, timeout = map(int, sys.argv[6:10])
 
     if mode != "client":
         raise Exception("This implementation only supports client mode")
 
     if operation == "send":
-        client = Sender(work_dir, host_port, address, transfers, body_bytes,
-                        credit_window)
+        client = Sender()
         
     if operation == "receive":
-        client = Receiver(work_dir, host_port, address, transfers, body_bytes,
-                          credit_window)
+        client = Receiver()
+
+    client.output_dir = output_dir
+    client.operation = operation
+    client.domain = domain
+    client.path = path
+    client.messages = messages
+    client.bytes_ = bytes_
+    client.credit = credit
+    client.timeout = timeout
 
     client.run()
     client.save()

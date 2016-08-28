@@ -1,6 +1,19 @@
 # Quiver
 
-Tools for testing the performance of AMQP servers and messaging APIs.
+A tool for testing the performance of AMQP servers and messaging APIs.
+
+    [Start an AMQP server]
+    $ quiver receive q0 &
+    $ quiver send q0
+    *     10,000    3,271 transfers/s
+    [...]
+    *    100,000    3,932 transfers/s
+    --------------------------------------------------------------------------------
+    Duration:                                            26.1 s
+    Transfer count:                                   100,000 transfers
+    Transfer rate:                                      3,826 transfers/s
+    Latency (min, max, avg):                 11.0, 47.4, 19.5 ms
+    --------------------------------------------------------------------------------
 
 ## Installation
 
@@ -29,8 +42,8 @@ as fast as it can.  When the requested transfers are done, it reports
 the throughput and latency of the overall set, from the first send to
 the last receive.
 
-    usage: quiver [-h] [--impl NAME] [-n COUNT] [--bytes COUNT] [--credit COUNT]
-        [--server] OPERATION URL
+    usage: quiver [-h] [-i NAME] [-n COUNT] [--bytes COUNT] [--credit COUNT]
+        [--timeout SECONDS] [--server] OPERATION ADDRESS
 
     Test the performance of AMQP servers and messaging APIs
 
@@ -40,21 +53,22 @@ the last receive.
 
     optional arguments:
       -h, --help            show this help message and exit
-      --impl NAME           Use the NAME implementation (default: proton-python)
-      -n COUNT, --messages  COUNT
+      -i NAME, --impl NAME  Use NAME implementation (default: proton-python)
+      -n COUNT, --messages COUNT
                             Send or receive COUNT messages (default: 100000)
       --bytes COUNT         Send message bodies containing COUNT bytes (default: 1000)
       --credit COUNT        Sustain credit for COUNT incoming transfers (default: 100)
+      --timeout SECONDS     Fail after SECONDS without transfers (default: 60)
       --server              Operate in server mode (default: False)
 
     operations:
       send                  Send messages
       receive               Receive messages
 
-    URLs:
+    addresses:
       [//DOMAIN/]PATH
       //example.net/jobs
-      //10.0.0.100:5672/jobs/alpha
+      //10.0.0.10:5672/jobs/alpha
       //localhost/q0
       q0
 
@@ -99,20 +113,23 @@ on mechanics.  By the same token, implementation outputs are
 intentionally left raw so `quiver` can do the work of presenting the
 results.
 
-### Positional arguments
+### Input arguments
 
-Implementations must process these arguments.
+Implementations must process the following positional arguments.
 
-    [1] output-dir      A temporary work directory
+    [1] output-dir      A directory for output files
     [2] mode            'client' or 'server'
     [3] operation       'send' or 'receive'
     [4] domain          <host>[:<port>]
     [5] path            An AMQP address path
-    [6] messages        Number of transfers
+    [6] messages        Number of messages to transfer
     [7] bytes           Length of generated message body
     [8] credit          Credit to maintain
+    [9] timeout         Timeout in seconds
 
-### Recording transfers
+### Output files
+
+#### Transfer records
 
 Implementations must save received transfers to
 `<output-dir>/transfers.csv` in the following record format, one
@@ -120,9 +137,13 @@ transfer per line.
 
     <message-id>,<send-time>,<receive-time>\r\n
 
+Time values are unix epoch seconds, with at least nine digits of
+sub-second precision.
+
+    10,1472344673.324439049,1472344673.345107079
+
 ## Todo
 
 - Consider periodic transfer data saves - period on time or messages?
 - Offer aliases for frequently used impls
-- Send-and-receive operation
 - Save rusage info

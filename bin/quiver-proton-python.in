@@ -47,6 +47,7 @@ class BaseHandler(MessagingHandler):
         self.path = None
         self.messages = None
         self.bytes_ = None
+        self.timeout = None
         
         self.start_time = None
         self.batch_start_time = None
@@ -149,7 +150,7 @@ class Server(BaseHandler):
 
 def main():
     output_dir, mode, operation, domain, path = sys.argv[1:6]
-    messages, bytes_, credit = map(int, sys.argv[6:9])
+    messages, bytes_, credit, timeout = map(int, sys.argv[6:10])
 
     if mode == "client":
         handler = Client(prefetch=credit)
@@ -163,6 +164,7 @@ def main():
     handler.path = path
     handler.messages = messages
     handler.bytes_ = bytes_
+    handler.timeout = timeout
         
     container = Container(handler)
     container.run()
