@@ -27,32 +27,25 @@ set -eu
 if (( $# == 1 )); then
     COUNT=$1
 else
-    COUNT=10
+    COUNT=1000
 fi
 
 PORT=$(python -S -c "import random; print random.randrange(49152, 65535)")
 ADDRESS=//localhost:$PORT/q0
 
 quiver --server receive $ADDRESS -n $COUNT &
-sleep 0.5
 quiver send $ADDRESS -n $COUNT
 wait
 
-# XXX This is blowing up with the credit window at 100
-# ERROR:root:amqp:connection:framing-error: AMQP header mismatch: Unknown protocol ['\x98\xbb\xec\xc1F\x7f\x00\x00\x98\xbb\xec\xc1F\x7f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00`\x7f\xff@@@@@@\x00\x00\x00#\x02\x00\x00\x00\x0 [...]
+# XXX _qpid_messaging.NotFound: No such target : q0
+#quiver --server receive $ADDRESS -n $COUNT &
+#quiver send --impl qpid-messaging-python $ADDRESS -n $COUNT
+#wait
+
 # quiver --server send $ADDRESS -n $COUNT &
-# sleep 0.5
 # quiver receive $ADDRESS -n $COUNT
 # wait
 
-# XXX _qpid_messaging.NotFound: No such target : q0
-# quiver --server receive $ADDRESS -n $COUNT &
-# sleep 0.5
-# quiver send --impl qpid-messaging-python $ADDRESS -n $COUNT
-# wait
-
 # quiver --server send $ADDRESS -n $COUNT &
-# sleep 0.5
 # quiver receive --impl qpid-messaging-python $ADDRESS -n $COUNT
 # wait
-

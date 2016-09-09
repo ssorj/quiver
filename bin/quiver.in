@@ -35,6 +35,7 @@ import argparse
 import shutil
 import subprocess
 import tempfile
+import time
 
 def main():
     description = "Test the performance of AMQP servers and messaging APIs"
@@ -43,7 +44,7 @@ def main():
              "  receive               Receive messages\n" \
              "\n" \
              "addresses:\n" \
-             "  [//DOMAIN/]PATH\n" \
+             "  [//DOMAIN/]PATH              The default domain is 'localhost:5672'\n" \
              "  //example.net/jobs\n" \
              "  //10.0.0.10:5672/jobs/alpha\n" \
              "  //localhost/q0\n" \
@@ -51,12 +52,12 @@ def main():
              "\n" \
              "implementations:\n" \
              "  proton-python\n" \
-             "  qpid-messaging-python       Supports client mode only\n" \
+             "  qpid-messaging-python        Supports client mode only\n" \
              "\n" \
              "example usage:\n" \
-             "  $ qdrouterd &               # Start an AMQP server\n" \
-             "  $ quiver receive q0 &       # Start receiving\n" \
-             "  $ quiver send q0            # Start sending\n" \
+             "  $ qdrouterd &                # Start an AMQP server\n" \
+             "  $ quiver receive q0 &        # Start receiving\n" \
+             "  $ quiver send q0             # Start sending\n" \
              "\n" \
 
     class Formatter(argparse.ArgumentDefaultsHelpFormatter,
@@ -72,12 +73,14 @@ def main():
                         help="Either 'send' or 'receive'")
     parser.add_argument("address", metavar="ADDRESS",
                         help="The location of an AMQP node")
-    parser.add_argument("-i", "--impl", metavar="NAME",
-                        help="Use NAME implementation",
-                        default="proton-python")
     parser.add_argument("-n", "--messages", metavar="COUNT",
                         help="Send or receive COUNT messages",
                         default=100000, type=int)
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Periodically print status to the console")
+    parser.add_argument("--impl", metavar="NAME",
+                        help="Use NAME implementation",
+                        default="proton-python")
     parser.add_argument("--bytes", metavar="COUNT",
                         help="Send message bodies containing COUNT bytes",
                         default=1000, type=int)
@@ -86,9 +89,13 @@ def main():
                         default=100, type=int)
     parser.add_argument("--timeout", metavar="SECONDS",
                         help="Fail after SECONDS without transfers",
-                        default=60, type=int)
+                        default=10, type=int)
     parser.add_argument("--server", action="store_true",
                         help="Operate in server mode")
+    parser.add_argument("--output", metavar="DIRECTORY",
+                        help="Save output files to DIRECTORY")
+    parser.add_argument("--quiet", action="store_true",
+                        help="Print nothing to the console")
     
     args = parser.parse_args()
 
@@ -97,14 +104,20 @@ def main():
     if not os.path.exists(impl):
         exit("Error: Can't find '{}'".format(impl))
     
-    output_dir = tempfile.mkdtemp(prefix="quiver-")
-    mode = "server" if args.server else "client"
+    output_dir = args.output
+    mode = "client"
     operation = args.operation
     messages = str(args.messages)
     bytes_ = str(args.bytes)
     credit = str(args.credit)
     timeout = str(args.timeout)
 
+    if output_dir is None:
+        output_dir = tempfile.mkdtemp(prefix="quiver-")
+
+    if args.server:
+        mode = "server"
+        
     if args.address.startswith("//"):
         domain, path = args.address[2:].split("/", 1)
     else:
@@ -123,21 +136,33 @@ def main():
         timeout,
     ]
 
-    # print("Calling '{}'".format(" ".join(command)))
+    print("Calling '{}'".format(" ".join(command)))
 
-    subprocess.check_call(command)
+    transfers_file = os.path.join(output_dir, "transfers.csv")
+    
+    with open(transfers_file, "w") as f:
+        start_time = time.time()
+
+        proc = subprocess.Popen(command, stdout=f)
+        proc.wait()
+
+        stop_time = time.time()
+
+    duration = stop_time - start_time
 
     if operation == "receive":
-        report(output_dir)
+        report(transfers_file)
 
     # shutil.rmtree(output_dir)
         
-def report(output_dir):
-    transfers_file = os.path.join(output_dir, "transfers.csv")
+def report(transfers_file):
+    if os.path.getsize(transfers_file) == 0:
+        exit("Error: No transfers")
+    
     send_times = list()
     receive_times = list()
     latencies = list()
-    
+
     with open(transfers_file, "r") as f:
         for line in f:
             message_id, send_time, receive_time = line.split(",", 2)

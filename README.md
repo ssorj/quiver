@@ -42,8 +42,10 @@ as fast as it can.  When the requested transfers are done, it reports
 the throughput and latency of the overall set, from the first send to
 the last receive.
 
-    usage: quiver [-h] [-i NAME] [-n COUNT] [--bytes COUNT] [--credit COUNT]
-        [--timeout SECONDS] [--server] OPERATION ADDRESS
+    usage: quiver [-h] [-n COUNT] [-v] [--impl NAME] [--bytes COUNT]
+                  [--credit COUNT] [--timeout SECONDS] [--server]
+                  [--output DIRECTORY] [--quiet]
+                  OPERATION ADDRESS
 
     Test the performance of AMQP servers and messaging APIs
 
@@ -53,24 +55,31 @@ the last receive.
 
     optional arguments:
       -h, --help            show this help message and exit
-      -i NAME, --impl NAME  Use NAME implementation (default: proton-python)
       -n COUNT, --messages COUNT
                             Send or receive COUNT messages (default: 100000)
+      -v, --verbose         Periodically print status to the console (default: False)
+      --impl NAME           Use NAME implementation (default: proton-python)
       --bytes COUNT         Send message bodies containing COUNT bytes (default: 1000)
       --credit COUNT        Sustain credit for COUNT incoming transfers (default: 100)
-      --timeout SECONDS     Fail after SECONDS without transfers (default: 60)
+      --timeout SECONDS     Fail after SECONDS without transfers (default: 10)
       --server              Operate in server mode (default: False)
+      --output DIRECTORY    Save output files to DIRECTORY (default: None)
+      --quiet               Print nothing to the console (default: False)
 
     operations:
       send                  Send messages
       receive               Receive messages
 
     addresses:
-      [//DOMAIN/]PATH
+      [//DOMAIN/]PATH              The default domain is 'localhost:5672'
       //example.net/jobs
       //10.0.0.10:5672/jobs/alpha
       //localhost/q0
       q0
+
+    implementations:
+      proton-python
+      qpid-messaging-python        Supports client mode only
 
 ## Examples
 
@@ -113,7 +122,7 @@ on mechanics.  By the same token, implementation outputs are
 intentionally left raw so `quiver` can do the work of presenting the
 results.
 
-### Input arguments
+### Input
 
 Implementations must process the following positional arguments.
 
@@ -124,15 +133,12 @@ Implementations must process the following positional arguments.
     [5] path            An AMQP address path
     [6] messages        Number of messages to transfer
     [7] bytes           Length of generated message body
-    [8] credit          Credit to maintain
+    [8] credit          Amount of credit to maintain
     [9] timeout         Timeout in seconds
 
-### Output files
+### Output
 
-#### Transfer records
-
-Implementations must save received transfers to
-`<output-dir>/transfers.csv` in the following record format, one
+Implementations must print received transfers to standard output, one
 transfer per line.
 
     <message-id>,<send-time>,<receive-time>\r\n
@@ -144,6 +150,6 @@ sub-second precision.
 
 ## Todo
 
-- Consider periodic transfer data saves - period on time or messages?
-- Offer aliases for frequently used impls
-- Save rusage info
+- Provide aliases for frequently used impls
+- Save periodic memory and CPU usage
+- Test scripts should cleanup children on interrupt

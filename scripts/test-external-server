@@ -22,8 +22,9 @@ set -eux
 
 IMPL=$1
 ADDRESS=$2
+COUNT=$3
 
-quiver --impl $IMPL receive $ADDRESS -n 100000 &
-quiver --impl $IMPL send $ADDRESS -n 100000
+quiver --impl $IMPL receive $ADDRESS -n $COUNT &
+quiver --impl $IMPL send $ADDRESS -n $COUNT
 
 wait

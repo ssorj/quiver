@@ -37,6 +37,9 @@ from proton import Message
 from proton.handlers import MessagingHandler
 from proton.reactor import Container
 
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+    
 class BaseHandler(MessagingHandler):
     def __init__(self, **kwargs):
         super(BaseHandler, self).__init__(**kwargs)
@@ -48,19 +51,29 @@ class BaseHandler(MessagingHandler):
         self.messages = None
         self.bytes_ = None
         self.timeout = None
-        
-        self.start_time = None
-        self.batch_start_time = None
+
         self.transfers = 0
-        self.transfer_records = list()
+        self.checkpoint = None
+        self.task = None
         self.stopping = False
 
     def on_start(self, event):
-        self.start_time = time.time()
-        self.batch_start_time = self.start_time
+        self.checkpoint = time.time(), 0
+        self.task = event.container.schedule(1.0, self)
         
     def stop(self):
         self.stopping = True
+        self.task.cancel()
+
+    def on_timer_task(self, event):
+        now = time.time()
+        then, transfers_then = self.checkpoint
+        
+        if self.transfers > transfers_then:
+            self.checkpoint = now, self.transfers
+            self.task = event.container.schedule(1.0, self)
+        elif now - then > self.timeout:
+            raise Exception("Timeout!")
 
     def on_sendable(self, event):
         if self.stopping:
@@ -75,39 +88,25 @@ class BaseHandler(MessagingHandler):
             event.sender.send(message)
 
             self.transfers += 1
-
+            
             if self.transfers == self.messages:
                 self.stop()
-            
+
     def on_message(self, event):
         if self.stopping:
             return
-        
+
         message = event.message
-        send_time = message.properties["send-time"]
-        receive_time = time.time()
+        rtime = time.time()
+        stime = event.message.properties["send-time"]
+        record = "{},{:.9f},{:.9f}\r\n".format(message.id, stime, rtime)
         
-        self.transfer_records.append((message.id, send_time, receive_time))
+        sys.stdout.write(record)
+
         self.transfers += 1
 
-        if self.transfers % 10000 == 0:
-            prev_time = self.batch_start_time
-            curr_time = time.time()
-            rate = int(round(10000 / (curr_time - prev_time)))
-            
-            print("* {:10,} {:8,} transfers/s".format(self.transfers, rate))
-
-            self.batch_start_time = curr_time
-            
         if self.transfers == self.messages:
             self.stop()
-
-    def save(self):
-        transfers_file = os.path.join(self.output_dir, "transfers.csv")
-        
-        with open(transfers_file, "w") as f:
-            for record in self.transfer_records:
-                f.write("{},{:.9f},{:.9f}\r\n".format(*record))
 
 class Client(BaseHandler):
     def __init__(self, **kwargs):
@@ -168,8 +167,6 @@ def main():
         
     container = Container(handler)
     container.run()
-
-    handler.save()
     
 if __name__ == "__main__":
     try:
