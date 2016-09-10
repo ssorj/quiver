@@ -136,9 +136,11 @@ def main():
         timeout,
     ]
 
-    print("Calling '{}'".format(" ".join(command)))
+    if args.verbose:
+        print("Calling '{}'".format(" ".join(command)))
 
     transfers_file = os.path.join(output_dir, "transfers.csv")
+    total_transfers = 0
     
     with open(transfers_file, "w") as fout:
         with open(transfers_file, "r") as fin:
@@ -149,7 +151,7 @@ def main():
             if operation == "receive":
                 while proc.poll() is None:
                     time.sleep(2)
-                    print_status(fin, start_time)
+                    total_transfers = print_status(fin, total_transfers)
             else:
                 proc.wait()
 
@@ -157,12 +159,12 @@ def main():
 
     duration = stop_time - start_time
 
-    if operation == "receive":
+    if not args.quiet and operation == "receive":
         report(transfers_file)
 
     # shutil.rmtree(output_dir)
 
-def print_status(fin, start_time):
+def print_status(fin, total_transfers):
     send_times = list()
     receive_times = list()
     latencies = list()
@@ -171,10 +173,7 @@ def print_status(fin, start_time):
         fpos = fin.tell()
         line = fin.readline()
 
-        if line == "":
-            break
-
-        if line[-1] != "\n":
+        if line == "" or line[-1] != "\n":
             fin.seek(fpos)
             break
         
@@ -194,21 +193,23 @@ def print_status(fin, start_time):
         receive_times.append(receive_time)
         latencies.append(latency)
 
-    if not receive_times:
-        print("*")
+    transfers = len(receive_times)
+    total_transfers += transfers
+    
+    if transfers == 0:
+        print("* {:10,}".format(total_transfers))
         return
 
-    seconds = time.time() - start_time
     duration = max(receive_times) - min(send_times)
-    transfer_count = len(receive_times)
-    transfer_rate = int(round(transfer_count / duration))
-    latency = sum(latencies) / transfer_count * 1000
+    rate = int(round(transfers / duration))
+    latency = sum(latencies) / transfers * 1000
 
-    seconds_col = "{:.1f} s".format(seconds)
-    transfers_col = "{:10,} transfers/s".format(transfer_rate)
+    rate_col = "{:10,} transfers/s".format(rate)
     latency_col = "{:.1f} ms avg latency".format(latency)
     
-    print("* {:>8} {:>20} {:>22}".format(seconds_col, transfers_col, latency_col))
+    print("* {:10,} {:>20} {:>24}".format(total_transfers, rate_col, latency_col))
+
+    return total_transfers
     
 def report(transfers_file):
     if os.path.getsize(transfers_file) == 0:
