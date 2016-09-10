@@ -140,13 +140,20 @@ def main():
 
     transfers_file = os.path.join(output_dir, "transfers.csv")
     
-    with open(transfers_file, "w") as f:
-        start_time = time.time()
+    with open(transfers_file, "w") as fout:
+        with open(transfers_file, "r") as fin:
+            start_time = time.time()
 
-        proc = subprocess.Popen(command, stdout=f)
-        proc.wait()
+            proc = subprocess.Popen(command, stdout=fout)
 
-        stop_time = time.time()
+            if operation == "receive":
+                while proc.poll() is None:
+                    time.sleep(2)
+                    print_status(fin, start_time)
+            else:
+                proc.wait()
+
+            stop_time = time.time()
 
     duration = stop_time - start_time
 
@@ -154,7 +161,55 @@ def main():
         report(transfers_file)
 
     # shutil.rmtree(output_dir)
+
+def print_status(fin, start_time):
+    send_times = list()
+    receive_times = list()
+    latencies = list()
+
+    while True:
+        fpos = fin.tell()
+        line = fin.readline()
+
+        if line == "":
+            break
+
+        if line[-1] != "\n":
+            fin.seek(fpos)
+            break
         
+        line = line[:-1]
+        
+        try:
+            message_id, send_time, receive_time = line.split(",", 2)
+        except ValueError:
+            print("Failed to parse line '{}'".format(line))
+            continue
+
+        send_time = float(send_time)
+        receive_time = float(receive_time)
+        latency = receive_time - send_time
+
+        send_times.append(send_time)
+        receive_times.append(receive_time)
+        latencies.append(latency)
+
+    if not receive_times:
+        print("*")
+        return
+
+    seconds = time.time() - start_time
+    duration = max(receive_times) - min(send_times)
+    transfer_count = len(receive_times)
+    transfer_rate = int(round(transfer_count / duration))
+    latency = sum(latencies) / transfer_count * 1000
+
+    seconds_col = "{:.1f} s".format(seconds)
+    transfers_col = "{:10,} transfers/s".format(transfer_rate)
+    latency_col = "{:.1f} ms avg latency".format(latency)
+    
+    print("* {:>8} {:>20} {:>22}".format(seconds_col, transfers_col, latency_col))
+    
 def report(transfers_file):
     if os.path.getsize(transfers_file) == 0:
         exit("Error: No transfers")

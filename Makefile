@@ -48,7 +48,7 @@ install: build
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
 devel: clean install
-	scripts/smoke-test
+	scripts/smoke-test 100000
 
 build/lib/quiver/quiver-qpid-messaging-cpp: bin/quiver-qpid-messaging-cpp.cpp
 	mkdir -p build/lib/quiver
