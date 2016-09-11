@@ -110,10 +110,9 @@ def main():
     
     try:
         command.check()
+        command.run()
     except Exception as e:
         exit("Error: {}".format(e))
-
-    command.run()
 
 if __name__ == "__main__":
     try:

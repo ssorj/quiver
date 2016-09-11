@@ -152,4 +152,3 @@ sub-second precision.
 
 - Provide aliases for frequently used impls
 - Save periodic memory and CPU usage
-- Test scripts should cleanup children on interrupt

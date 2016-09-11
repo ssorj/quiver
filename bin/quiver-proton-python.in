@@ -26,10 +26,10 @@ from __future__ import with_statement
 import os
 import sys
 
-default = os.path.normpath("@quiver_home@")
-home = os.environ.get("QUIVER_HOME", default)
+default_home_dir = os.path.normpath("@quiver_home@")
+home_dir = os.environ.get("QUIVER_HOME", default_home_dir)
 
-sys.path.insert(0, os.path.join(home, "python"))
+sys.path.insert(0, os.path.join(home_dir, "python"))
 
 import time
 
@@ -53,27 +53,30 @@ class BaseHandler(MessagingHandler):
         self.timeout = None
 
         self.transfers = 0
-        self.checkpoint = None
-        self.task = None
+        self.checkpoint = None # timestamp, transfers
+        self.timer_task = None
         self.stopping = False
 
     def on_start(self, event):
-        self.checkpoint = time.time(), 0
-        self.task = event.container.schedule(1.0, self)
+        self.checkpoint = time.time(), self.transfers
+        self.timer_task = event.container.schedule(1.0, self)
         
     def stop(self):
         self.stopping = True
-        self.task.cancel()
+        self.timer_task.cancel()
 
     def on_timer_task(self, event):
         now = time.time()
         then, transfers_then = self.checkpoint
-        
-        if self.transfers > transfers_then:
-            self.checkpoint = now, self.transfers
-            self.task = event.container.schedule(1.0, self)
-        elif now - then > self.timeout:
+
+        if self.transfers == transfers_then and now - then > self.timeout:
             raise Exception("Timeout!")
+
+        if self.transfers > transfers_then:
+            then = now
+            
+        self.checkpoint = then, self.transfers
+        self.timer_task = event.container.schedule(1.0, self)
 
     def on_sendable(self, event):
         if self.stopping:

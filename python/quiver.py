@@ -98,9 +98,8 @@ class Command(object):
             self.started.set()
             start_time = _time.time()
 
-            proc = _subprocess.Popen(args, stdout=fout)
-            proc.wait()
-
+            _subprocess.check_call(args, stdout=fout)
+            
             stop_time = _time.time()
             self.stopped.set()
             

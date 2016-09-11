@@ -41,28 +41,49 @@ function random_address {
     echo //localhost:${port}/q0
 }
 
-function test_peer_to_peer {
+function test_server_mode {
     local sender_impl=$1
     local receiver_impl=$2
     local address=$(random_address)
+    local sender_pid=
+    local receiver_pid=
+    local failures=0
 
-    echo Testing peer-to-peer mode, sender \'$sender_impl\', receiver \'$receiver_impl\'
+    echo -n "Testing server mode, sender ${sender_impl}, receiver ${receiver_impl} ... "
     
     quiver --quiet --impl $receiver_impl --server receive $address -n $COUNT &
+    receiver_pid=$!
     quiver --quiet --impl $sender_impl send $address -n $COUNT &
+    sender_pid=$!
 
-    wait
+    wait $sender_pid || let "failures+=1"
+    wait $receiver_pid || let "failures+=1"
 
-    echo Test passed
+    # XXX ERROR:root:amqp:connection:framing-error: AMQP header mismatch: Unknown protocol ['X\x1b
+    
+    # quiver --quiet --impl $sender_impl --server send $address -n $COUNT &
+    # sender_pid=$!
+    # quiver --quiet --impl $receiver_impl receive $address -n $COUNT &
+    # receiver_pid=$!
+
+    # wait $sender_pid || let "failures+=1"
+    # wait $receiver_pid || let "failures+=1"
+
+    if (( $failures == 0 )); then 
+        echo PASSED
+    else
+        echo FAILED
+    fi
 }
 
-function test_client_server {
+function test_client_mode {
     local sender_impl=$1
     local receiver_impl=$2
     local port=$(random_port)
     local address=//localhost:${port}/q0
+    local failures=0
 
-    echo Testing client mode, sender \'$sender_impl\', receiver \'$receiver_impl\'
+    echo -n "Testing client mode, sender ${sender_impl}, receiver ${receiver_impl} ... "
     
     qbroker --port $port 2> /dev/null &
     local broker_pid=$!
@@ -73,25 +94,26 @@ function test_client_server {
     quiver --quiet --impl $sender_impl send $address -n $COUNT &
     local sender_pid=$!
 
-    wait $receiver_pid $sender_pid
+    wait $sender_pid || let "failures+=1"
+    wait $receiver_pid || let "failures+=1"
+
     kill $broker_pid
     wait $broker_pid 2> /dev/null || :
 
-    echo Test passed
+    if (( $failures == 0 )); then 
+        echo PASSED
+    else
+        echo FAILED
+    fi
 }
 
-# ADDRESS=$(random_address)
-# quiver --impl proton-python --verbose --server receive $ADDRESS -n $COUNT &
-# quiver --impl proton-python --verbose send $ADDRESS -n $COUNT &
-# wait
-
-test_peer_to_peer proton-python proton-python   
+test_server_mode proton-python proton-python   
 
 if hash qbroker; then
-    test_client_server proton-python proton-python
-    test_client_server proton-python qpid-messaging-python
-    test_client_server qpid-messaging-python proton-python
-    test_client_server qpid-messaging-python qpid-messaging-python
+    test_client_mode proton-python proton-python
+    test_client_mode proton-python qpid-messaging-python
+    test_client_mode qpid-messaging-python proton-python
+    test_client_mode qpid-messaging-python qpid-messaging-python
 fi
 
 # XXX ERROR:root:amqp:connection:framing-error: AMQP header mismatch: Unknown protocol ['X\x8b{w\xe8\x7f\x00\x00X
