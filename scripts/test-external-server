@@ -20,11 +20,13 @@
 
 set -eux
 
+trap "kill 0" EXIT
+
 IMPL=$1
 ADDRESS=$2
 COUNT=$3
 
-quiver --impl $IMPL receive $ADDRESS -n $COUNT &
-quiver --impl $IMPL send $ADDRESS -n $COUNT
+quiver --verbose --impl $IMPL receive $ADDRESS -n $COUNT &
+quiver --verbose --impl $IMPL send $ADDRESS -n $COUNT &
 
 wait

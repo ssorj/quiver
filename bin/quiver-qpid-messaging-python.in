@@ -81,7 +81,8 @@ class Sender(Client):
         message.id = str(self.transfers + 1)
         message.properties[b"send-time"] = time.time()
 
-        link.send(message, timeout=self.timeout)
+        # link.send(message, timeout=self.timeout)
+        link.send(message) # XXX Send has no timeout arg
         
         self.transfers +=1
         

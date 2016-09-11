@@ -20,6 +20,8 @@
 
 set -eu
 
+trap "kill 0" EXIT
+
 # until nc localhost $port 2> /dev/null < /dev/null; do
 #     sleep 0.1
 # done
@@ -30,22 +32,82 @@ else
     COUNT=1000
 fi
 
-PORT=$(python -S -c "import random; print random.randrange(49152, 65535)")
-ADDRESS=//localhost:$PORT/q0
+function random_port {
+    echo $(python -S -c "import random; print random.randrange(49152, 65535)")
+}
 
-quiver --verbose --server receive $ADDRESS -n $COUNT &
-quiver --verbose send $ADDRESS -n $COUNT
-wait
+function random_address {
+    local port=$(random_port)
+    echo //localhost:${port}/q0
+}
 
-# XXX _qpid_messaging.NotFound: No such target : q0
-#quiver --server receive $ADDRESS -n $COUNT &
-#quiver send --impl qpid-messaging-python $ADDRESS -n $COUNT
+function test_peer_to_peer {
+    local sender_impl=$1
+    local receiver_impl=$2
+    local address=$(random_address)
+
+    echo Testing peer-to-peer mode, sender \'$sender_impl\', receiver \'$receiver_impl\'
+    
+    quiver --quiet --impl $receiver_impl --server receive $address -n $COUNT &
+    quiver --quiet --impl $sender_impl send $address -n $COUNT &
+
+    wait
+
+    echo Test passed
+}
+
+function test_client_server {
+    local sender_impl=$1
+    local receiver_impl=$2
+    local port=$(random_port)
+    local address=//localhost:${port}/q0
+
+    echo Testing client mode, sender \'$sender_impl\', receiver \'$receiver_impl\'
+    
+    qbroker --port $port 2> /dev/null &
+    local broker_pid=$!
+
+    quiver --quiet --impl $receiver_impl receive $address -n $COUNT &
+    local receiver_pid=$!
+    
+    quiver --quiet --impl $sender_impl send $address -n $COUNT &
+    local sender_pid=$!
+
+    wait $receiver_pid $sender_pid
+    kill $broker_pid
+    wait $broker_pid 2> /dev/null || :
+
+    echo Test passed
+}
+
+# ADDRESS=$(random_address)
+# quiver --impl proton-python --verbose --server receive $ADDRESS -n $COUNT &
+# quiver --impl proton-python --verbose send $ADDRESS -n $COUNT &
+# wait
+
+test_peer_to_peer proton-python proton-python   
+
+if hash qbroker; then
+    test_client_server proton-python proton-python
+    test_client_server proton-python qpid-messaging-python
+    test_client_server qpid-messaging-python proton-python
+    test_client_server qpid-messaging-python qpid-messaging-python
+fi
+
+# XXX ERROR:root:amqp:connection:framing-error: AMQP header mismatch: Unknown protocol ['X\x8b{w\xe8\x7f\x00\x00X
+#ADDRESS=$(random_address)
+#quiver --impl proton-python --server send $ADDRESS -n $COUNT &
+#quiver --impl proton-python receive $ADDRESS -n $COUNT &
 #wait
 
-# quiver --server send $ADDRESS -n $COUNT &
-# quiver receive $ADDRESS -n $COUNT
-# wait
+# XXX _qpid_messaging.NotFound: No such target : q0
+#ADDRESS=$(random_address)
+#quiver --impl proton-python --server receive $ADDRESS -n $COUNT &
+#quiver --impl qpid-messaging-python send $ADDRESS -n $COUNT
+#wait
 
-# quiver --server send $ADDRESS -n $COUNT &
-# quiver receive --impl qpid-messaging-python $ADDRESS -n $COUNT
-# wait
+# XXX _qpid_messaging.NotFound: No such source : q0
+#ADDRESS=$(random_address)
+#quiver --impl proton-python --server send $ADDRESS -n $COUNT &
+#quiver --impl qpid-messaging-python receive $ADDRESS -n $COUNT
+#wait

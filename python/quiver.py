@@ -160,8 +160,6 @@ class _PeriodicStatusThread(_threading.Thread):
             while not self.command.stopped.wait(2):
                 self.print_status(fin)
 
-            self.print_status(fin)
-
     def print_status(self, fin):
         send_times = list()
         receive_times = list()
