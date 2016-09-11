@@ -22,27 +22,142 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import os as _os
+import subprocess as _subprocess
+import tempfile as _tempfile
 import threading as _threading
+import time as _time
 
-class PeriodicStatusThread(_threading.Thread):
-    def __init__(self, start_event, stop_event, transfers_file):
+class Command(object):
+    def __init__(self, home_dir, output_dir, impl, mode, operation, address,
+                 messages, bytes_, credit, timeout):
+        self.home_dir = home_dir
+        self.output_dir = output_dir
+        self.impl = impl
+        self.mode = mode
+        self.operation = operation
+        self.address = address
+        self.messages = messages
+        self.bytes_ = bytes_
+        self.credit = credit
+        self.timeout = timeout
+
+        self.verbose = False
+        self.quiet = False
+
+        impl_name = "quiver-{}".format(self.impl)
+
+        if self.output_dir is None:
+            self.output_dir = _tempfile.mkdtemp(prefix="quiver-")
+            
+        self.impl_file = _os.path.join(self.home_dir, impl_name)
+        self.transfers_file = _os.path.join(self.output_dir, "transfers.csv")
+
+        self.started = _threading.Event()
+        self.stopped = _threading.Event()
+
+        self.periodic_status_thread = _PeriodicStatusThread(self)
+
+    def init(self):
+        if not _os.path.exists(self.output_dir):
+            _os.makedirs(self.output_dir)
+        
+    def check(self):
+        if not _os.path.exists(self.impl_file):
+            raise Exception("No impl at '{}'".format(self.impl_file))
+
+        if not _os.path.isdir(self.output_dir):
+            raise Exception("Invalid output dir at '{}'".format(self.output_dir))
+
+    def run(self):
+        if self.address.startswith("//"):
+            domain, path = self.address[2:].split("/", 1)
+        else:
+            domain, path = "localhost:5672", self.address
+
+        args = [
+            self.impl_file,
+            self.output_dir,
+            self.mode,
+            self.operation,
+            domain,
+            path,
+            str(self.messages),
+            str(self.bytes_),
+            str(self.credit),
+            str(self.timeout),
+        ]
+
+        if self.verbose:
+            print("Calling '{}'".format(" ".join(args)))
+
+            if self.operation == "receive":
+                self.periodic_status_thread.start()
+        
+        with open(self.transfers_file, "w") as fout:
+            self.started.set()
+            start_time = _time.time()
+
+            proc = _subprocess.Popen(args, stdout=fout)
+            proc.wait()
+
+            stop_time = _time.time()
+            self.stopped.set()
+            
+        duration = stop_time - start_time
+
+        if not self.quiet and self.operation == "receive":
+            self.report()
+
+    def report(self):
+        if _os.path.getsize(self.transfers_file) == 0:
+            raise Exception("No transfers")
+        
+        send_times = list()
+        receive_times = list()
+        latencies = list()
+
+        with open(self.transfers_file, "r") as f:
+            for line in f:
+                message_id, send_time, receive_time = line.split(",", 2)
+
+                send_time = float(send_time)
+                receive_time = float(receive_time)
+                latency = receive_time - send_time
+
+                send_times.append(send_time)
+                receive_times.append(receive_time)
+                latencies.append(latency)
+
+        duration = max(receive_times) - min(send_times)
+        transfer_count = len(receive_times)
+        transfer_rate = int(round(transfer_count / duration))
+        latency_avg = sum(latencies) / transfer_count * 1000
+        latency_min = min(latencies) * 1000
+        latency_max = max(latencies) * 1000
+        latency = "{:.1f}, {:.1f}, {:.1f}".format(latency_min, latency_max,
+                                                  latency_avg)
+                
+        print("-" * 80)
+        print("{:32} {:24.1f} s".format("Duration:", duration))
+        print("{:32} {:24,} transfers".format("Transfer count:", transfer_count))
+        print("{:32} {:24,} transfers/s".format("Transfer rate:", transfer_rate))
+        print("{:32} {:>24} ms".format("Latency (min, max, avg):", latency))
+        print("-" * 80)
+    
+class _PeriodicStatusThread(_threading.Thread):
+    def __init__(self, command):
         _threading.Thread.__init__(self)
 
-        self.start_event = start_event
-        self.stop_event = stop_event
-        self.transfers_file = transfers_file
-
+        self.command = command
         self.transfers = 0
-        
         self.daemon = True
 
     def run(self):
-        total_transfers = 0
+        self.command.started.wait()
         
-        self.start_event.wait()
-        
-        with open(self.transfers_file, "r") as fin:
-            while not self.stop_event.wait(2):
+        with open(self.command.transfers_file, "r") as fin:
+            while not self.command.stopped.wait(2):
                 self.print_status(fin)
 
             self.print_status(fin)
