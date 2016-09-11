@@ -35,7 +35,10 @@ import argparse
 import shutil
 import subprocess
 import tempfile
+import threading
 import time
+
+from quiver import *
 
 def main():
     description = "Test the performance of AMQP servers and messaging APIs"
@@ -136,27 +139,27 @@ def main():
         timeout,
     ]
 
+    transfers_file = os.path.join(output_dir, "transfers.csv")
+    start_event = threading.Event()
+    stop_event = threading.Event()
+    
     if args.verbose:
         print("Calling '{}'".format(" ".join(command)))
 
-    transfers_file = os.path.join(output_dir, "transfers.csv")
-    total_transfers = 0
+        if operation == "receive":
+            thread = PeriodicStatusThread(start_event, stop_event, transfers_file)
+            thread.start()
     
     with open(transfers_file, "w") as fout:
-        with open(transfers_file, "r") as fin:
-            start_time = time.time()
+        start_event.set()
+        start_time = time.time()
 
-            proc = subprocess.Popen(command, stdout=fout)
+        proc = subprocess.Popen(command, stdout=fout)
+        proc.wait()
 
-            if operation == "receive":
-                while proc.poll() is None:
-                    time.sleep(2)
-                    total_transfers = print_status(fin, total_transfers)
-            else:
-                proc.wait()
-
-            stop_time = time.time()
-
+        stop_time = time.time()
+        stop_event.set()
+        
     duration = stop_time - start_time
 
     if not args.quiet and operation == "receive":
@@ -164,53 +167,6 @@ def main():
 
     # shutil.rmtree(output_dir)
 
-def print_status(fin, total_transfers):
-    send_times = list()
-    receive_times = list()
-    latencies = list()
-
-    while True:
-        fpos = fin.tell()
-        line = fin.readline()
-
-        if line == "" or line[-1] != "\n":
-            fin.seek(fpos)
-            break
-        
-        line = line[:-1]
-        
-        try:
-            message_id, send_time, receive_time = line.split(",", 2)
-        except ValueError:
-            print("Failed to parse line '{}'".format(line))
-            continue
-
-        send_time = float(send_time)
-        receive_time = float(receive_time)
-        latency = receive_time - send_time
-
-        send_times.append(send_time)
-        receive_times.append(receive_time)
-        latencies.append(latency)
-
-    transfers = len(receive_times)
-    total_transfers += transfers
-    
-    if transfers == 0:
-        print("* {:10,}".format(total_transfers))
-        return
-
-    duration = max(receive_times) - min(send_times)
-    rate = int(round(transfers / duration))
-    latency = sum(latencies) / transfers * 1000
-
-    rate_col = "{:10,} transfers/s".format(rate)
-    latency_col = "{:.1f} ms avg latency".format(latency)
-    
-    print("* {:10,} {:>20} {:>24}".format(total_transfers, rate_col, latency_col))
-
-    return total_transfers
-    
 def report(transfers_file):
     if os.path.getsize(transfers_file) == 0:
         exit("Error: No transfers")
