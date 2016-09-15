@@ -30,7 +30,6 @@ int main(int argc, char** argv) {
     int messages = std::atoi(argv[6]);
     int bytes = std::atoi(argv[7]);
     int credit = std::atoi(argv[8]);
-    int timeout = std::atoi(argv[9]);
 
     std::cerr << output_dir << std::endl;
     std::cerr << mode << std::endl;
@@ -40,5 +39,4 @@ int main(int argc, char** argv) {
     std::cerr << messages << std::endl;
     std::cerr << bytes << std::endl;
     std::cerr << credit << std::endl;
-    std::cerr << timeout << std::endl;
 }

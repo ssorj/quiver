@@ -25,21 +25,17 @@ from __future__ import with_statement
 
 import os
 import sys
-
-default_home_dir = os.path.normpath("@quiver_home@")
-home_dir = os.environ.get("QUIVER_HOME", default_home_dir)
-
-sys.path.insert(0, os.path.join(home_dir, "python"))
-
 import time
 
 from proton import Message
 from proton.handlers import MessagingHandler
 from proton.reactor import Container
 
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
-    
+default_home_dir = os.path.normpath("@quiver_home@")
+home_dir = os.environ.get("QUIVER_HOME", default_home_dir)
+
+sys.path.insert(0, os.path.join(home_dir, "python"))
+
 class BaseHandler(MessagingHandler):
     def __init__(self, **kwargs):
         super(BaseHandler, self).__init__(**kwargs)
@@ -50,33 +46,12 @@ class BaseHandler(MessagingHandler):
         self.path = None
         self.messages = None
         self.bytes_ = None
-        self.timeout = None
 
         self.transfers = 0
-        self.checkpoint = None # timestamp, transfers
-        self.timer_task = None
         self.stopping = False
 
-    def on_start(self, event):
-        self.checkpoint = time.time(), self.transfers
-        self.timer_task = event.container.schedule(1.0, self)
-        
     def stop(self):
         self.stopping = True
-        self.timer_task.cancel()
-
-    def on_timer_task(self, event):
-        now = time.time()
-        then, transfers_then = self.checkpoint
-
-        if self.transfers == transfers_then and now - then > self.timeout:
-            raise Exception("Timeout!")
-
-        if self.transfers > transfers_then:
-            then = now
-            
-        self.checkpoint = then, self.transfers
-        self.timer_task = event.container.schedule(1.0, self)
 
     def on_sendable(self, event):
         if self.stopping:
@@ -150,23 +125,26 @@ class Server(BaseHandler):
         
         self.acceptor.close()
 
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+    
 def main():
-    output_dir, mode, operation, domain, path = sys.argv[1:6]
-    messages, bytes_, credit, timeout = map(int, sys.argv[6:10])
+    mode, operation = sys.argv[2:4]
+    credit = int(sys.argv[8])
 
     if mode == "client":
         handler = Client(prefetch=credit)
-    
-    if mode == "server":
+    elif mode == "server":
         handler = Server(prefetch=credit)
+    else:
+        raise Exception()
 
-    handler.output_dir = output_dir
+    handler.output_dir = sys.argv[1]
     handler.operation = operation
-    handler.domain = domain
-    handler.path = path
-    handler.messages = messages
-    handler.bytes_ = bytes_
-    handler.timeout = timeout
+    handler.domain = sys.argv[4]
+    handler.path = sys.argv[5]
+    handler.messages = int(sys.argv[6])
+    handler.bytes_ = int(sys.argv[7])
         
     container = Container(handler)
     container.run()

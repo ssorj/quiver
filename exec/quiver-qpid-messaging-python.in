@@ -42,7 +42,6 @@ class Client(object):
         self.messages = None
         self.bytes_ = None
         self.credit = None
-        self.timeout = None
         
         self.transfers = 0
 
@@ -83,7 +82,7 @@ class Receiver(Client):
             if receiver.available() == 0:
                 continue
         
-            message = receiver.get(timeout=self.timeout)
+            message = receiver.get()
 
             session.acknowledge()
 
@@ -115,7 +114,6 @@ def main():
     client.messages = int(sys.argv[6])
     client.bytes_ = int(sys.argv[7])
     client.credit = int(sys.argv[8])
-    client.timeout = int(sys.argv[9])
 
     client.run()
     

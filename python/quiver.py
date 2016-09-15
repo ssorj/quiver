@@ -27,6 +27,7 @@ import subprocess as _subprocess
 import tempfile as _tempfile
 import threading as _threading
 import time as _time
+import traceback as _traceback
 
 class Command(object):
     def __init__(self, home_dir, output_dir, impl, mode, operation, address,
@@ -85,7 +86,6 @@ class Command(object):
             str(self.messages),
             str(self.bytes_),
             str(self.credit),
-            str(self.timeout),
         ]
 
         if self.verbose:
@@ -149,15 +149,33 @@ class _PeriodicStatusThread(_threading.Thread):
         _threading.Thread.__init__(self)
 
         self.command = command
+
         self.transfers = 0
+        self.intervals = 0
+        self.checkpoint = None # timestamp, transfers
+        
         self.daemon = True
 
     def run(self):
+        try:
+            self.do_run()
+        except Exception as e:
+            _traceback.print_exc()
+            exit(str(e))
+        
+    def do_run(self):
         self.command.started.wait()
         
+        self.checkpoint = _time.time(), self.transfers
+
         with open(self.command.transfers_file, "r") as fin:
-            while not self.command.stopped.wait(2):
+            while not self.command.stopped.wait(1):
+                # XXX separate reporting from stats collection
                 self.print_status(fin)
+
+                self.check_timeout()
+                    
+                self.intervals += 1
 
     def print_status(self, fin):
         send_times = list()
@@ -203,3 +221,15 @@ class _PeriodicStatusThread(_threading.Thread):
         latency_col = "{:.1f} ms avg latency".format(latency)
         
         print("* {:12,} {:>24} {:>24}".format(self.transfers, rate_col, latency_col))
+
+    def check_timeout(self):
+        now = _time.time()
+        then, transfers_then = self.checkpoint
+
+        if self.transfers == transfers_then and now - then > self.command.timeout:
+            raise Exception("Timeout!")
+
+        if self.transfers > transfers_then:
+            then = now
+            
+        self.checkpoint = then, self.transfers
