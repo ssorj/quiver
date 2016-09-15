@@ -192,7 +192,7 @@ class _PeriodicStatusThread(_threading.Thread):
         self.transfers += transfers
         
         if transfers == 0:
-            print("* {:10,}".format(self.transfers))
+            print("* {:12,}".format(self.transfers))
             return
 
         duration = max(receive_times) - min(send_times)
@@ -202,4 +202,4 @@ class _PeriodicStatusThread(_threading.Thread):
         rate_col = "{:10,} transfers/s".format(rate)
         latency_col = "{:.1f} ms avg latency".format(latency)
         
-        print("* {:10,} {:>20} {:>24}".format(self.transfers, rate_col, latency_col))
+        print("* {:12,} {:>24} {:>24}".format(self.transfers, rate_col, latency_col))
