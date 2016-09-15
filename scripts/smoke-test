@@ -38,7 +38,8 @@ function random_port {
 
 function random_address {
     local port=$(random_port)
-    echo //localhost:${port}/q0
+    # XXX Using 127.0.0.1 here to avoid connection failures
+    echo //127.0.0.1:${port}/q0
 }
 
 function test_server_mode {
@@ -80,12 +81,14 @@ function test_client_mode {
     local sender_impl=$1
     local receiver_impl=$2
     local port=$(random_port)
-    local address=//localhost:${port}/q0
+    # XXX Using 127.0.0.1 here to avoid connection failures
+    local address=//127.0.0.1:${port}/q0
     local failures=0
 
     echo -n "Testing client mode, sender ${sender_impl}, receiver ${receiver_impl} ... "
-    
-    qbroker --port $port 2> /dev/null &
+
+    # XXX Using 127.0.0.1 here to avoid connection failures
+    qbroker --host 127.0.0.1 --port $port 2> /dev/null &
     local broker_pid=$!
 
     quiver --quiet --impl $receiver_impl receive $address -n $MESSAGES &
@@ -107,15 +110,23 @@ function test_client_mode {
     fi
 }
 
+test_server_mode qpid-jms qpid-proton-python   
+# XXX _qpid_messaging.NotFound: No such target : q0
+#test_server_mode qpid-messaging-python qpid-proton-python   
 test_server_mode qpid-proton-python qpid-proton-python   
 
 if hash qbroker; then
-    test_client_mode qpid-proton-python qpid-proton-python
-    test_client_mode qpid-proton-python qpid-messaging-python
-    test_client_mode qpid-messaging-python qpid-proton-python
-    test_client_mode qpid-messaging-python qpid-messaging-python
     # XXX javax.jms.JMSException: Failed to create connection to: amqp://localhost:65407
-    #test_client_mode qpid-jms qpid-jms
+    # Issue is use of 'localhost': 127.0.0.1 works
+    test_client_mode qpid-jms qpid-jms
+    test_client_mode qpid-jms qpid-messaging-python
+    test_client_mode qpid-jms qpid-proton-python
+    test_client_mode qpid-messaging-python qpid-jms
+    test_client_mode qpid-messaging-python qpid-messaging-python
+    test_client_mode qpid-messaging-python qpid-proton-python
+    test_client_mode qpid-proton-python qpid-jms
+    test_client_mode qpid-proton-python qpid-messaging-python
+    test_client_mode qpid-proton-python qpid-proton-python
 fi
 
 # XXX ERROR:root:amqp:connection:framing-error: AMQP header mismatch: Unknown protocol ['X\x8b{w\xe8\x7f\x00\x00X
