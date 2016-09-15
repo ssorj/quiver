@@ -35,6 +35,14 @@ import argparse
 
 from quiver import *
 
+impls_by_name = {
+    "jms": "qpid-jms",
+    "python": "qpid-proton-python",
+    "qpid-jms": "qpid-jms",
+    "qpid-messaging-python": "qpid-messaging-python",
+    "qpid-proton-python": "qpid-proton-python",
+}
+
 def main():
     description = "Test the performance of AMQP servers and messaging APIs"
     epilog = "operations:\n" \
@@ -42,20 +50,21 @@ def main():
              "  receive               Receive messages\n" \
              "\n" \
              "addresses:\n" \
-             "  [//DOMAIN/]PATH              The default domain is 'localhost:5672'\n" \
+             "  [//DOMAIN/]PATH                 The default domain is 'localhost:5672'\n" \
              "  //example.net/jobs\n" \
              "  //10.0.0.10:5672/jobs/alpha\n" \
              "  //localhost/q0\n" \
              "  q0\n" \
              "\n" \
              "implementations:\n" \
-             "  qpid-proton-python\n" \
-             "  qpid-messaging-python        Supports client mode only\n" \
+             "  qpid-jms (jms)                  Supports client mode only\n" \
+             "  qpid-messaging-python           Supports client mode only\n" \
+             "  qpid-proton-python (python)\n" \
              "\n" \
              "example usage:\n" \
-             "  $ qdrouterd &                # Start an AMQP server\n" \
-             "  $ quiver receive q0 &        # Start receiving\n" \
-             "  $ quiver send q0             # Start sending\n" \
+             "  $ qdrouterd &                   # Start an AMQP server\n" \
+             "  $ quiver receive q0 &           # Start receiving\n" \
+             "  $ quiver send q0                # Start sending\n" \
              "\n" \
 
     class Formatter(argparse.ArgumentDefaultsHelpFormatter,
@@ -97,9 +106,14 @@ def main():
     
     args = parser.parse_args()
 
+    try:
+        impl = impls_by_name[args.impl]
+    except KeyError:
+        parser.error("Impl '{}' is unknown".format(args.impl))
+    
     mode = "server" if args.server else "client"
     
-    command = Command(home_dir, args.output, args.impl, mode, args.operation,
+    command = Command(home_dir, args.output, impl, mode, args.operation,
                       args.address, args.messages, args.bytes, args.credit,
                       args.timeout)
 
@@ -111,7 +125,7 @@ def main():
         command.check()
         command.run()
     except Exception as e:
-        exit("Error: {}".format(e))
+        parser.exit(1, str(e))
 
 if __name__ == "__main__":
     try:

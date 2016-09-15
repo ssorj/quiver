@@ -48,6 +48,10 @@ install: build
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
 devel: clean install
+	quiver -h > /dev/null
+
+.PHONY: test
+test: devel
 	scripts/smoke-test 10
 
 build/exec/quiver-qpid-messaging-cpp: exec/quiver-qpid-messaging-cpp.cpp
