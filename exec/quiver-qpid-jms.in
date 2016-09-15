@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/python
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -18,15 +18,33 @@
 # under the License.
 #
 
-set -eux
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
 
-trap "kill 0" EXIT
+import os
+import subprocess
+import sys
 
-IMPL=$1
-ADDRESS=$2
-MESSAGES=$3
+default_home_dir = os.path.normpath("@quiver_home@")
+home_dir = os.environ.get("QUIVER_HOME", default_home_dir)
 
-quiver --verbose --impl $IMPL receive $ADDRESS -n $MESSAGES &
-quiver --verbose --impl $IMPL send $ADDRESS -n $MESSAGES &
+def main():
+    jar_file = os.path.join(home_dir, "java", "quiver.jar")
 
-wait
+    args = [
+        "java",
+        "-classpath", jar_file,
+        "net.ssorj.quiver.QuiverQpidJms",
+    ]
+
+    args += sys.argv[1:]
+
+    subprocess.check_call(args)
+    
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

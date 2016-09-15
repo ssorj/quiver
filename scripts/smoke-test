@@ -27,9 +27,9 @@ trap "kill 0" EXIT
 # done
 
 if (( $# == 1 )); then
-    COUNT=$1
+    MESSAGES=$1
 else
-    COUNT=1000
+    MESSAGES=1000
 fi
 
 function random_port {
@@ -51,9 +51,9 @@ function test_server_mode {
 
     echo -n "Testing server mode, sender ${sender_impl}, receiver ${receiver_impl} ... "
     
-    quiver --quiet --impl $receiver_impl --server receive $address -n $COUNT &
+    quiver --quiet --impl $receiver_impl --server receive $address -n $MESSAGES &
     receiver_pid=$!
-    quiver --quiet --impl $sender_impl send $address -n $COUNT &
+    quiver --quiet --impl $sender_impl send $address -n $MESSAGES &
     sender_pid=$!
 
     wait $sender_pid || let "failures+=1"
@@ -61,9 +61,9 @@ function test_server_mode {
 
     # XXX ERROR:root:amqp:connection:framing-error: AMQP header mismatch: Unknown protocol ['X\x1b
     
-    # quiver --quiet --impl $sender_impl --server send $address -n $COUNT &
+    # quiver --quiet --impl $sender_impl --server send $address -n $MESSAGES &
     # sender_pid=$!
-    # quiver --quiet --impl $receiver_impl receive $address -n $COUNT &
+    # quiver --quiet --impl $receiver_impl receive $address -n $MESSAGES &
     # receiver_pid=$!
 
     # wait $sender_pid || let "failures+=1"
@@ -88,10 +88,10 @@ function test_client_mode {
     qbroker --port $port 2> /dev/null &
     local broker_pid=$!
 
-    quiver --quiet --impl $receiver_impl receive $address -n $COUNT &
+    quiver --quiet --impl $receiver_impl receive $address -n $MESSAGES &
     local receiver_pid=$!
     
-    quiver --quiet --impl $sender_impl send $address -n $COUNT &
+    quiver --quiet --impl $sender_impl send $address -n $MESSAGES &
     local sender_pid=$!
 
     wait $sender_pid || let "failures+=1"
@@ -107,29 +107,31 @@ function test_client_mode {
     fi
 }
 
-test_server_mode proton-python proton-python   
+test_server_mode qpid-proton-python qpid-proton-python   
 
 if hash qbroker; then
-    test_client_mode proton-python proton-python
-    test_client_mode proton-python qpid-messaging-python
-    test_client_mode qpid-messaging-python proton-python
+    test_client_mode qpid-proton-python qpid-proton-python
+    test_client_mode qpid-proton-python qpid-messaging-python
+    test_client_mode qpid-messaging-python qpid-proton-python
     test_client_mode qpid-messaging-python qpid-messaging-python
+    # XXX javax.jms.JMSException: Failed to create connection to: amqp://localhost:65407
+    #test_client_mode qpid-jms qpid-jms
 fi
 
 # XXX ERROR:root:amqp:connection:framing-error: AMQP header mismatch: Unknown protocol ['X\x8b{w\xe8\x7f\x00\x00X
 #ADDRESS=$(random_address)
-#quiver --impl proton-python --server send $ADDRESS -n $COUNT &
-#quiver --impl proton-python receive $ADDRESS -n $COUNT &
+#quiver --impl qpid-proton-python --server send $ADDRESS -n $MESSAGES &
+#quiver --impl qpid-proton-python receive $ADDRESS -n $MESSAGES &
 #wait
 
 # XXX _qpid_messaging.NotFound: No such target : q0
 #ADDRESS=$(random_address)
-#quiver --impl proton-python --server receive $ADDRESS -n $COUNT &
-#quiver --impl qpid-messaging-python send $ADDRESS -n $COUNT
+#quiver --impl qpid-proton-python --server receive $ADDRESS -n $MESSAGES &
+#quiver --impl qpid-messaging-python send $ADDRESS -n $MESSAGES
 #wait
 
 # XXX _qpid_messaging.NotFound: No such source : q0
 #ADDRESS=$(random_address)
-#quiver --impl proton-python --server send $ADDRESS -n $COUNT &
-#quiver --impl qpid-messaging-python receive $ADDRESS -n $COUNT
+#quiver --impl qpid-proton-python --server send $ADDRESS -n $MESSAGES &
+#quiver --impl qpid-messaging-python receive $ADDRESS -n $MESSAGES
 #wait

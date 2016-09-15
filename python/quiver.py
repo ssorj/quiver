@@ -50,7 +50,7 @@ class Command(object):
         if self.output_dir is None:
             self.output_dir = _tempfile.mkdtemp(prefix="quiver-")
             
-        self.impl_file = _os.path.join(self.home_dir, impl_name)
+        self.impl_file = _os.path.join(self.home_dir, "exec", impl_name)
         self.transfers_file = _os.path.join(self.output_dir, "transfers.csv")
 
         self.started = _threading.Event()

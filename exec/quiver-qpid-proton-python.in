@@ -86,7 +86,7 @@ class BaseHandler(MessagingHandler):
             message = Message(b"x" * self.bytes_)
             message.id = self.transfers + 1
             message.properties = dict()
-            message.properties["send-time"] = time.time()
+            message.properties["SendTime"] = time.time()
 
             event.sender.send(message)
 
@@ -101,7 +101,7 @@ class BaseHandler(MessagingHandler):
 
         message = event.message
         rtime = time.time()
-        stime = event.message.properties["send-time"]
+        stime = event.message.properties["SendTime"]
         record = "{},{:.9f},{:.9f}\r\n".format(message.id, stime, rtime)
         
         sys.stdout.write(record)

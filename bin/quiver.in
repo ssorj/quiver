@@ -49,7 +49,7 @@ def main():
              "  q0\n" \
              "\n" \
              "implementations:\n" \
-             "  proton-python\n" \
+             "  qpid-proton-python\n" \
              "  qpid-messaging-python        Supports client mode only\n" \
              "\n" \
              "example usage:\n" \
@@ -73,18 +73,18 @@ def main():
                         help="The location of an AMQP node")
     parser.add_argument("-n", "--messages", metavar="COUNT",
                         help="Send or receive COUNT messages",
-                        default=100000, type=int)
+                        default=1000000, type=int)
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Periodically print status to the console")
     parser.add_argument("--impl", metavar="NAME",
                         help="Use NAME implementation",
-                        default="proton-python")
+                        default="qpid-proton-python")
     parser.add_argument("--bytes", metavar="COUNT",
                         help="Send message bodies containing COUNT bytes",
-                        default=1000, type=int)
+                        default=100, type=int)
     parser.add_argument("--credit", metavar="COUNT",
                         help="Sustain credit for COUNT incoming transfers",
-                        default=100, type=int)
+                        default=1000, type=int)
     parser.add_argument("--timeout", metavar="SECONDS",
                         help="Fail after SECONDS without transfers",
                         default=10, type=int)
@@ -106,9 +106,8 @@ def main():
     command.verbose = args.verbose
     command.quiet = args.quiet
     
-    command.init()
-    
     try:
+        command.init()
         command.check()
         command.run()
     except Exception as e:

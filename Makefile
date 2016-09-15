@@ -20,40 +20,40 @@ clean:
 	rm -rf install
 
 .PHONY: build
-build: build/lib/quiver/quiver-qpid-messaging-cpp build/lib/quiver/quiver-proton-cpp
+build: build/exec/quiver-qpid-messaging-cpp build/exec/quiver-qpid-proton-cpp build-java
+	scripts/configure-file exec/quiver-qpid-proton-python.in build/exec/quiver-qpid-proton-python \
+		quiver_home ${QUIVER_HOME}
+	scripts/configure-file exec/quiver-qpid-jms.in build/exec/quiver-qpid-jms \
+		quiver_home ${QUIVER_HOME}
+	scripts/configure-file exec/quiver-qpid-messaging-python.in build/exec/quiver-qpid-messaging-python \
+		quiver_home ${QUIVER_HOME}
 	scripts/configure-file bin/quiver.in build/bin/quiver \
 		quiver_home ${QUIVER_HOME}
-	scripts/configure-file bin/quiver-proton-python.in \
-		build/lib/quiver/quiver-proton-python \
-		quiver_home ${QUIVER_HOME}
-	scripts/configure-file bin/quiver-qpid-messaging-python.in \
-		build/lib/quiver/quiver-qpid-messaging-python \
-		quiver_home ${QUIVER_HOME}
+
+.PHONY: build-java
+build-java:
+	rm -rf build/java
+	mkdir -p build/java
+	cd java && mvn package
+	cp java/target/quiver-*-jar-with-dependencies.jar build/java/quiver.jar
 
 .PHONY: install
 install: build
 	mkdir -p ${DESTDIR}${QUIVER_HOME}
 	scripts/install-files python ${DESTDIR}${QUIVER_HOME}/python \*.py
-	scripts/install-executable build/bin/quiver \
-		${DESTDIR}${PREFIX}/bin/quiver
-	scripts/install-executable build/lib/quiver/quiver-proton-cpp \
-		${DESTDIR}${PREFIX}/lib/quiver/quiver-proton-cpp
-	scripts/install-executable build/lib/quiver/quiver-proton-python \
-		${DESTDIR}${PREFIX}/lib/quiver/quiver-proton-python
-	scripts/install-executable build/lib/quiver/quiver-qpid-messaging-cpp \
-		${DESTDIR}${PREFIX}/lib/quiver/quiver-qpid-messaging-cpp
-	scripts/install-executable build/lib/quiver/quiver-qpid-messaging-python \
-		${DESTDIR}${PREFIX}/lib/quiver/quiver-qpid-messaging-python
+	scripts/install-files build/java ${DESTDIR}${QUIVER_HOME}/java \*
+	scripts/install-files build/exec ${DESTDIR}${QUIVER_HOME}/exec \*
+	scripts/install-executable build/bin/quiver ${DESTDIR}${PREFIX}/bin/quiver
 
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
 devel: clean install
 	scripts/smoke-test 10
 
-build/lib/quiver/quiver-qpid-messaging-cpp: bin/quiver-qpid-messaging-cpp.cpp
-	mkdir -p build/lib/quiver
+build/exec/quiver-qpid-messaging-cpp: exec/quiver-qpid-messaging-cpp.cpp
+	mkdir -p build/exec
 	gcc -std=c++11 -lqpidmessaging -lqpidtypes -lstdc++ $< -o $@
 
-build/lib/quiver/quiver-proton-cpp: bin/quiver-proton-cpp.cpp
-	mkdir -p build/lib/quiver
+build/exec/quiver-qpid-proton-cpp: exec/quiver-qpid-proton-cpp.cpp
+	mkdir -p build/exec
 	gcc -std=c++11 -lqpid-proton -lstdc++ $< -o $@

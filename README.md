@@ -148,6 +148,10 @@ sub-second precision.
 
     10,1472344673.324439049,1472344673.345107079
 
+## Dependencies
+
+ - geronimo-jms
+
 ## Todo
 
 - Provide aliases for frequently used impls

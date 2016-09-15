@@ -25,15 +25,14 @@ from __future__ import with_statement
 
 import os
 import sys
+import time
+
+from qpid_messaging import *
 
 default_home_dir = os.path.normpath("@quiver_home@")
 home_dir = os.environ.get("QUIVER_HOME", default_home_dir)
 
 sys.path.insert(0, os.path.join(home_dir, "python"))
-
-import time
-
-from qpid_messaging import *
 
 class Client(object):
     def __init__(self):
@@ -54,80 +53,69 @@ class Client(object):
 
         try:
             session = conn.session()
-
-            link = self.create_link(session)
-            link.capacity = self.credit
-
-            while self.transfers < self.messages:
-                self.transfer_message(link)
+            self.transfer_messages(session)
         finally:
             conn.close()
 
-    def create_link(self, session):
+    def transfer_messages(self, session):
         raise NotImplementedError()
-
-    def transfer_message(self, link):
-        raise NotImplementedError()
-
-    def save(self):
-        pass
                 
 class Sender(Client):
-    def create_link(self, session):
-        return session.sender(self.path)
+    def transfer_messages(self, session):
+        sender = session.sender(self.path)
+        sender.capacity = self.credit
 
-    def transfer_message(self, link):
-        message = Message(b"x" * self.bytes_)
-        message.id = str(self.transfers + 1)
-        message.properties[b"send-time"] = time.time()
+        while self.transfers < self.messages:
+            message = Message(b"x" * self.bytes_)
+            message.id = str(self.transfers + 1)
+            message.properties[b"SendTime"] = time.time()
 
-        # link.send(message, timeout=self.timeout)
-        link.send(message) # XXX Send has no timeout arg
+            sender.send(message)
         
-        self.transfers +=1
+            self.transfers +=1
         
 class Receiver(Client):
-    def create_link(self, session):
-        return session.receiver(self.path)
+    def transfer_messages(self, session):
+        receiver = session.receiver(self.path)
+        receiver.capacity = self.credit
 
-    def transfer_message(self, link):
-        if link.available() == 0:
-            return
+        while self.transfers < self.messages:
+            if receiver.available() == 0:
+                continue
         
-        message = link.get(timeout=self.timeout)
+            message = receiver.get(timeout=self.timeout)
 
-        link.session.acknowledge()
+            session.acknowledge()
 
-        stime = message.properties["send-time"]
-        rtime = time.time()
-        record = "{},{:.9f},{:.9f}\r\n".format(message.id, stime, rtime)
+            stime = message.properties["SendTime"]
+            rtime = time.time()
+            record = "{},{:.9f},{:.9f}\r\n".format(message.id, stime, rtime)
 
-        sys.stdout.write(record)
-        
-        self.transfers +=1
+            sys.stdout.write(record)
+            
+            self.transfers +=1
 
 def main():
-    output_dir, mode, operation, domain, path = sys.argv[1:6]
-    messages, bytes_, credit, timeout = map(int, sys.argv[6:10])
+    mode, operation = sys.argv[2:4]
 
     if mode != "client":
-        raise Exception("This implementation only supports client mode")
+        raise Exception("This impl supports client mode only")
 
     if operation == "send":
         client = Sender()
-        
-    if operation == "receive":
+    elif operation == "receive":
         client = Receiver()
+    else:
+        raise Exception()
 
-    client.output_dir = output_dir
+    client.output_dir = sys.argv[1]
     client.operation = operation
-    client.domain = domain
-    client.path = path
-    client.messages = messages
-    client.path = path
-    client.bytes_ = bytes_
-    client.credit = credit
-    client.timeout = timeout
+    client.domain = sys.argv[4]
+    client.path = sys.argv[5]
+    client.messages = int(sys.argv[6])
+    client.bytes_ = int(sys.argv[7])
+    client.credit = int(sys.argv[8])
+    client.timeout = int(sys.argv[9])
 
     client.run()
     
