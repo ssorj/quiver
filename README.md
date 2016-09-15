@@ -141,16 +141,17 @@ Implementations must process the following positional arguments.
 Implementations must print received transfers to standard output, one
 transfer per line.
 
-    <message-id>,<send-time>,<receive-time>\r\n
+    <message-id>,<send-time>,<receive-time>\n
 
-Time values are unix epoch seconds, with at least nine digits of
+Time values are unix epoch seconds, with at least three digits of
 sub-second precision.
 
-    10,1472344673.324439049,1472344673.345107079
+    10,1472344673.324,1472344673.345
 
-## Dependencies
+### Messages
 
- - geronimo-jms
+ - message id
+ - SendTime
 
 ## Todo
 

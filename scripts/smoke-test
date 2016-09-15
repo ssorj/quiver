@@ -117,7 +117,7 @@ test_server_mode qpid-proton-python qpid-proton-python
 
 if hash qbroker; then
     # XXX javax.jms.JMSException: Failed to create connection to: amqp://localhost:65407
-    # Issue is use of 'localhost': 127.0.0.1 works
+    # Issue is use of 'localhost'; 127.0.0.1 works
     test_client_mode qpid-jms qpid-jms
     test_client_mode qpid-jms qpid-messaging-python
     test_client_mode qpid-jms qpid-proton-python

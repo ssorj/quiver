@@ -88,7 +88,7 @@ class Receiver(Client):
 
             stime = message.properties["SendTime"]
             rtime = time.time()
-            record = "{},{:.9f},{:.9f}\r\n".format(message.id, stime, rtime)
+            record = "{},{:.9f},{:.9f}\n".format(message.id, stime, rtime)
 
             sys.stdout.write(record)
             

@@ -77,7 +77,7 @@ class BaseHandler(MessagingHandler):
         message = event.message
         rtime = time.time()
         stime = event.message.properties["SendTime"]
-        record = "{},{:.9f},{:.9f}\r\n".format(message.id, stime, rtime)
+        record = "{},{:.6f},{:.6f}\n".format(message.id, stime, rtime)
         
         sys.stdout.write(record)
 

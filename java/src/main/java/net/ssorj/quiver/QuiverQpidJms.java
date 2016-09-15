@@ -149,6 +149,7 @@ class Receiver extends Client {
     }
 
     void transferMessages(Session session) throws JMSException {
+        PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
         MessageConsumer consumer = session.createConsumer(this.queue);
 
         while (this.transfers < this.messages) {
@@ -164,9 +165,11 @@ class Receiver extends Client {
             double stime = message.getDoubleProperty("SendTime");
             double rtime = (double) System.currentTimeMillis() / 1000.0;
 
-            System.out.println(id + "," + stime + "," + rtime);
+            out.printf("%s,%.3f,%.3f\n", id, stime, rtime);
             
             this.transfers += 1;
         }
+
+        out.flush();
     }
 }
