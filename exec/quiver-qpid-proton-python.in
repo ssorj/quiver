@@ -61,7 +61,7 @@ class BaseHandler(MessagingHandler):
             message = Message(b"x" * self.bytes_)
             message.id = self.transfers + 1
             message.properties = dict()
-            message.properties["SendTime"] = time.time()
+            message.properties["SendTime"] = long(round(time.time() * 1000))
 
             event.sender.send(message)
 
@@ -75,9 +75,9 @@ class BaseHandler(MessagingHandler):
             return
 
         message = event.message
-        rtime = time.time()
+        rtime = long(round(time.time() * 1000))
         stime = event.message.properties["SendTime"]
-        record = "{},{:.6f},{:.6f}\n".format(message.id, stime, rtime)
+        record = "{},{},{}\n".format(message.id, stime, rtime)
         
         sys.stdout.write(record)
 

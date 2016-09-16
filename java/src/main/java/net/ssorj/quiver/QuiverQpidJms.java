@@ -123,10 +123,10 @@ class Client {
         
         while (this.transfers < this.messages) {
             BytesMessage message = session.createBytesMessage();
-            double stime = (double) System.currentTimeMillis() / 1000.0;
+            long stime = System.currentTimeMillis();
 
             message.writeBytes(body);
-            message.setDoubleProperty("SendTime", stime);
+            message.setLongProperty("SendTime", stime);
             
             producer.send(message);
 
@@ -142,16 +142,16 @@ class Client {
             BytesMessage message = (BytesMessage) consumer.receive();
 
             if (message == null) {
-                throw new RuntimeException("Null response");
+                throw new RuntimeException("Null receive");
             }
 
             message.acknowledge();
 
             String id = message.getJMSMessageID();
-            double stime = message.getDoubleProperty("SendTime");
-            double rtime = (double) System.currentTimeMillis() / 1000.0;
+            long stime = message.getLongProperty("SendTime");
+            long rtime = System.currentTimeMillis();
 
-            out.printf("%s,%.3f,%.3f\n", id, stime, rtime);
+            out.printf("%s,%d,%d\n", id, stime, rtime);
             
             this.transfers += 1;
         }

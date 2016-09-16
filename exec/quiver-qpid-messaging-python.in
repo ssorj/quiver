@@ -70,7 +70,7 @@ class Client(object):
         while self.transfers < self.messages:
             message = Message(b"x" * self.bytes_)
             message.id = str(self.transfers + 1)
-            message.properties[b"SendTime"] = time.time()
+            message.properties[b"SendTime"] = long(round(time.time() * 1000))
 
             sender.send(message)
         
@@ -89,8 +89,8 @@ class Client(object):
             session.acknowledge()
 
             stime = message.properties["SendTime"]
-            rtime = time.time()
-            record = "{},{:.9f},{:.9f}\n".format(message.id, stime, rtime)
+            rtime = long(round(time.time() * 1000))
+            record = "{},{},{}\n".format(message.id, stime, rtime)
 
             sys.stdout.write(record)
             

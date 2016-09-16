@@ -165,17 +165,15 @@ transfer per line.
 
     <message-id>,<send-time>,<receive-time>\n
 
-Time values are unix epoch seconds, with at least three digits of
-sub-second precision.
+Time values are unix epoch milliseconds.
 
-    10,1472344673.324,1472344673.345
+    10,1472344673324,1472344673345
 
 ### Messages
 
-Implementations must give each message an ID based on a numeric
-sequence.  They must also set an application property named 'SendTime'
-containing a double representing the send time in seconds, with
-sub-second precision represented in the fractional part.
+Implementations must give each message a unique ID to aid debugging.
+They must also set an application property named 'SendTime' containing
+a long representing the send time in milliseconds.
 
 ## Todo
 

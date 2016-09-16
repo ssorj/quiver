@@ -26,6 +26,7 @@ from __future__ import with_statement
 import argparse
 import os
 import sys
+import traceback
 
 default_home_dir = os.path.normpath("@quiver_home@")
 home_dir = os.environ.get("QUIVER_HOME", default_home_dir)
@@ -125,6 +126,7 @@ def main():
         command.check()
         command.run()
     except Exception as e:
+        traceback.print_exc()
         exit("quiver: error: {}".format(e))
 
 if __name__ == "__main__":

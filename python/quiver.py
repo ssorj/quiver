@@ -54,8 +54,11 @@ class Command(object):
         self.impl_file = _os.path.join(self.home_dir, "exec", impl_name)
         self.transfers_file = _os.path.join(self.output_dir, "transfers.csv")
 
+        self.start_time = None
+        self.end_time = None
+        
         self.started = _threading.Event()
-        self.stopped = _threading.Event()
+        self.ended = _threading.Event()
 
         self.periodic_status_thread = _PeriodicStatusThread(self)
 
@@ -96,14 +99,12 @@ class Command(object):
         
         with open(self.transfers_file, "w") as fout:
             self.started.set()
-            start_time = _time.time()
+            self.start_time = _time.time()
 
             _subprocess.check_call(args, stdout=fout)
             
-            stop_time = _time.time()
-            self.stopped.set()
-            
-        duration = stop_time - start_time
+            self.end_time = _time.time()
+            self.ended.set()
 
         if not self.quiet and self.operation == "receive":
             self.report()
@@ -112,35 +113,30 @@ class Command(object):
         if _os.path.getsize(self.transfers_file) == 0:
             raise Exception("No transfers")
         
-        send_times = list()
-        receive_times = list()
         latencies = list()
 
         with open(self.transfers_file, "r") as f:
             for line in f:
                 message_id, send_time, receive_time = line.split(",", 2)
 
-                send_time = float(send_time)
-                receive_time = float(receive_time)
+                send_time = long(send_time)
+                receive_time = long(receive_time)
                 latency = receive_time - send_time
 
-                send_times.append(send_time)
-                receive_times.append(receive_time)
                 latencies.append(latency)
 
-        duration = max(receive_times) - min(send_times)
-        transfer_count = len(receive_times)
-        transfer_rate = int(round(transfer_count / duration))
-        latency_avg = sum(latencies) / transfer_count * 1000
-        latency_min = min(latencies) * 1000
-        latency_max = max(latencies) * 1000
-        latency = "{:,.1f}, {:,.1f}, {:,.1f}".format(latency_min, latency_max,
-                                                     latency_avg)
+        duration = self.end_time - self.start_time
+        transfers = len(latencies)
+        rate = int(round(transfers / duration))
+        lmin = min(latencies)
+        lmax = max(latencies)
+        lavg = float(sum(latencies)) / transfers
+        latency = "{:,d}, {:,d}, {:,.1f}".format(lmin, lmax, lavg)
 
         _print_bracket()
-        _print_numeric_field("Duration", duration, "s", "{:.1f}")
-        _print_numeric_field("Transfer count", transfer_count, "transfers", "{:,d}")
-        _print_numeric_field("Transfer rate", transfer_rate, "transfers/s", "{:,d}")
+        _print_numeric_field("Duration", duration, "s", "{:,.1f}")
+        _print_numeric_field("Transfer count", transfers, "transfers", "{:,d}")
+        _print_numeric_field("Transfer rate", rate, "transfers/s", "{:,d}")
         _print_numeric_field("Latency (min, max, avg)", latency, "ms")
         _print_bracket()
 
@@ -162,8 +158,9 @@ class _PeriodicStatusThread(_threading.Thread):
         self.command = command
 
         self.transfers = 0
-        self.intervals = 0
-        self.checkpoint = None # timestamp, transfers
+        self.period_start_time = None
+        self.period_end_time = None
+        self.timeout_checkpoint = None # timestamp, transfers
         
         self.daemon = True
 
@@ -176,21 +173,17 @@ class _PeriodicStatusThread(_threading.Thread):
         
     def do_run(self):
         self.command.started.wait()
-        
-        self.checkpoint = _time.time(), self.transfers
+
+        self.period_end_time = _time.time()
+        self.timeout_checkpoint = _time.time(), self.transfers
 
         with open(self.command.transfers_file, "r") as fin:
-            while not self.command.stopped.wait(1):
+            while not self.command.ended.wait(1):
                 # XXX separate reporting from stats collection
                 self.print_status(fin)
-
                 self.check_timeout()
-                    
-                self.intervals += 1
 
     def print_status(self, fin):
-        send_times = list()
-        receive_times = list()
         latencies = list()
 
         while True:
@@ -205,37 +198,38 @@ class _PeriodicStatusThread(_threading.Thread):
             
             try:
                 message_id, send_time, receive_time = line.split(",", 2)
-            except ValueError:
-                print("Failed to parse line '{}'".format(line))
+                send_time = long(send_time)
+                receive_time = long(receive_time)
+            except ValueError as e:
+                print("Failed to parse line '{}': {}".format(line, e))
                 continue
-
-            send_time = float(send_time)
-            receive_time = float(receive_time)
-            latency = receive_time - send_time
-
-            send_times.append(send_time)
-            receive_times.append(receive_time)
+            
+            latency = long(receive_time) - long(send_time)
             latencies.append(latency)
 
-        transfers = len(receive_times)
+        transfers = len(latencies)
         self.transfers += transfers
         
-        if transfers == 0:
+        if transfers == 0 and not self.command.quiet:
             print("* {:12,}".format(self.transfers))
             return
 
-        duration = max(receive_times) - min(send_times)
-        rate = int(round(transfers / duration))
-        latency = sum(latencies) / transfers * 1000
-
-        rate_col = "{:10,} transfers/s".format(rate)
-        latency_col = "{:,.1f} ms avg latency".format(latency)
+        self.period_start_time = self.period_end_time
+        self.period_end_time = _time.time()
         
-        print("* {:12,} {:>24} {:>28}".format(self.transfers, rate_col, latency_col))
+        duration = self.period_end_time - self.period_start_time
+        rate = int(round(transfers / duration))
+        latency = float(sum(latencies)) / transfers
+
+        frate = "{:,d} transfers/s".format(rate)
+        flatency = "{:,.1f} ms avg latency".format(latency)
+
+        if not self.command.quiet:
+            print("* {:12,} {:>24} {:>28}".format(self.transfers, frate, flatency))
 
     def check_timeout(self):
         now = _time.time()
-        then, transfers_then = self.checkpoint
+        then, transfers_then = self.timeout_checkpoint
 
         if self.transfers == transfers_then and now - then > self.command.timeout:
             raise Exception("Timeout!")
@@ -243,4 +237,4 @@ class _PeriodicStatusThread(_threading.Thread):
         if self.transfers > transfers_then:
             then = now
             
-        self.checkpoint = then, self.transfers
+        self.timeout_checkpoint = then, self.transfers
