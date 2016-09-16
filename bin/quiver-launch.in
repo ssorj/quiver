@@ -35,22 +35,35 @@ sys.path.insert(0, os.path.join(home_dir, "python"))
 
 from quiver import *
 
+description = "Launch quiver senders and receivers\n" \
+              "\n" \
+              "Arguments not processed by quiver-launch are passed to\n" \
+              "the 'quiver' command\n"
+
+class Formatter(argparse.ArgumentDefaultsHelpFormatter,
+                argparse.RawDescriptionHelpFormatter):
+    pass
+
+parser = argparse.ArgumentParser(description=description,
+                                 formatter_class=Formatter)
+
+parser.add_argument("address", metavar="ADDRESS",
+                    help="The location of an AMQP node")
+parser.add_argument("--pairs", metavar="COUNT",
+                    help="Launch COUNT sender-receiver pairs",
+                    default=1, type=int)
+parser.add_argument("--senders", metavar="COUNT",
+                    help="Launch COUNT senders",
+                    default=1, type=int)
+parser.add_argument("--receivers", metavar="COUNT",
+                    help="Launch COUNT receivers",
+                    default=1, type=int)
+
 def main():
-    class Formatter(argparse.ArgumentDefaultsHelpFormatter,
-                    argparse.RawDescriptionHelpFormatter):
-        pass
-
-    parser = argparse.ArgumentParser(formatter_class=Formatter)
-
-    parser.add_argument("address", metavar="ADDRESS",
-                        help="The location of an AMQP node")
-    parser.add_argument("pairs", metavar="COUNT",
-                        help="Launch COUNT sender-receiver pairs",
-                        nargs="?", default=1, type=int)
-    
     args, passthrough_args = parser.parse_known_args()
 
-    # print(passthrough_args)
+    sender_count = max(args.pairs, args.senders)
+    receiver_count = max(args.pairs, args.receivers)
     
     sender_args = ["quiver", args.address, "send"]
     sender_args += passthrough_args
@@ -61,15 +74,14 @@ def main():
     senders = list()
     receivers = list()
     
-    for i in range(args.pairs):
+    for i in range(sender_count):
         sender = subprocess.Popen(sender_args)
-        receiver = subprocess.Popen(receiver_args)
-        
         senders.append(sender)
+
+    for i in range(receiver_count):
+        receiver = subprocess.Popen(receiver_args)
         receivers.append(receiver)
 
-    #os.waitpid(0, 0)
-        
     for sender in senders:
         sender.wait()
 

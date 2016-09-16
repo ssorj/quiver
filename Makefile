@@ -51,7 +51,8 @@ install: build
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
 devel: clean install
-	quiver -h > /dev/null
+	quiver --help > /dev/null
+	quiver-launch --help > /dev/null
 
 .PHONY: test
 test: devel

@@ -66,44 +66,44 @@ epilog = "operations:\n" \
          "  $ quiver q0 send                # Start sending\n" \
          "\n"
 
-def main():
-    class Formatter(argparse.ArgumentDefaultsHelpFormatter,
-                    argparse.RawDescriptionHelpFormatter):
-        pass
+class Formatter(argparse.ArgumentDefaultsHelpFormatter,
+                argparse.RawDescriptionHelpFormatter):
+    pass
 
-    parser = argparse.ArgumentParser(description=description,
-                                     epilog=epilog,
-                                     formatter_class=Formatter)
+parser = argparse.ArgumentParser(description=description,
+                                 epilog=epilog,
+                                 formatter_class=Formatter)
 
-    parser.add_argument("address", metavar="ADDRESS",
-                        help="The location of an AMQP node")
-    parser.add_argument("operation", metavar="OPERATION",
-                        choices=["send", "receive"],
-                        help="Either 'send' or 'receive'")
-    parser.add_argument("-n", "--messages", metavar="COUNT",
-                        help="Send or receive COUNT messages",
-                        default=1000000, type=int)
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Periodically print status to the console")
-    parser.add_argument("--impl", metavar="NAME",
-                        help="Use NAME implementation",
-                        default="qpid-proton-python")
-    parser.add_argument("--bytes", metavar="COUNT",
-                        help="Send message bodies containing COUNT bytes",
-                        default=100, type=int)
-    parser.add_argument("--credit", metavar="COUNT",
-                        help="Sustain credit for COUNT incoming transfers",
-                        default=1000, type=int)
-    parser.add_argument("--timeout", metavar="SECONDS",
-                        help="Fail after SECONDS without transfers",
-                        default=10, type=int)
-    parser.add_argument("--server", action="store_true",
-                        help="Operate in server mode")
-    parser.add_argument("--output", metavar="DIRECTORY",
-                        help="Save output files to DIRECTORY")
-    parser.add_argument("--quiet", action="store_true",
-                        help="Print nothing to the console")
+parser.add_argument("address", metavar="ADDRESS",
+                    help="The location of an AMQP node")
+parser.add_argument("operation", metavar="OPERATION",
+                    choices=["send", "receive"],
+                    help="Either 'send' or 'receive'")
+parser.add_argument("-n", "--messages", metavar="COUNT",
+                    help="Send or receive COUNT messages",
+                    default=1000000, type=int)
+parser.add_argument("-v", "--verbose", action="store_true",
+                    help="Periodically print status to the console")
+parser.add_argument("--impl", metavar="NAME",
+                    help="Use NAME implementation",
+                    default="qpid-proton-python")
+parser.add_argument("--bytes", metavar="COUNT",
+                    help="Send message bodies containing COUNT bytes",
+                    default=100, type=int)
+parser.add_argument("--credit", metavar="COUNT",
+                    help="Sustain credit for COUNT incoming transfers",
+                    default=1000, type=int)
+parser.add_argument("--timeout", metavar="SECONDS",
+                    help="Fail after SECONDS without transfers",
+                    default=10, type=int)
+parser.add_argument("--server", action="store_true",
+                    help="Operate in server mode")
+parser.add_argument("--output", metavar="DIRECTORY",
+                    help="Save output files to DIRECTORY")
+parser.add_argument("--quiet", action="store_true",
+                    help="Print nothing to the console")
     
+def main():
     args = parser.parse_args()
 
     try:
