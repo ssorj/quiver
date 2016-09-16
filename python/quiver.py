@@ -22,6 +22,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import numpy as _numpy
 import os as _os
 import subprocess as _subprocess
 import tempfile as _tempfile
@@ -128,16 +129,20 @@ class Command(object):
         duration = self.end_time - self.start_time
         transfers = len(latencies)
         rate = int(round(transfers / duration))
-        lmin = min(latencies)
-        lmax = max(latencies)
-        lavg = float(sum(latencies)) / transfers
-        latency = "{:,d}, {:,d}, {:,.1f}".format(lmin, lmax, lavg)
+        latency = _numpy.mean(latencies)
 
+        quartiles = (_numpy.percentile(latencies, 25),
+                     _numpy.percentile(latencies, 50),
+                     _numpy.percentile(latencies, 75),
+                     _numpy.percentile(latencies, 100))
+        fquartiles = "{:,.0f} {:,.0f} {:,.0f} {:,.0f}".format(*quartiles)
+        
         _print_bracket()
         _print_numeric_field("Duration", duration, "s", "{:,.1f}")
         _print_numeric_field("Transfer count", transfers, "transfers", "{:,d}")
         _print_numeric_field("Transfer rate", rate, "transfers/s", "{:,d}")
-        _print_numeric_field("Latency (min, max, avg)", latency, "ms")
+        _print_numeric_field("Latency average", latency, "ms", "{:,.1f}")
+        _print_numeric_field("Latency by quartile", fquartiles, "ms")
         _print_bracket()
 
 def _print_bracket():
@@ -149,7 +154,7 @@ def _print_numeric_field(name, value, unit, fmt=None):
     if fmt is not None:
         value = fmt.format(value)
     
-    print("{:<32} {:>24} {}".format(name, value, unit))
+    print("{:<28} {:>32} {}".format(name, value, unit))
         
 class _PeriodicStatusThread(_threading.Thread):
     def __init__(self, command):
