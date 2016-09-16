@@ -134,8 +134,8 @@ class Command(object):
         latency_avg = sum(latencies) / transfer_count * 1000
         latency_min = min(latencies) * 1000
         latency_max = max(latencies) * 1000
-        latency = "{:.1f}, {:.1f}, {:.1f}".format(latency_min, latency_max,
-                                                  latency_avg)
+        latency = "{:,.1f}, {:,.1f}, {:,.1f}".format(latency_min, latency_max,
+                                                     latency_avg)
 
         _print_bracket()
         _print_numeric_field("Duration", duration, "s", "{:.1f}")
@@ -229,9 +229,9 @@ class _PeriodicStatusThread(_threading.Thread):
         latency = sum(latencies) / transfers * 1000
 
         rate_col = "{:10,} transfers/s".format(rate)
-        latency_col = "{:.1f} ms avg latency".format(latency)
+        latency_col = "{:,.1f} ms avg latency".format(latency)
         
-        print("* {:12,} {:>24} {:>24}".format(self.transfers, rate_col, latency_col))
+        print("* {:12,} {:>24} {:>28}".format(self.transfers, rate_col, latency_col))
 
     def check_timeout(self):
         now = _time.time()
