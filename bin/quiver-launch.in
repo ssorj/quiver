@@ -46,7 +46,7 @@ def main():
                         help="The location of an AMQP node")
     parser.add_argument("pairs", metavar="COUNT",
                         help="Launch COUNT sender-receiver pairs",
-                        default=1, type=int)
+                        nargs="?", default=1, type=int)
     
     args, passthrough_args = parser.parse_known_args()
 
