@@ -29,6 +29,8 @@ build: build/exec/quiver-qpid-messaging-cpp build/exec/quiver-qpid-proton-cpp bu
 		quiver_home ${QUIVER_HOME}
 	scripts/configure-file bin/quiver.in build/bin/quiver \
 		quiver_home ${QUIVER_HOME}
+	scripts/configure-file bin/quiver-launch.in build/bin/quiver-launch \
+		quiver_home ${QUIVER_HOME}
 
 .PHONY: build-java
 build-java:
@@ -44,6 +46,7 @@ install: build
 	scripts/install-files build/java ${DESTDIR}${QUIVER_HOME}/java \*
 	scripts/install-files build/exec ${DESTDIR}${QUIVER_HOME}/exec \*
 	scripts/install-executable build/bin/quiver ${DESTDIR}${PREFIX}/bin/quiver
+	scripts/install-executable build/bin/quiver-launch ${DESTDIR}${PREFIX}/bin/quiver-launch
 
 .PHONY: devel
 devel: PREFIX := ${PWD}/install

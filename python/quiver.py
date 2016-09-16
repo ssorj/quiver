@@ -30,14 +30,14 @@ import time as _time
 import traceback as _traceback
 
 class Command(object):
-    def __init__(self, home_dir, output_dir, impl, mode, operation, address,
-                 messages, bytes_, credit, timeout):
+    def __init__(self, home_dir, output_dir, impl, mode, address,
+                 operation, messages, bytes_, credit, timeout):
         self.home_dir = home_dir
         self.output_dir = output_dir
         self.impl = impl
         self.mode = mode
-        self.operation = operation
         self.address = address
+        self.operation = operation
         self.messages = messages
         self.bytes_ = bytes_
         self.credit = credit
@@ -80,9 +80,9 @@ class Command(object):
             self.impl_file,
             self.output_dir,
             self.mode,
-            self.operation,
             domain,
             path,
+            self.operation,
             str(self.messages),
             str(self.bytes_),
             str(self.credit),
@@ -91,8 +91,8 @@ class Command(object):
         if self.verbose:
             print("Calling '{}'".format(" ".join(args)))
 
-            if self.operation == "receive":
-                self.periodic_status_thread.start()
+        if self.operation == "receive":
+            self.periodic_status_thread.start()
         
         with open(self.transfers_file, "w") as fout:
             self.started.set()
@@ -136,14 +136,25 @@ class Command(object):
         latency_max = max(latencies) * 1000
         latency = "{:.1f}, {:.1f}, {:.1f}".format(latency_min, latency_max,
                                                   latency_avg)
-                
-        print("-" * 80)
-        print("{:32} {:24.1f} s".format("Duration:", duration))
-        print("{:32} {:24,} transfers".format("Transfer count:", transfer_count))
-        print("{:32} {:24,} transfers/s".format("Transfer rate:", transfer_rate))
-        print("{:32} {:>24} ms".format("Latency (min, max, avg):", latency))
-        print("-" * 80)
+
+        _print_bracket()
+        _print_numeric_field("Duration", duration, "s", "{:.1f}")
+        _print_numeric_field("Transfer count", transfer_count, "transfers", "{:,d}")
+        _print_numeric_field("Transfer rate", transfer_rate, "transfers/s", "{:,d}")
+        _print_numeric_field("Latency (min, max, avg)", latency, "ms")
+        _print_bracket()
+
+def _print_bracket():
+    print("-" * 80)
+        
+def _print_numeric_field(name, value, unit, fmt=None):
+    name = "{}:".format(name)
     
+    if fmt is not None:
+        value = fmt.format(value)
+    
+    print("{:<32} {:>24} {}".format(name, value, unit))
+        
 class _PeriodicStatusThread(_threading.Thread):
     def __init__(self, command):
         _threading.Thread.__init__(self)

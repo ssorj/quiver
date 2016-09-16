@@ -31,9 +31,9 @@ public class QuiverQpidJms {
     public static void main(String[] args) {
         String outputDir = args[0];
         String mode = args[1];
-        String operation = args[2];
-        String domain = args[3];
-        String path = args[4];
+        String domain = args[2];
+        String path = args[3];
+        String operation = args[4];
         int messages = Integer.parseInt(args[5]);
         int bytes = Integer.parseInt(args[6]);
         int credit = Integer.parseInt(args[7]);

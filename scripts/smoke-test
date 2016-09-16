@@ -22,10 +22,6 @@ set -eu
 
 trap "kill 0" EXIT
 
-# until nc localhost $port 2> /dev/null < /dev/null; do
-#     sleep 0.1
-# done
-
 if (( $# == 1 )); then
     MESSAGES=$1
 else
@@ -52,9 +48,9 @@ function test_server_mode {
 
     echo -n "Testing server mode, sender ${sender_impl}, receiver ${receiver_impl} ... "
     
-    quiver --quiet --impl $receiver_impl --server receive $address -n $MESSAGES &
+    quiver $address receive -n $MESSAGES --quiet --impl $receiver_impl --server &
     receiver_pid=$!
-    quiver --quiet --impl $sender_impl send $address -n $MESSAGES &
+    quiver $address send -n $MESSAGES --quiet --impl $sender_impl &
     sender_pid=$!
 
     wait $sender_pid || let "failures+=1"
@@ -62,9 +58,9 @@ function test_server_mode {
 
     # XXX ERROR:root:amqp:connection:framing-error: AMQP header mismatch: Unknown protocol ['X\x1b
     
-    # quiver --quiet --impl $sender_impl --server send $address -n $MESSAGES &
+    # quiver $address send -n $MESSAGES --quiet --impl $sender_impl --server &
     # sender_pid=$!
-    # quiver --quiet --impl $receiver_impl receive $address -n $MESSAGES &
+    # quiver $address receive -n $MESSAGES --quiet --impl $receiver_impl &
     # receiver_pid=$!
 
     # wait $sender_pid || let "failures+=1"
@@ -91,10 +87,10 @@ function test_client_mode {
     qbroker --host 127.0.0.1 --port $port 2> /dev/null &
     local broker_pid=$!
 
-    quiver --quiet --impl $receiver_impl receive $address -n $MESSAGES &
+    quiver $address receive -n $MESSAGES --quiet --impl $receiver_impl &
     local receiver_pid=$!
     
-    quiver --quiet --impl $sender_impl send $address -n $MESSAGES &
+    quiver $address send -n $MESSAGES --quiet --impl $sender_impl &
     local sender_pid=$!
 
     wait $sender_pid || let "failures+=1"
@@ -128,21 +124,3 @@ if hash qbroker; then
     test_client_mode qpid-proton-python qpid-messaging-python
     test_client_mode qpid-proton-python qpid-proton-python
 fi
-
-# XXX ERROR:root:amqp:connection:framing-error: AMQP header mismatch: Unknown protocol ['X\x8b{w\xe8\x7f\x00\x00X
-#ADDRESS=$(random_address)
-#quiver --impl qpid-proton-python --server send $ADDRESS -n $MESSAGES &
-#quiver --impl qpid-proton-python receive $ADDRESS -n $MESSAGES &
-#wait
-
-# XXX _qpid_messaging.NotFound: No such target : q0
-#ADDRESS=$(random_address)
-#quiver --impl qpid-proton-python --server receive $ADDRESS -n $MESSAGES &
-#quiver --impl qpid-messaging-python send $ADDRESS -n $MESSAGES
-#wait
-
-# XXX _qpid_messaging.NotFound: No such source : q0
-#ADDRESS=$(random_address)
-#quiver --impl qpid-proton-python --server send $ADDRESS -n $MESSAGES &
-#quiver --impl qpid-messaging-python receive $ADDRESS -n $MESSAGES
-#wait

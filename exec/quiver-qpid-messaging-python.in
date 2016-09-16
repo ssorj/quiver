@@ -39,6 +39,7 @@ class Client(object):
         self.output_dir = None
         self.domain = None
         self.path = None
+        self.operation = None
         self.messages = None
         self.bytes_ = None
         self.credit = None
@@ -52,15 +53,17 @@ class Client(object):
 
         try:
             session = conn.session()
-            self.transfer_messages(session)
+
+            if self.operation == "send":
+                self.send_messages(session)
+            elif self.operation == "receive":
+                self.receive_messages(session)
+            else:
+                raise Exception()
         finally:
             conn.close()
 
-    def transfer_messages(self, session):
-        raise NotImplementedError()
-                
-class Sender(Client):
-    def transfer_messages(self, session):
+    def send_messages(self, session):
         sender = session.sender(self.path)
         sender.capacity = self.credit
 
@@ -73,8 +76,7 @@ class Sender(Client):
         
             self.transfers +=1
         
-class Receiver(Client):
-    def transfer_messages(self, session):
+    def receive_messages(self, session):
         receiver = session.receiver(self.path)
         receiver.capacity = self.credit
 
@@ -95,22 +97,14 @@ class Receiver(Client):
             self.transfers +=1
 
 def main():
-    mode, operation = sys.argv[2:4]
-
-    if mode != "client":
+    if sys.argv[2] != "client":
         raise Exception("This impl supports client mode only")
 
-    if operation == "send":
-        client = Sender()
-    elif operation == "receive":
-        client = Receiver()
-    else:
-        raise Exception()
-
+    client = Client()
     client.output_dir = sys.argv[1]
-    client.operation = operation
-    client.domain = sys.argv[4]
-    client.path = sys.argv[5]
+    client.domain = sys.argv[3]
+    client.path = sys.argv[4]
+    client.operation = sys.argv[5]
     client.messages = int(sys.argv[6])
     client.bytes_ = int(sys.argv[7])
     client.credit = int(sys.argv[8])

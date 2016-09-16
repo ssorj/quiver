@@ -23,6 +23,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import argparse
 import os
 import sys
 
@@ -30,8 +31,6 @@ default_home_dir = os.path.normpath("@quiver_home@")
 home_dir = os.environ.get("QUIVER_HOME", default_home_dir)
 
 sys.path.insert(0, os.path.join(home_dir, "python"))
-
-import argparse
 
 from quiver import *
 
@@ -43,30 +42,31 @@ impls_by_name = {
     "qpid-proton-python": "qpid-proton-python",
 }
 
-def main():
-    description = "Test the performance of AMQP servers and messaging APIs"
-    epilog = "operations:\n" \
-             "  send                  Send messages\n" \
-             "  receive               Receive messages\n" \
-             "\n" \
-             "addresses:\n" \
-             "  [//DOMAIN/]PATH                 The default domain is 'localhost:5672'\n" \
-             "  //example.net/jobs\n" \
-             "  //10.0.0.10:5672/jobs/alpha\n" \
-             "  //localhost/q0\n" \
-             "  q0\n" \
-             "\n" \
-             "implementations:\n" \
-             "  qpid-jms (jms)                  Supports client mode only\n" \
-             "  qpid-messaging-python           Supports client mode only\n" \
-             "  qpid-proton-python (python)\n" \
-             "\n" \
-             "example usage:\n" \
-             "  $ qdrouterd &                   # Start an AMQP server\n" \
-             "  $ quiver receive q0 &           # Start receiving\n" \
-             "  $ quiver send q0                # Start sending\n" \
-             "\n" \
+description = "Test the performance of AMQP servers and messaging APIs"
 
+epilog = "operations:\n" \
+         "  send                  Send messages\n" \
+         "  receive               Receive messages\n" \
+         "\n" \
+         "addresses:\n" \
+         "  [//DOMAIN/]PATH                 The default domain is 'localhost:5672'\n" \
+         "  //example.net/jobs\n" \
+         "  //10.0.0.10:5672/jobs/alpha\n" \
+         "  //localhost/q0\n" \
+         "  q0\n" \
+         "\n" \
+         "implementations:\n" \
+         "  qpid-jms (jms)                  Supports client mode only\n" \
+         "  qpid-messaging-python           Supports client mode only\n" \
+         "  qpid-proton-python (python)\n" \
+         "\n" \
+         "example usage:\n" \
+         "  $ qdrouterd &                   # Start an AMQP server\n" \
+         "  $ quiver q0 receive &           # Start receiving\n" \
+         "  $ quiver q0 send                # Start sending\n" \
+         "\n"
+
+def main():
     class Formatter(argparse.ArgumentDefaultsHelpFormatter,
                     argparse.RawDescriptionHelpFormatter):
         pass
@@ -75,11 +75,11 @@ def main():
                                      epilog=epilog,
                                      formatter_class=Formatter)
 
+    parser.add_argument("address", metavar="ADDRESS",
+                        help="The location of an AMQP node")
     parser.add_argument("operation", metavar="OPERATION",
                         choices=["send", "receive"],
                         help="Either 'send' or 'receive'")
-    parser.add_argument("address", metavar="ADDRESS",
-                        help="The location of an AMQP node")
     parser.add_argument("-n", "--messages", metavar="COUNT",
                         help="Send or receive COUNT messages",
                         default=1000000, type=int)
@@ -113,8 +113,8 @@ def main():
     
     mode = "server" if args.server else "client"
     
-    command = Command(home_dir, args.output, impl, mode, args.operation,
-                      args.address, args.messages, args.bytes, args.credit,
+    command = Command(home_dir, args.output, impl, mode, args.address,
+                      args.operation, args.messages, args.bytes, args.credit,
                       args.timeout)
 
     command.verbose = args.verbose
@@ -125,7 +125,7 @@ def main():
         command.check()
         command.run()
     except Exception as e:
-        parser.exit(1, str(e))
+        exit("quiver: error: {}".format(e))
 
 if __name__ == "__main__":
     try:
