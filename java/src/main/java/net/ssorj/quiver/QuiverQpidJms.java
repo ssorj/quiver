@@ -60,16 +60,9 @@ public class QuiverQpidJms {
             throw new RuntimeException(e);
         }
 
-        Client client;
+        Client client = new Client(outputDir, factory, queue, operation,
+                                   messages, bytes);
         
-        if (operation.equals("send")) {
-            client = new Sender(outputDir, messages, bytes, factory, queue);
-        } else if (operation.equals("receive")) {
-            client = new Receiver(outputDir, messages, bytes, factory, queue);
-        } else {
-            throw new java.lang.IllegalStateException();
-        }
-
         try {
             client.run();
         } catch (RuntimeException e) {
@@ -79,21 +72,23 @@ public class QuiverQpidJms {
     }
 }
 
-abstract class Client {
+class Client {
     protected final String outputDir;
-    protected final int messages;
-    protected final int bytes;
     protected final ConnectionFactory factory;
     protected final Destination queue;
+    protected final String operation;
+    protected final int messages;
+    protected final int bytes;
     protected int transfers;
     
-    Client(String outputDir, int messages, int bytes,
-           ConnectionFactory factory, Destination queue) {
+    Client(String outputDir, ConnectionFactory factory, Destination queue,
+           String operation, int messages, int bytes) {
         this.outputDir = outputDir;
-        this.messages = messages;
-        this.bytes = bytes;
         this.factory = factory;
         this.queue = queue;
+        this.operation = operation;
+        this.messages = messages;
+        this.bytes = bytes;
         this.transfers = 0;
     }
 
@@ -104,7 +99,13 @@ abstract class Client {
 
             Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-            this.transferMessages(session);
+            if (this.operation.equals("send")) {
+                this.sendMessages(session);
+            } else if (this.operation.equals("receive")) {
+                this.receiveMessages(session);
+            } else {
+                throw new java.lang.IllegalStateException();
+            }
 
             conn.close();
         } catch (JMSException e) {
@@ -112,27 +113,19 @@ abstract class Client {
         }
     }
 
-    abstract void transferMessages(Session session) throws JMSException;
-}
-
-class Sender extends Client {
-    Sender(String outputDir, int messages, int bytes,
-           ConnectionFactory factory, Destination queue) {
-        super(outputDir, messages, bytes, factory, queue);
-    }
-
-    void transferMessages(Session session) throws JMSException {
+    void sendMessages(Session session) throws JMSException {
         MessageProducer producer = session.createProducer(this.queue);
         producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
-
+        producer.setDisableMessageTimestamp(true);
+        
+        byte[] body = new byte[this.bytes];
+        Arrays.fill(body, (byte) 120);
+        
         while (this.transfers < this.messages) {
-            byte[] body = new byte[this.bytes];
             BytesMessage message = session.createBytesMessage();
-
-            Arrays.fill(body, (byte) 120);
-            message.writeBytes(body);
-            message.setJMSMessageID(Integer.toString(this.transfers + 1));
             double stime = (double) System.currentTimeMillis() / 1000.0;
+
+            message.writeBytes(body);
             message.setDoubleProperty("SendTime", stime);
             
             producer.send(message);
@@ -140,15 +133,8 @@ class Sender extends Client {
             this.transfers += 1;
         }
     }
-}
 
-class Receiver extends Client {
-    Receiver(String outputDir, int messages, int bytes,
-             ConnectionFactory factory, Destination queue) {
-        super(outputDir, messages, bytes, factory, queue);
-    }
-
-    void transferMessages(Session session) throws JMSException {
+    void receiveMessages(Session session) throws JMSException {
         PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
         MessageConsumer consumer = session.createConsumer(this.queue);
 
