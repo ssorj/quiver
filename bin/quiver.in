@@ -117,7 +117,7 @@ def main():
     try:
         impl = impls_by_name[args.impl]
     except KeyError:
-        parser.error("Impl '{}' is unknown".format(args.impl))
+        parser.error("Implementation '{}' is unknown".format(args.impl))
     
     mode = "server" if args.server else "client"
     

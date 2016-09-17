@@ -87,7 +87,6 @@ class Client(object):
                 continue
         
             message = receiver.get()
-
             session.acknowledge()
 
             stime = message.properties["SendTime"]
