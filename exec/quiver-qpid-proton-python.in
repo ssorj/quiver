@@ -125,9 +125,6 @@ class Server(BaseHandler):
         
         self.acceptor.close()
 
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
-    
 def main():
     mode = sys.argv[2]
     credit = int(sys.argv[8])

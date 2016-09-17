@@ -20,13 +20,13 @@
 
 set -eu
 
-trap "kill 0" EXIT
-
 if (( $# == 1 )); then
     MESSAGES=$1
 else
     MESSAGES=1000
 fi
+
+test_failures=0
 
 function random_port {
     echo $(python -S -c "import random; print random.randrange(49152, 65535)")
@@ -69,6 +69,7 @@ function test_server_mode {
     if (( $failures == 0 )); then 
         echo PASSED
     else
+        let "test_failures+=1"
         echo FAILED
     fi
 }
@@ -102,6 +103,7 @@ function test_client_mode {
     if (( $failures == 0 )); then 
         echo PASSED
     else
+        let "test_failures+=1"
         echo FAILED
     fi
 }
@@ -131,3 +133,5 @@ test_client_mode qpid-proton-python qpid-jms
 test_client_mode qpid-proton-python qpid-messaging-cpp
 test_client_mode qpid-proton-python qpid-messaging-python
 test_client_mode qpid-proton-python qpid-proton-python
+
+echo $test_failures test failures

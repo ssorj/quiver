@@ -30,7 +30,7 @@ import threading as _threading
 import time as _time
 import traceback as _traceback
 
-class Command(object):
+class QuiverCommand(object):
     def __init__(self, home_dir, output_dir, impl, mode, address,
                  operation, messages, bytes_, credit, timeout):
         self.home_dir = home_dir
@@ -59,6 +59,7 @@ class Command(object):
         self.end_time = None
         
         self.started = _threading.Event()
+        self.stop = _threading.Event()
         self.ended = _threading.Event()
 
         self.periodic_status_thread = _PeriodicStatusThread(self)
@@ -69,10 +70,12 @@ class Command(object):
         
     def check(self):
         if not _os.path.exists(self.impl_file):
-            raise Exception("No impl at '{}'".format(self.impl_file))
+            msg = "No impl at '{}'".format(self.impl_file)
+            raise QuiverError(msg)
 
         if not _os.path.isdir(self.output_dir):
-            raise Exception("Invalid output dir at '{}'".format(self.output_dir))
+            msg = "Invalid output dir at '{}'".format(self.output_dir)
+            raise QuiverError(msg)
 
     def run(self):
         if self.address.startswith("//"):
@@ -102,8 +105,17 @@ class Command(object):
             self.started.set()
             self.start_time = _time.time()
 
-            _subprocess.check_call(args, stdout=fout)
-            
+            proc = _subprocess.Popen(args, stdout=fout)
+
+            while proc.poll() == None:
+                if self.stop.wait(1):
+                    proc.terminate()
+
+            if proc.returncode != 0:
+                msg = "Subprocess {} exited with code {}".format \
+                      (proc.pid, proc.returncode)
+                raise QuiverError(msg)
+                    
             self.end_time = _time.time()
             self.ended.set()
 
@@ -112,7 +124,7 @@ class Command(object):
 
     def report(self):
         if _os.path.getsize(self.transfers_file) == 0:
-            raise Exception("No transfers")
+            raise QuiverError("No transfers")
         
         latencies = list()
 
@@ -156,6 +168,9 @@ def _print_numeric_field(name, value, unit, fmt=None):
     
     print("{:<24} {:>36} {}".format(name, value, unit))
         
+class QuiverError(Exception):
+    pass
+
 class _PeriodicStatusThread(_threading.Thread):
     def __init__(self, command):
         _threading.Thread.__init__(self)
@@ -172,9 +187,11 @@ class _PeriodicStatusThread(_threading.Thread):
     def run(self):
         try:
             self.do_run()
-        except Exception as e:
+        except QuiverError as e:
+            exit("quiver: error: {}".format(e))
+        except:
             _traceback.print_exc()
-            exit(str(e))
+            exit(1)
         
     def do_run(self):
         self.command.started.wait()
@@ -215,8 +232,10 @@ class _PeriodicStatusThread(_threading.Thread):
         transfers = len(latencies)
         self.transfers += transfers
         
-        if transfers == 0 and not self.command.quiet:
-            print("* {:12,}".format(self.transfers))
+        if transfers == 0:
+            if not self.command.quiet:
+                print("* {:12,}".format(self.transfers))
+
             return
 
         self.period_start_time = self.period_end_time
@@ -237,9 +256,14 @@ class _PeriodicStatusThread(_threading.Thread):
         then, transfers_then = self.timeout_checkpoint
 
         if self.transfers == transfers_then and now - then > self.command.timeout:
-            raise Exception("Timeout!")
+            self.command.stop.set()
+            eprint("Operation timed out")
+            return
 
         if self.transfers > transfers_then:
             then = now
             
         self.timeout_checkpoint = then, self.transfers
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)

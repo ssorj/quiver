@@ -121,9 +121,9 @@ def main():
     
     mode = "server" if args.server else "client"
     
-    command = Command(home_dir, args.output, impl, mode, args.address,
-                      args.operation, args.messages, args.bytes, args.credit,
-                      args.timeout)
+    command = QuiverCommand(home_dir, args.output, impl, mode, args.address,
+                            args.operation, args.messages, args.bytes,
+                            args.credit, args.timeout)
 
     command.verbose = args.verbose
     command.quiet = args.quiet
@@ -132,9 +132,11 @@ def main():
         command.init()
         command.check()
         command.run()
-    except Exception as e:
-        traceback.print_exc()
+    except QuiverError as e:
         exit("quiver: error: {}".format(e))
+    except:
+        traceback.print_exc()
+        exit(1)
 
 if __name__ == "__main__":
     try:
