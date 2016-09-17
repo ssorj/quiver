@@ -1,0 +1,193 @@
+#!/usr/bin/python
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
+
+import collections as collections
+import os
+import sys
+import uuid as uuid
+
+from argparse import ArgumentParser
+from proton import *
+from proton.handlers import *
+from proton.reactor import *
+
+# _log = _logging.getLogger("amqp_test_broker")
+
+class Queue(object):
+    def __init__(self):
+        self.messages = collections.deque()
+        self.consumers = list()
+
+    def add_consumer(self, link):
+        assert link.is_sender
+        assert link not in self.consumers
+
+        self.consumers.append(link)
+
+    def remove_consumer(self, link):
+        assert link.is_sender
+
+        try:
+            self.consumers.remove(link)
+        except ValueError:
+            pass
+
+    def store_message(self, message):
+        self.messages.append(message)
+
+    def forward_messages(self, link):
+        assert link.is_sender
+
+        while link.credit > 0:
+            try:
+                message = self.messages.popleft()
+            except IndexError:
+                break
+
+            link.send(message)
+
+class BrokerHandler(MessagingHandler):
+    def __init__(self, address):
+        super(BrokerHandler, self).__init__()
+
+        self.address = address
+        self.queues = dict()
+
+    def on_start(self, event):
+        self.acceptor = event.container.listen(self.address)
+
+        # _log.info("Listening on {}".format(self.address))
+
+    def get_queue(self, address):
+        try:
+            queue = self.queues[address]
+        except KeyError:
+            queue = self.queues[address] = Queue()
+
+        return queue
+
+    def on_link_opening(self, event):
+        if event.link.is_sender:
+            # if event.link.remote_source.dynamic:
+            #     address = str(uuid.uuid4())
+            #     event.link.source.address = address
+            
+            #     queue = Queue(True)
+            #     queue.subscribe(event.link)
+
+            #     self.queues[address] = queue
+
+            #     return
+
+            address = event.link.remote_source.address
+
+            assert address is not None
+            
+            event.link.source.address = address
+
+            queue = self.get_queue(address)
+            queue.add_consumer(event.link)
+
+            return
+
+        if event.link.is_receiver:
+            address = event.link.remote_target.address
+
+            assert address is not None
+            
+            event.link.target.address = address
+
+    def on_link_closing(self, event):
+        if event.link.is_sender:
+            self.remove_consumer(event.link)
+
+    def on_connection_closing(self, event):
+        self.remove_consumers(event.connection)
+
+    def on_disconnected(self, event):
+        self.remove_consumers(event.connection)
+
+    def remove_consumers(self, connection):
+        link = connection.link_head(Endpoint.REMOTE_ACTIVE)
+
+        while link is not None:
+            if link.is_sender:
+                queue = self.queues.get(link.source.address)
+
+                if queue is not None:
+                    queue.remove_consumer(link)
+                
+                # XXX handle dynamic
+                #if queue.consumers == 0 and queue.messages.count == 0:
+                #    del self.queues[link.source.address]
+
+            link = link.next(Endpoint.REMOTE_ACTIVE)
+
+    def on_sendable(self, event):
+        queue = self.get_queue(event.link.source.address)
+        queue.forward_messages(event.link)
+
+    def on_message(self, event):
+        queue = self.get_queue(event.link.target.address)
+
+        queue.store_message(event.message)
+
+        for link in queue.consumers:
+            queue.forward_messages(link)
+
+class Broker(object):
+    def __init__(self, interface):
+        self.interface = interface
+        self.container = Container(BrokerHandler(self.interface))
+
+    # def __repr__(self):
+    #     return pencil.format_repr(self, self.interface)
+        
+    def run(self):
+        # _log.info("Starting {}".format(self))
+        
+        self.container.run()
+
+def main():
+    description = "A simple AMQP message broker for testing"
+    parser = ArgumentParser(description=description)
+
+    parser.add_argument("--host", metavar="HOST", default="localhost",
+                        help="Listen at HOST (default localhost)")
+    parser.add_argument("--port", metavar="PORT", default="5672",
+                        help="Listen at PORT (default 5672)")
+
+    args = parser.parse_args()
+
+    interface = "{}:{}".format(args.host, args.port)
+    broker = Broker(interface)
+
+    broker.run()
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
