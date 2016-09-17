@@ -25,6 +25,7 @@ from __future__ import with_statement
 import numpy as _numpy
 import os as _os
 import subprocess as _subprocess
+import sys as _sys
 import tempfile as _tempfile
 import threading as _threading
 import time as _time
@@ -249,15 +250,22 @@ class _PeriodicStatusThread(_threading.Thread):
         flatency = "{:,.1f} ms avg latency".format(latency)
 
         if not self.command.quiet:
-            print("* {:12,} {:>24} {:>28}".format(self.transfers, frate, flatency))
+            msg = "* {:12,} {:>24} {:>28}".format \
+                  (self.transfers, frate, flatency)
+            print(msg)
 
     def check_timeout(self):
         now = _time.time()
         then, transfers_then = self.timeout_checkpoint
+        elapsed = now - then
 
-        if self.transfers == transfers_then and now - then > self.command.timeout:
+        if self.transfers == transfers_then and elapsed > self.command.timeout:
             self.command.stop.set()
-            eprint("Operation timed out")
+
+            msg = "quiver: error: {} operation timed out".format \
+                  (self.command.operation)
+            eprint(msg)
+
             return
 
         if self.transfers > transfers_then:
@@ -266,4 +274,4 @@ class _PeriodicStatusThread(_threading.Thread):
         self.timeout_checkpoint = then, self.transfers
 
 def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
+    print(*args, file=_sys.stderr, **kwargs)
