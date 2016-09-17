@@ -128,18 +128,14 @@ def main():
     command.verbose = args.verbose
     command.quiet = args.quiet
     
-    try:
-        command.init()
-        command.check()
-        command.run()
-    except QuiverError as e:
-        exit("quiver: error: {}".format(e))
-    except:
-        traceback.print_exc()
-        exit(1)
+    command.init()
+    command.check()
+    command.run()
 
 if __name__ == "__main__":
     try:
         main()
+    except QuiverError as e:
+        exit("quiver: error: {}".format(e))
     except KeyboardInterrupt:
         pass
