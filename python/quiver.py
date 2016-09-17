@@ -45,8 +45,8 @@ class QuiverCommand(object):
         self.credit = credit
         self.timeout = timeout
 
-        self.verbose = False
         self.quiet = False
+        self.debug = False
 
         impl_name = "quiver-{}".format(self.impl)
 
@@ -96,8 +96,11 @@ class QuiverCommand(object):
             str(self.credit),
         ]
 
-        if self.verbose:
-            print("Calling '{}'".format(" ".join(args)))
+        if self.debug:
+            self.debug("Calling '{}'".format(" ".join(args)))
+
+        if not self.quiet:
+            self.print_config()
 
         if self.operation == "receive":
             self.periodic_status_thread.start()
@@ -120,13 +123,31 @@ class QuiverCommand(object):
             self.end_time = _time.time()
             self.ended.set()
 
-        if not self.quiet and self.operation == "receive":
-            self.report()
-
-    def report(self):
-        if _os.path.getsize(self.transfers_file) == 0:
-            raise QuiverError("No transfers")
+        if self.operation == "receive":
+            if _os.path.getsize(self.transfers_file) == 0:
+                raise QuiverError("No transfers")
         
+            if not self.quiet:
+                self.print_results()
+
+    def debug(self, msg, *args):
+        msg = "quiver: {}".format(msg)
+        print(msg.format(*args))
+            
+    def print_config(self):
+        _print_bracket()
+        _print_field("Output dir", self.output_dir)
+        _print_field("Implementation", self.impl)
+        _print_field("Mode", self.mode)
+        _print_field("Address", self.address)
+        _print_field("Operation", self.operation)
+        _print_field("Messages", "{:,d}".format(self.messages))
+        _print_field("Bytes", "{:,d}".format(self.bytes_))
+        _print_field("Credit", "{:,d}".format(self.credit))
+        _print_field("Timeout", "{:,d}".format(self.timeout))
+        _print_bracket()
+            
+    def print_results(self):
         latencies = list()
 
         with open(self.transfers_file, "r") as f:
@@ -161,6 +182,10 @@ class QuiverCommand(object):
 def _print_bracket():
     print("-" * 80)
         
+def _print_field(name, value):
+    name = "{}:".format(name)
+    print("{:<24} {:<36}".format(name, value))
+    
 def _print_numeric_field(name, value, unit, fmt=None):
     name = "{}:".format(name)
     
@@ -168,7 +193,7 @@ def _print_numeric_field(name, value, unit, fmt=None):
         value = fmt.format(value)
     
     print("{:<24} {:>36} {}".format(name, value, unit))
-        
+
 class QuiverError(Exception):
     pass
 

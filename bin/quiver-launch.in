@@ -27,6 +27,7 @@ import argparse
 import os
 import subprocess
 import sys
+import time
 
 default_home_dir = os.path.normpath("@quiver_home@")
 home_dir = os.environ.get("QUIVER_HOME", default_home_dir)
@@ -77,6 +78,8 @@ def main():
     for i in range(sender_count):
         sender = subprocess.Popen(sender_args)
         senders.append(sender)
+
+    time.sleep(0.1)
 
     for i in range(receiver_count):
         receiver = subprocess.Popen(receiver_args)
