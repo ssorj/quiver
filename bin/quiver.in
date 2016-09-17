@@ -36,7 +36,9 @@ sys.path.insert(0, os.path.join(home_dir, "python"))
 from quiver import *
 
 impls_by_name = {
-    "artemis-jms": "artemis-jms",
+    "activemq-jms": "activemq-jms",
+    "activemq-artemis-jms": "activemq-artemis-jms",
+    "artemis-jms": "activemq-artemis-jms",
     "jms": "qpid-jms",
     "python": "qpid-proton-python",
     "qpid-jms": "qpid-jms",
@@ -59,7 +61,8 @@ epilog = "operations:\n" \
          "  q0\n" \
          "\n" \
          "implementations:\n" \
-         "  artemis-jms                     Client mode only; requires Artemis server\n" \
+         "  activemq-artemis-jms            Client mode only; requires Artemis server\n" \
+         "  activemq-jms                    Client mode only; ActiveMQ or Artemis server\n" \
          "  qpid-jms (jms)                  Client mode only\n" \
          "  qpid-messaging-cpp              Client mode only\n" \
          "  qpid-messaging-python           Client mode only\n" \

@@ -37,7 +37,7 @@ def main():
         "java",
         "-classpath", jar_file,
         "-Dorg.slf4j.simpleLogger.defaultLogLevel=warn",
-        "net.ssorj.quiver.QuiverArtemisJms",
+        "net.ssorj.quiver.QuiverActiveMqArtemisJms",
     ]
 
     args += sys.argv[1:]

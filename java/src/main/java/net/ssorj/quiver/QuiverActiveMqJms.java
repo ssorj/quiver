@@ -26,7 +26,7 @@ import java.util.*;
 import javax.jms.*;
 import javax.naming.*;
 
-public class QuiverArtemisJms {
+public class QuiverActiveMqJms {
     public static void main(String[] args) {
         String outputDir = args[0];
         String mode = args[1];
@@ -47,7 +47,7 @@ public class QuiverArtemisJms {
         Destination queue;
 
         env.put(Context.INITIAL_CONTEXT_FACTORY,
-                "org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory");
+                "org.apache.activemq.jndi.ActiveMQInitialContextFactory");
         env.put("connectionFactory.ConnectionFactory", "tcp://" + domain);
         env.put("queue.queueLookup", path);
 

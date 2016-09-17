@@ -154,7 +154,7 @@ def _print_numeric_field(name, value, unit, fmt=None):
     if fmt is not None:
         value = fmt.format(value)
     
-    print("{:<28} {:>32} {}".format(name, value, unit))
+    print("{:<24} {:>36} {}".format(name, value, unit))
         
 class _PeriodicStatusThread(_threading.Thread):
     def __init__(self, command):
