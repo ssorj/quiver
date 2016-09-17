@@ -18,6 +18,7 @@ help:
 clean:
 	rm -rf build
 	rm -rf install
+	rm -rf java/target
 
 .PHONY: build
 build: build/exec/quiver-qpid-messaging-cpp build/exec/quiver-qpid-proton-cpp build-java
@@ -38,8 +39,7 @@ build: build/exec/quiver-qpid-messaging-cpp build/exec/quiver-qpid-proton-cpp bu
 
 .PHONY: build-java
 build-java:
-	rm -rf build/java
-	mkdir -p build/java
+	@mkdir -p build/java
 	cd java && mvn package
 	cp java/target/quiver-*-jar-with-dependencies.jar build/java/quiver.jar
 
@@ -63,9 +63,9 @@ test: devel
 	scripts/smoke-test 10
 
 build/exec/quiver-qpid-messaging-cpp: exec/quiver-qpid-messaging-cpp.cpp
-	mkdir -p build/exec
+	@mkdir -p build/exec
 	gcc -std=c++11 -lqpidmessaging -lqpidtypes -lstdc++ $< -o $@
 
 build/exec/quiver-qpid-proton-cpp: exec/quiver-qpid-proton-cpp.cpp
-	mkdir -p build/exec
+	@mkdir -p build/exec
 	gcc -std=c++11 -lqpid-proton -lstdc++ $< -o $@
