@@ -107,20 +107,29 @@ function test_client_mode {
 }
 
 test_server_mode qpid-jms qpid-proton-python   
+# XXX Connect failed to amqp:tcp:127.0.0.1:55536: Reconnect disabled
+#test_server_mode qpid-messaging-cpp qpid-proton-python
 # XXX _qpid_messaging.NotFound: No such target : q0
-#test_server_mode qpid-messaging-python qpid-proton-python   
+#test_server_mode qpid-messaging-python qpid-proton-python
 test_server_mode qpid-proton-python qpid-proton-python   
 
 if hash qbroker; then
     # XXX javax.jms.JMSException: Failed to create connection to: amqp://localhost:65407
     # Issue is use of 'localhost'; 127.0.0.1 works
     test_client_mode qpid-jms qpid-jms
+    test_client_mode qpid-jms qpid-messaging-cpp
     test_client_mode qpid-jms qpid-messaging-python
     test_client_mode qpid-jms qpid-proton-python
+    test_client_mode qpid-messaging-cpp qpid-jms
+    test_client_mode qpid-messaging-cpp qpid-messaging-cpp
+    test_client_mode qpid-messaging-cpp qpid-messaging-python
+    test_client_mode qpid-messaging-cpp qpid-proton-python
     test_client_mode qpid-messaging-python qpid-jms
+    test_client_mode qpid-messaging-python qpid-messaging-cpp
     test_client_mode qpid-messaging-python qpid-messaging-python
     test_client_mode qpid-messaging-python qpid-proton-python
     test_client_mode qpid-proton-python qpid-jms
+    test_client_mode qpid-proton-python qpid-messaging-cpp
     test_client_mode qpid-proton-python qpid-messaging-python
     test_client_mode qpid-proton-python qpid-proton-python
 fi

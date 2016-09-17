@@ -39,6 +39,7 @@ impls_by_name = {
     "jms": "qpid-jms",
     "python": "qpid-proton-python",
     "qpid-jms": "qpid-jms",
+    "qpid-messaging-cpp": "qpid-messaging-cpp",
     "qpid-messaging-python": "qpid-messaging-python",
     "qpid-proton-python": "qpid-proton-python",
 }
@@ -58,6 +59,7 @@ epilog = "operations:\n" \
          "\n" \
          "implementations:\n" \
          "  qpid-jms (jms)                  Supports client mode only\n" \
+         "  qpid-messaging-cpp              Supports client mode only\n" \
          "  qpid-messaging-python           Supports client mode only\n" \
          "  qpid-proton-python (python)\n" \
          "\n" \

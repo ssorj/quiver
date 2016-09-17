@@ -67,8 +67,10 @@ class Client(object):
         sender = session.sender(self.path)
         sender.capacity = self.credit
 
+        body = b"x" * self.bytes_
+        
         while self.transfers < self.messages:
-            message = Message(b"x" * self.bytes_)
+            message = Message(body)
             message.id = str(self.transfers + 1)
             message.properties[b"SendTime"] = long(round(time.time() * 1000))
 
