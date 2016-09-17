@@ -26,7 +26,7 @@ import java.util.*;
 import javax.jms.*;
 import javax.naming.*;
 
-public class QuiverQpidJms {
+public class QuiverArtemisJms {
     public static void main(String[] args) {
         String outputDir = args[0];
         String mode = args[1];
@@ -47,13 +47,13 @@ public class QuiverQpidJms {
         Destination queue;
 
         env.put(Context.INITIAL_CONTEXT_FACTORY,
-                "org.apache.qpid.jms.jndi.JmsInitialContextFactory");
-        env.put("connectionfactory.factoryLookup", "amqp://" + domain);
+                "org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory");
+        env.put("connectionFactory.ConnectionFactory", "tcp://" + domain);
         env.put("queue.queueLookup", path);
 
         try {
             context = new InitialContext(env);
-            factory = (ConnectionFactory) context.lookup("factoryLookup");
+            factory = (ConnectionFactory) context.lookup("ConnectionFactory");
             queue = (Destination) context.lookup("queueLookup");
         } catch (NamingException e) {
             throw new RuntimeException(e);

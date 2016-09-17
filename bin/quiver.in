@@ -36,6 +36,7 @@ sys.path.insert(0, os.path.join(home_dir, "python"))
 from quiver import *
 
 impls_by_name = {
+    "artemis-jms": "artemis-jms",
     "jms": "qpid-jms",
     "python": "qpid-proton-python",
     "qpid-jms": "qpid-jms",
@@ -44,23 +45,24 @@ impls_by_name = {
     "qpid-proton-python": "qpid-proton-python",
 }
 
-description = "Test the performance of AMQP servers and messaging APIs"
+description = "Test the performance of messaging clients and servers"
 
 epilog = "operations:\n" \
          "  send                  Send messages\n" \
          "  receive               Receive messages\n" \
          "\n" \
          "addresses:\n" \
-         "  [//DOMAIN/]PATH                 The default domain is 'localhost:5672'\n" \
+         "  [//DOMAIN/]PATH                 The default domain is 'localhost'\n" \
          "  //example.net/jobs\n" \
          "  //10.0.0.10:5672/jobs/alpha\n" \
          "  //localhost/q0\n" \
          "  q0\n" \
          "\n" \
          "implementations:\n" \
-         "  qpid-jms (jms)                  Supports client mode only\n" \
-         "  qpid-messaging-cpp              Supports client mode only\n" \
-         "  qpid-messaging-python           Supports client mode only\n" \
+         "  artemis-jms                     Client mode only; requires Artemis server\n" \
+         "  qpid-jms (jms)                  Client mode only\n" \
+         "  qpid-messaging-cpp              Client mode only\n" \
+         "  qpid-messaging-python           Client mode only\n" \
          "  qpid-proton-python (python)\n" \
          "\n" \
          "example usage:\n" \

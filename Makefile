@@ -21,11 +21,13 @@ clean:
 
 .PHONY: build
 build: build/exec/quiver-qpid-messaging-cpp build/exec/quiver-qpid-proton-cpp build-java
-	scripts/configure-file exec/quiver-qpid-proton-python.in build/exec/quiver-qpid-proton-python \
+	scripts/configure-file exec/quiver-artemis-jms.in build/exec/quiver-artemis-jms \
 		quiver_home ${QUIVER_HOME}
 	scripts/configure-file exec/quiver-qpid-jms.in build/exec/quiver-qpid-jms \
 		quiver_home ${QUIVER_HOME}
 	scripts/configure-file exec/quiver-qpid-messaging-python.in build/exec/quiver-qpid-messaging-python \
+		quiver_home ${QUIVER_HOME}
+	scripts/configure-file exec/quiver-qpid-proton-python.in build/exec/quiver-qpid-proton-python \
 		quiver_home ${QUIVER_HOME}
 	scripts/configure-file bin/quiver.in build/bin/quiver \
 		quiver_home ${QUIVER_HOME}

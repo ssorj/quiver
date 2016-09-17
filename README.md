@@ -1,6 +1,6 @@
 # Quiver
 
-A tool for testing the performance of AMQP servers and messaging APIs.
+Tools for testing the performance of messaging clients and servers.
 
     [Start an AMQP server]
     $ quiver q0 receive &
@@ -80,12 +80,15 @@ the last receive.
 
     implementations:
       qpid-jms (jms)                  Supports client mode only
+      qpid-messaging-cpp              Supports client mode only
       qpid-messaging-python           Supports client mode only
       qpid-proton-python (python)
 
 ### quiver-launch
 
-`quiver-launch` starts sender-receiver pairs.
+`quiver-launch` starts sender-receiver pairs.  Each sender or receiver
+is an invocation of the `quiver` command.  Arguments not processed by
+`quiver-launch` are passed to `quiver`.
 
     usage: quiver-launch [-h] [--pairs COUNT] [--senders COUNT]
                          [--receivers COUNT] ADDRESS
@@ -140,7 +143,7 @@ the last receive.
 
 The `quiver` command is a wrapper that invokes an implementation
 executable using standard arguments.  `quiver` tries to take
-responsibility for 'cooking' its inputs so implementations can focus
+responsibility for "cooking" its inputs so implementations can focus
 on mechanics.  By the same token, implementation outputs are
 intentionally left raw so `quiver` can do the work of presenting the
 results.
@@ -169,11 +172,14 @@ Time values are unix epoch milliseconds.
 
     10,1472344673324,1472344673345
 
+To avoid any performance impact, take care that writes to standard
+output are buffered.
+
 ### Messages
 
 Implementations must give each message a unique ID to aid debugging.
-They must also set an application property named 'SendTime' containing
-a long representing the send time in milliseconds.
+They must also set an application property named `SendTime` containing
+a `long` representing the send time in milliseconds.
 
 ## Todo
 

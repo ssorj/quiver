@@ -78,7 +78,7 @@ class Command(object):
         if self.address.startswith("//"):
             domain, path = self.address[2:].split("/", 1)
         else:
-            domain, path = "localhost:5672", self.address
+            domain, path = "localhost", self.address
 
         args = [
             self.impl_file,
@@ -135,7 +135,7 @@ class Command(object):
                      _numpy.percentile(latencies, 50),
                      _numpy.percentile(latencies, 75),
                      _numpy.percentile(latencies, 100))
-        fquartiles = "{:,.0f} {:,.0f} {:,.0f} {:,.0f}".format(*quartiles)
+        fquartiles = "{:,.0f} | {:,.0f} | {:,.0f} | {:,.0f}".format(*quartiles)
         
         _print_bracket()
         _print_numeric_field("Duration", duration, "s", "{:,.1f}")
