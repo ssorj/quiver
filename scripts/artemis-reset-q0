@@ -20,5 +20,5 @@
 
 set -eu
 
-$HOME/artemis/bin/artemis destination delete --name q0 --type core-queue || :
+$HOME/artemis/bin/artemis destination delete --name q0 --type core-queue 2> /dev/null || :
 $HOME/artemis/bin/artemis destination create --name q0 --type core-queue

@@ -69,3 +69,7 @@ build/exec/quiver-qpid-messaging-cpp: exec/quiver-qpid-messaging-cpp.cpp
 build/exec/quiver-qpid-proton-cpp: exec/quiver-qpid-proton-cpp.cpp
 	@mkdir -p build/exec
 	gcc -std=c++11 -lqpid-proton -lstdc++ $< -o $@
+
+.PHONY: update-plano
+update-plano:
+	curl "https://raw.githubusercontent.com/ssorj/plano/master/python/plano.py" -o scripts/plano.py

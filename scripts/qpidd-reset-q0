@@ -26,5 +26,5 @@ else
     PORT=$1
 fi
 
-qpid-config -b localhost:$PORT del queue q0 --force || :
+qpid-config -b localhost:$PORT del queue q0 --force 2> /dev/null || :
 qpid-config -b localhost:$PORT add queue q0
