@@ -21,12 +21,14 @@ clean:
 	rm -rf java/target
 
 .PHONY: build
-build: build/exec/quiver-qpid-messaging-cpp build/exec/quiver-qpid-proton-cpp build-java
+build: build/exec/quiver-qpid-messaging-cpp build/exec/quiver-qpid-proton-cpp build-java build-vertx-proton
 	scripts/configure-file exec/quiver-activemq-jms.in build/exec/quiver-activemq-jms \
 		quiver_home ${QUIVER_HOME}
 	scripts/configure-file exec/quiver-activemq-artemis-jms.in build/exec/quiver-activemq-artemis-jms \
 		quiver_home ${QUIVER_HOME}
 	scripts/configure-file exec/quiver-qpid-jms.in build/exec/quiver-qpid-jms \
+		quiver_home ${QUIVER_HOME}
+	scripts/configure-file exec/quiver-vertx-proton.in build/exec/quiver-vertx-proton \
 		quiver_home ${QUIVER_HOME}
 	scripts/configure-file exec/quiver-qpid-messaging-python.in build/exec/quiver-qpid-messaging-python \
 		quiver_home ${QUIVER_HOME}
@@ -40,8 +42,14 @@ build: build/exec/quiver-qpid-messaging-cpp build/exec/quiver-qpid-proton-cpp bu
 .PHONY: build-java
 build-java:
 	@mkdir -p build/java
-	cd java && mvn package
+	cd java && mvn clean package
 	cp java/target/quiver-*-jar-with-dependencies.jar build/java/quiver.jar
+
+.PHONY: build-vertx-proton
+build-vertx-proton:
+	@mkdir -p build/java
+	cd java/vertx-proton && mvn clean package
+	cp java/vertx-proton/target/quiver-vertx-proton-*-jar-with-dependencies.jar build/java/quiver-vertx-proton.jar
 
 .PHONY: install
 install: build
