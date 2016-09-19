@@ -151,8 +151,6 @@ class Client {
                 throw new RuntimeException("Null receive");
             }
 
-            message.acknowledge();
-
             String id = message.getJMSMessageID();
             long stime = message.getLongProperty("SendTime");
             long rtime = System.currentTimeMillis();
