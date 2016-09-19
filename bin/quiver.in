@@ -71,7 +71,7 @@ epilog = "operations:\n" \
          "  vertx-proton                    Client mode only\n" \
          "\n" \
          "example usage:\n" \
-         "  $ qdrouterd &                   # Start an AMQP server\n" \
+         "  $ qdrouterd &                   # Start a message server\n" \
          "  $ quiver q0 receive &           # Start receiving\n" \
          "  $ quiver q0 send                # Start sending\n" \
          "\n"
@@ -85,7 +85,7 @@ parser = argparse.ArgumentParser(description=description,
                                  formatter_class=Formatter)
 
 parser.add_argument("address", metavar="ADDRESS",
-                    help="The location of an AMQP node")
+                    help="The location of a message queue")
 parser.add_argument("operation", metavar="OPERATION",
                     choices=["send", "receive"],
                     help="Either 'send' or 'receive'")

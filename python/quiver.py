@@ -173,8 +173,8 @@ class QuiverCommand(object):
         
         _print_bracket()
         _print_numeric_field("Duration", duration, "s", "{:,.1f}")
-        _print_numeric_field("Transfer count", transfers, "transfers", "{:,d}")
-        _print_numeric_field("Transfer rate", rate, "transfers/s", "{:,d}")
+        _print_numeric_field("Message count", transfers, "messages", "{:,d}")
+        _print_numeric_field("Message rate", rate, "messages/s", "{:,d}")
         _print_numeric_field("Latency average", latency, "ms", "{:,.1f}")
         _print_numeric_field("Latency by quartile", fquartiles, "ms")
         _print_bracket()
