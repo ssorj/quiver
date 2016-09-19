@@ -27,7 +27,58 @@ import java.util.*;
 import javax.jms.*;
 import javax.naming.*;
 
-public class JmsClient {
+public class QuiverJms {
+    public static void main(String[] args) {
+        String outputDir = args[0];
+        String mode = args[1];
+        String domain = args[2];
+        String path = args[3];
+        String operation = args[4];
+        int messages = Integer.parseInt(args[5]);
+        int bytes = Integer.parseInt(args[6]);
+        int credit = Integer.parseInt(args[7]);
+
+        if (!mode.equals("client")) {
+            throw new RuntimeException("This impl supports client mode only");
+        }
+
+        String cfPrefix = System.getProperty("quiver.jms.cf.prefix");
+        String cfName = System.getProperty("quiver.jms.cf.name");
+        String cfUrl = System.getProperty("quiver.jms.cf.url");
+
+        assert cfPrefix != null;
+        assert cfName != null;
+        assert cfUrl != null;
+        
+        Hashtable<Object, Object> env = new Hashtable<Object, Object>();
+        Context context;
+        ConnectionFactory factory;
+        Destination queue;
+
+        env.put(cfPrefix + "." + cfName, cfUrl);
+        env.put("queue.queueLookup", path);
+
+        try {
+            context = new InitialContext(env);
+            factory = (ConnectionFactory) context.lookup(cfName);
+            queue = (Destination) context.lookup("queueLookup");
+        } catch (NamingException e) {
+            throw new RuntimeException(e);
+        }
+
+        Client client = new Client(outputDir, factory, queue, operation,
+                                   messages, bytes);
+        
+        try {
+            client.run();
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            throw e;
+        }
+    }
+}
+
+class Client {
     protected final String outputDir;
     protected final ConnectionFactory factory;
     protected final Destination queue;
@@ -36,8 +87,8 @@ public class JmsClient {
     protected final int bytes;
     protected int transfers;
     
-    JmsClient(String outputDir, ConnectionFactory factory, Destination queue,
-              String operation, int messages, int bytes) {
+    Client(String outputDir, ConnectionFactory factory, Destination queue,
+           String operation, int messages, int bytes) {
         this.outputDir = outputDir;
         this.factory = factory;
         this.queue = queue;

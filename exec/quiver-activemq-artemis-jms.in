@@ -32,12 +32,17 @@ home_dir = os.environ.get("QUIVER_HOME", default_home_dir)
 
 def main():
     jar_file = os.path.join(home_dir, "java", "quiver.jar")
+    domain = sys.argv[3]
 
     args = [
         "java",
         "-classpath", jar_file,
+        "-Djava.naming.factory.initial=org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory",
+        "-Dquiver.jms.cf.prefix=connectionFactory",
+        "-Dquiver.jms.cf.name=ConnectionFactory",
+        "-Dquiver.jms.cf.url=tcp://{}".format(domain),
         "-Dorg.slf4j.simpleLogger.defaultLogLevel=warn",
-        "net.ssorj.quiver.QuiverActiveMqArtemisJms",
+        "net.ssorj.quiver.QuiverJms",
     ]
 
     args += sys.argv[1:]

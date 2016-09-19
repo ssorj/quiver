@@ -184,7 +184,7 @@ def _print_bracket():
         
 def _print_field(name, value):
     name = "{}:".format(name)
-    print("{:<24} {:<36}".format(name, value))
+    print("{:<24} {}".format(name, value))
     
 def _print_numeric_field(name, value, unit, fmt=None):
     name = "{}:".format(name)

@@ -134,4 +134,4 @@ test_client_mode qpid-proton-python qpid-messaging-cpp
 test_client_mode qpid-proton-python qpid-messaging-python
 test_client_mode qpid-proton-python qpid-proton-python
 
-echo $test_failures test failures
+echo "Test failures: ${test_failures}"
