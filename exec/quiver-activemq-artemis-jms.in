@@ -31,7 +31,7 @@ default_home_dir = os.path.normpath("@quiver_home@")
 home_dir = os.environ.get("QUIVER_HOME", default_home_dir)
 
 def main():
-    jar_file = os.path.join(home_dir, "java", "quiver.jar")
+    jar_file = os.path.join(home_dir, "java", "quiver-jms.jar")
     domain = sys.argv[3]
 
     args = [

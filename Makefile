@@ -21,7 +21,7 @@ clean:
 	rm -rf java/target
 
 .PHONY: build
-build: build/exec/quiver-qpid-messaging-cpp build/exec/quiver-qpid-proton-cpp build-java build-vertx-proton
+build: build/exec/quiver-qpid-messaging-cpp build/exec/quiver-qpid-proton-cpp build-jms build-vertx-proton
 	scripts/configure-file exec/quiver-activemq-jms.in build/exec/quiver-activemq-jms \
 		quiver_home ${QUIVER_HOME}
 	scripts/configure-file exec/quiver-activemq-artemis-jms.in build/exec/quiver-activemq-artemis-jms \
@@ -39,11 +39,11 @@ build: build/exec/quiver-qpid-messaging-cpp build/exec/quiver-qpid-proton-cpp bu
 	scripts/configure-file bin/quiver-launch.in build/bin/quiver-launch \
 		quiver_home ${QUIVER_HOME}
 
-.PHONY: build-java
-build-java:
+.PHONY: build-jms
+build-jms:
 	@mkdir -p build/java
-	cd java && mvn clean package
-	cp java/target/quiver-*-jar-with-dependencies.jar build/java/quiver.jar
+	cd java/jms && mvn clean package
+	cp java/jms/target/quiver-jms-*-jar-with-dependencies.jar build/java/quiver-jms.jar
 
 .PHONY: build-vertx-proton
 build-vertx-proton:
