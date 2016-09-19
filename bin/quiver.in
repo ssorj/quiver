@@ -45,6 +45,7 @@ impls_by_name = {
     "qpid-messaging-cpp": "qpid-messaging-cpp",
     "qpid-messaging-python": "qpid-messaging-python",
     "qpid-proton-python": "qpid-proton-python",
+    "vertx-proton": "vertx-proton",
 }
 
 description = "Test the performance of messaging clients and servers"
@@ -67,6 +68,7 @@ epilog = "operations:\n" \
          "  qpid-messaging-cpp              Client mode only\n" \
          "  qpid-messaging-python           Client mode only\n" \
          "  qpid-proton-python (python)\n" \
+         "  vertx-proton                    Client mode only\n" \
          "\n" \
          "example usage:\n" \
          "  $ qdrouterd &                   # Start an AMQP server\n" \
