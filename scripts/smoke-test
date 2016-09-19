@@ -121,17 +121,26 @@ test_client_mode qpid-jms qpid-jms
 test_client_mode qpid-jms qpid-messaging-cpp
 test_client_mode qpid-jms qpid-messaging-python
 test_client_mode qpid-jms qpid-proton-python
+test_client_mode qpid-jms vertx-proton
 test_client_mode qpid-messaging-cpp qpid-jms
 test_client_mode qpid-messaging-cpp qpid-messaging-cpp
 test_client_mode qpid-messaging-cpp qpid-messaging-python
 test_client_mode qpid-messaging-cpp qpid-proton-python
+test_client_mode qpid-messaging-cpp vertx-proton
 test_client_mode qpid-messaging-python qpid-jms
 test_client_mode qpid-messaging-python qpid-messaging-cpp
 test_client_mode qpid-messaging-python qpid-messaging-python
 test_client_mode qpid-messaging-python qpid-proton-python
+test_client_mode qpid-messaging-python vertx-proton
 test_client_mode qpid-proton-python qpid-jms
 test_client_mode qpid-proton-python qpid-messaging-cpp
 test_client_mode qpid-proton-python qpid-messaging-python
 test_client_mode qpid-proton-python qpid-proton-python
+test_client_mode qpid-proton-python vertx-proton
+test_client_mode vertx-proton qpid-jms
+test_client_mode vertx-proton qpid-messaging-cpp
+test_client_mode vertx-proton qpid-messaging-python
+test_client_mode vertx-proton qpid-proton-python
+test_client_mode vertx-proton vertx-proton
 
 echo "Test failures: ${test_failures}"
