@@ -47,31 +47,37 @@ class BaseHandler(MessagingHandler):
         self.messages = None
         self.bytes_ = None
 
-        self.transfers = 0
-        self.stopping = False
+        self.body = None
 
+        self.sent = 0
+        self.accepted = 0
+        self.received = 0
+
+    def init(self):
+        self.body = b"x" * self.bytes_
+        
     def stop(self):
-        self.stopping = True
+        raise NotImplementedError()
 
     def on_sendable(self, event):
-        if self.stopping:
-            return
-
-        while event.sender.credit > 0:
-            message = Message(b"x" * self.bytes_)
-            message.id = self.transfers + 1
+        while event.sender.credit > 0 and self.sent < self.messages:
+            message = Message(self.body)
+            message.id = self.sent + 1
             message.properties = dict()
             message.properties["SendTime"] = long(round(time.time() * 1000))
 
             event.sender.send(message)
 
-            self.transfers += 1
+            self.sent += 1
             
-            if self.transfers == self.messages:
-                self.stop()
+    def on_accepted(self, event):
+        self.accepted += 1
+                
+        if self.accepted == self.messages:
+            self.stop()
 
     def on_message(self, event):
-        if self.stopping:
+        if self.received == self.messages:
             return
 
         message = event.message
@@ -81,9 +87,10 @@ class BaseHandler(MessagingHandler):
         
         sys.stdout.write(record)
 
-        self.transfers += 1
+        self.received += 1
 
-        if self.transfers == self.messages:
+        if self.received == self.messages:
+            sys.stdout.flush()
             self.stop()
 
 class Client(BaseHandler):
@@ -100,13 +107,12 @@ class Client(BaseHandler):
 
         if self.operation == "send":
             event.container.create_sender(self.connection, self.path)
-
-        if self.operation == "receive":
+        elif self.operation == "receive":
             event.container.create_receiver(self.connection, self.path)
+        else:
+            raise Exception()
             
     def stop(self):
-        super(Client, self).stop()
-        
         self.connection.close()
 
 class Server(BaseHandler):
@@ -120,9 +126,15 @@ class Server(BaseHandler):
 
         self.acceptor = event.container.listen(self.domain)
 
+    def on_connection_opened(self, event):
+        if self.operation == "send":
+            event.container.create_sender(event.connection, self.path)
+        elif self.operation == "receive":
+            pass
+        else:
+            raise Exception()
+
     def stop(self):
-        super(Server, self).stop()
-        
         self.acceptor.close()
 
 def main():
@@ -142,7 +154,9 @@ def main():
     handler.operation = sys.argv[5]
     handler.messages = int(sys.argv[6])
     handler.bytes_ = int(sys.argv[7])
-        
+
+    handler.init()
+    
     container = Container(handler)
     container.run()
     

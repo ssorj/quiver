@@ -41,7 +41,6 @@ def main():
         "-Dquiver.jms.cf.prefix=connectionfactory", # Note the lowercase 'f'
         "-Dquiver.jms.cf.name=ConnectionFactory",
         "-Dquiver.jms.cf.url=amqp://{}".format(domain),
-        "-Dquiver.connectionfactory.url=amqp://{}".format(domain),
         "-Dorg.slf4j.simpleLogger.defaultLogLevel=warn",
         "net.ssorj.quiver.QuiverJms",
     ]

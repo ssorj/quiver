@@ -1,0 +1,106 @@
+#!/usr/bin/env node
+
+//
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+// 
+//   http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+
+"use strict";
+
+var container = require("@quiver_home@/javascript/node_modules/rhea");
+
+var ouputDir = process.argv[2];
+var mode = process.argv[3];
+var domain = process.argv[4];
+var path = process.argv[5];
+var operation = process.argv[6];
+var messages = process.argv[7];
+var bytes = process.argv[8];
+var credit = process.argv[9];
+
+var body = new Uint8Array(bytes);
+body.fill(120);
+
+var sent = 0;
+var accepted = 0;
+var received = 0;
+
+function eprint(message) {
+    process.stderr.write(message);
+    process.stderr.write("\n");
+}
+
+container.on("sendable", function(context) {
+    while (context.sender.sendable() && sent < messages) {
+        var message = {
+            id: sent + 1,
+            SendTime: new Date().getTime(),
+            content_type: "application/octet-stream",
+            body: body,
+        };
+        
+        context.sender.send(message);
+
+        sent++;
+    }
+});
+
+container.on("accepted", function(context) {
+    accepted++;
+
+    if (accepted == messages) {
+        context.connection.close();
+    }
+});
+
+container.on("message", function(context) {
+    if (received == messages) {
+        return;
+    }
+    
+    var message = context.message;
+    var rtime = new Date().getTime();
+    var stime = message.SendTime;
+    var record = message.id + "," + stime + "," + rtime + "\n";
+
+    process.stdout.write(record); // XXX buffered IO
+
+    received++;
+
+    if (received == messages) {
+        context.connection.close();
+    }
+});
+
+var host = domain;
+var port = 5672;
+var colon = host.indexOf(":");
+
+if (colon != -1) {
+    host = host.slice(0, colon);
+    port = host.slice(colon + 1);
+}
+
+var conn = container.connect({"host": host, "port": port});
+
+if (operation == "send") {
+    conn.open_sender(path);
+} else if (operation == "receive") {
+    conn.open_receiver(path, {prefetch: credit});
+} else {
+    throw new Error();
+}

@@ -38,7 +38,7 @@ function random_address {
     echo //127.0.0.1:${port}/q0
 }
 
-function test_server_mode {
+function test_server_receive_mode {
     local sender_impl=$1
     local receiver_impl=$2
     local address=$(random_address)
@@ -46,7 +46,7 @@ function test_server_mode {
     local receiver_pid=
     local failures=0
 
-    echo -n "Testing server mode, sender ${sender_impl}, receiver ${receiver_impl} ... "
+    echo -n "Testing server receive mode, sender ${sender_impl}, receiver ${receiver_impl} ... "
     
     quiver $address receive -n $MESSAGES --quiet --impl $receiver_impl --server &
     receiver_pid=$!
@@ -56,15 +56,31 @@ function test_server_mode {
     wait $sender_pid || let "failures+=1"
     wait $receiver_pid || let "failures+=1"
 
-    # XXX ERROR:root:amqp:connection:framing-error: AMQP header mismatch: Unknown protocol ['X\x1b
-    
-    # quiver $address send -n $MESSAGES --quiet --impl $sender_impl --server &
-    # sender_pid=$!
-    # quiver $address receive -n $MESSAGES --quiet --impl $receiver_impl &
-    # receiver_pid=$!
+    if (( $failures == 0 )); then 
+        echo PASSED
+    else
+        let "test_failures+=1"
+        echo FAILED
+    fi
+}
 
-    # wait $sender_pid || let "failures+=1"
-    # wait $receiver_pid || let "failures+=1"
+function test_server_send_mode {
+    local sender_impl=$1
+    local receiver_impl=$2
+    local address=$(random_address)
+    local sender_pid=
+    local receiver_pid=
+    local failures=0
+
+    echo -n "Testing server send mode, sender ${sender_impl}, receiver ${receiver_impl} ... "
+    
+    quiver $address send -n $MESSAGES --quiet --impl $sender_impl --server &
+    sender_pid=$!
+    quiver $address receive -n $MESSAGES --quiet --impl $receiver_impl &
+    receiver_pid=$!
+
+    wait $sender_pid || let "failures+=1"
+    wait $receiver_pid || let "failures+=1"
 
     if (( $failures == 0 )); then 
         echo PASSED
@@ -108,12 +124,13 @@ function test_client_mode {
     fi
 }
 
-test_server_mode qpid-jms qpid-proton-python   
+test_server_receive_mode qpid-jms qpid-proton-python   
 # XXX Connect failed to amqp:tcp:127.0.0.1:55536: Reconnect disabled
-#test_server_mode qpid-messaging-cpp qpid-proton-python
+#test_server_receive_mode qpid-messaging-cpp qpid-proton-python
 # XXX _qpid_messaging.NotFound: No such target : q0
-#test_server_mode qpid-messaging-python qpid-proton-python
-test_server_mode qpid-proton-python qpid-proton-python   
+#test_server_receive_mode qpid-messaging-python qpid-proton-python
+test_server_receive_mode qpid-proton-python qpid-proton-python
+#test_server_send_mode qpid-proton-python qpid-proton-python
 
 # XXX javax.jms.JMSException: Failed to create connection to: amqp://localhost:65407
 # Issue is use of 'localhost'; 127.0.0.1 works
@@ -121,26 +138,37 @@ test_client_mode qpid-jms qpid-jms
 test_client_mode qpid-jms qpid-messaging-cpp
 test_client_mode qpid-jms qpid-messaging-python
 test_client_mode qpid-jms qpid-proton-python
+#test_client_mode qpid-jms rhea
 test_client_mode qpid-jms vertx-proton
 test_client_mode qpid-messaging-cpp qpid-jms
 test_client_mode qpid-messaging-cpp qpid-messaging-cpp
 test_client_mode qpid-messaging-cpp qpid-messaging-python
 test_client_mode qpid-messaging-cpp qpid-proton-python
+#test_client_mode qpid-messaging-cpp rhea
 test_client_mode qpid-messaging-cpp vertx-proton
 test_client_mode qpid-messaging-python qpid-jms
 test_client_mode qpid-messaging-python qpid-messaging-cpp
 test_client_mode qpid-messaging-python qpid-messaging-python
 test_client_mode qpid-messaging-python qpid-proton-python
+#test_client_mode qpid-messaging-python rhea
 test_client_mode qpid-messaging-python vertx-proton
 test_client_mode qpid-proton-python qpid-jms
 test_client_mode qpid-proton-python qpid-messaging-cpp
 test_client_mode qpid-proton-python qpid-messaging-python
 test_client_mode qpid-proton-python qpid-proton-python
+#test_client_mode qpid-proton-python rhea
 test_client_mode qpid-proton-python vertx-proton
+#test_client_mode rhea qpid-jms
+#test_client_mode rhea qpid-messaging-cpp
+#test_client_mode rhea qpid-messaging-python
+#test_client_mode rhea qpid-proton-python
+#test_client_mode rhea rhea
+#test_client_mode rhea vertx-proton
 test_client_mode vertx-proton qpid-jms
 test_client_mode vertx-proton qpid-messaging-cpp
 test_client_mode vertx-proton qpid-messaging-python
 test_client_mode vertx-proton qpid-proton-python
+#test_client_mode vertx-proton rhea
 test_client_mode vertx-proton vertx-proton
 
 echo "Test failures: ${test_failures}"

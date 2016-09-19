@@ -96,8 +96,7 @@ class QuiverCommand(object):
             str(self.credit),
         ]
 
-        if self.debug:
-            self.debug("Calling '{}'".format(" ".join(args)))
+        self.dprint("Calling '{}'", " ".join(args))
 
         if not self.quiet:
             self.print_config()
@@ -130,7 +129,10 @@ class QuiverCommand(object):
             if not self.quiet:
                 self.print_results()
 
-    def debug(self, msg, *args):
+    def dprint(self, msg, *args):
+        if not self.debug:
+            return
+        
         msg = "quiver: {}".format(msg)
         print(msg.format(*args))
             
@@ -271,7 +273,7 @@ class _PeriodicStatusThread(_threading.Thread):
         rate = int(round(transfers / duration))
         latency = float(sum(latencies)) / transfers
 
-        frate = "{:,d} transfers/s".format(rate)
+        frate = "{:,d} messages/s".format(rate)
         flatency = "{:,.1f} ms avg latency".format(latency)
 
         if not self.command.quiet:

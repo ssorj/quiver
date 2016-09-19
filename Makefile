@@ -4,6 +4,19 @@ DESTDIR := ""
 PREFIX := ${HOME}/.local
 QUIVER_HOME = ${PREFIX}/lib/quiver
 
+TARGETS = \
+	build/bin/quiver \
+	build/bin/quiver-launch \
+	build/exec/quiver-activemq-jms \
+	build/exec/quiver-activemq-artemis-jms \
+	build/exec/quiver-qpid-jms \
+	build/exec/quiver-qpid-messaging-cpp \
+	build/exec/quiver-qpid-messaging-python \
+	build/exec/quiver-qpid-proton-cpp \
+	build/exec/quiver-qpid-proton-python \
+	build/exec/quiver-vertx-proton \
+	build/exec/quiver-rhea
+
 .PHONY: default
 default: devel
 
@@ -21,23 +34,7 @@ clean:
 	rm -rf java/target
 
 .PHONY: build
-build: build/exec/quiver-qpid-messaging-cpp build/exec/quiver-qpid-proton-cpp build-jms build-vertx-proton
-	scripts/configure-file exec/quiver-activemq-jms.in build/exec/quiver-activemq-jms \
-		quiver_home ${QUIVER_HOME}
-	scripts/configure-file exec/quiver-activemq-artemis-jms.in build/exec/quiver-activemq-artemis-jms \
-		quiver_home ${QUIVER_HOME}
-	scripts/configure-file exec/quiver-qpid-jms.in build/exec/quiver-qpid-jms \
-		quiver_home ${QUIVER_HOME}
-	scripts/configure-file exec/quiver-vertx-proton.in build/exec/quiver-vertx-proton \
-		quiver_home ${QUIVER_HOME}
-	scripts/configure-file exec/quiver-qpid-messaging-python.in build/exec/quiver-qpid-messaging-python \
-		quiver_home ${QUIVER_HOME}
-	scripts/configure-file exec/quiver-qpid-proton-python.in build/exec/quiver-qpid-proton-python \
-		quiver_home ${QUIVER_HOME}
-	scripts/configure-file bin/quiver.in build/bin/quiver \
-		quiver_home ${QUIVER_HOME}
-	scripts/configure-file bin/quiver-launch.in build/bin/quiver-launch \
-		quiver_home ${QUIVER_HOME}
+build: ${TARGETS} build-jms build-vertx-proton
 
 .PHONY: build-jms
 build-jms:
@@ -55,6 +52,7 @@ build-vertx-proton:
 install: build
 	mkdir -p ${DESTDIR}${QUIVER_HOME}
 	scripts/install-files python ${DESTDIR}${QUIVER_HOME}/python \*.py
+	scripts/install-files javascript ${DESTDIR}${QUIVER_HOME}/javascript \*
 	scripts/install-files build/java ${DESTDIR}${QUIVER_HOME}/java \*
 	scripts/install-files build/exec ${DESTDIR}${QUIVER_HOME}/exec \*
 	scripts/install-executable build/bin/quiver ${DESTDIR}${PREFIX}/bin/quiver
@@ -70,6 +68,14 @@ devel: clean install
 test: devel
 	scripts/smoke-test 10
 
+build/bin/%: bin/%.in
+	@mkdir -p build/bin
+	scripts/configure-file $< $@ quiver_home ${QUIVER_HOME}
+
+build/exec/%: exec/%.in
+	@mkdir -p build/exec
+	scripts/configure-file $< $@ quiver_home ${QUIVER_HOME}
+
 build/exec/quiver-qpid-messaging-cpp: exec/quiver-qpid-messaging-cpp.cpp
 	@mkdir -p build/exec
 	gcc -std=c++11 -lqpidmessaging -lqpidtypes -lstdc++ $< -o $@
@@ -77,6 +83,10 @@ build/exec/quiver-qpid-messaging-cpp: exec/quiver-qpid-messaging-cpp.cpp
 build/exec/quiver-qpid-proton-cpp: exec/quiver-qpid-proton-cpp.cpp
 	@mkdir -p build/exec
 	gcc -std=c++11 -lqpid-proton -lstdc++ $< -o $@
+
+.PHONY: update-rhea
+update-rhea:
+	npm install rhea --prefix javascript
 
 .PHONY: update-plano
 update-plano:

@@ -39,12 +39,14 @@ impls_by_name = {
     "activemq-jms": "activemq-jms",
     "activemq-artemis-jms": "activemq-artemis-jms",
     "artemis-jms": "activemq-artemis-jms",
+    "javascript": "rhea",
     "jms": "qpid-jms",
     "python": "qpid-proton-python",
     "qpid-jms": "qpid-jms",
     "qpid-messaging-cpp": "qpid-messaging-cpp",
     "qpid-messaging-python": "qpid-messaging-python",
     "qpid-proton-python": "qpid-proton-python",
+    "rhea": "rhea",
     "vertx-proton": "vertx-proton",
 }
 
@@ -64,10 +66,11 @@ epilog = "operations:\n" \
          "implementations:\n" \
          "  activemq-artemis-jms            Client mode only; requires Artemis server\n" \
          "  activemq-jms                    Client mode only; ActiveMQ or Artemis server\n" \
-         "  qpid-jms (jms)                  Client mode only\n" \
+         "  qpid-jms [jms]                  Client mode only\n" \
          "  qpid-messaging-cpp              Client mode only\n" \
          "  qpid-messaging-python           Client mode only\n" \
-         "  qpid-proton-python (python)\n" \
+         "  qpid-proton-python [python]\n" \
+         "  rhea [javascript]\n" \
          "  vertx-proton                    Client mode only\n" \
          "\n" \
          "example usage:\n" \
