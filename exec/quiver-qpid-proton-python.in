@@ -31,10 +31,7 @@ from proton import Message
 from proton.handlers import MessagingHandler
 from proton.reactor import Container
 
-default_home_dir = os.path.normpath("@quiver_home@")
-home_dir = os.environ.get("QUIVER_HOME", default_home_dir)
-
-sys.path.insert(0, os.path.join(home_dir, "python"))
+home_dir = os.path.normpath("@quiver_home@")
 
 class BaseHandler(MessagingHandler):
     def __init__(self, **kwargs):
