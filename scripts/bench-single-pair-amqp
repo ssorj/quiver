@@ -23,38 +23,118 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import subprocess
 import time
 
 from plano import *
 
-impls = (
+clients = (
     "qpid-jms",
     "qpid-messaging-cpp",
     "qpid-messaging-python",
     "qpid-proton-python",
+    "rhea",
+    "vertx-proton",
 )
 
-port = ARGS[1]
-messages = ARGS[2]    
+messages = ARGS[1]
+
+if not is_dir(join(home_dir(), "artemis")):
+    exit("I need an artemis instance installed at $HOME/artemis")
+
+def test_client(name, port, messages, output):
+    command = "quiver-launch //localhost:{}/q0 --impl {} -n {} > {}"
+
+    try:
+        call(command, port, name, messages, output)
+    except KeyboardInterrupt:
+        raise
+    except:
+        pass
+        
+def test_artemis(output_dir):
+    for client in clients:
+        port = 5672 # XXX
+        server_exec = join(home_dir(), "artemis", "bin", "artemis")
+        server_args = [server_exec, "run"]
+        output = join(output_dir, "artemis-{}.txt".format(client))
+
+        proc = subprocess.Popen(server_args)
+
+        time.sleep(5)
+
+        call("{} destination create --name q0 --type core-queue", server_exec)
+        
+        test_client(client, port, messages, output)
+
+        proc.terminate()
+        proc.wait()
+
+def test_qpidd(output_dir):
+    for client in clients:
+        port = random_port()
+        output = join(output_dir, "qpidd-{}.txt".format(client))
+
+        server_args = [
+            "qpidd",
+            "--port", str(port),
+            "--auth", "no",
+            "--default-queue-limit", "0",
+        ]
+
+        proc = subprocess.Popen(server_args)
+
+        call("qpid-config -b localhost:{} add queue q0", port)
+        
+        test_client(client, port, messages, output)
+
+        proc.terminate()
+        proc.wait()
+
+_qdrouterd_config_template = """
+router {
+    mode: standalone
+    id: bench-single-pair-amqp-1
+}
+
+listener {
+    host: ::
+    port: @port@
+    authenticatePeer: off
+    saslMechanisms: ANONYMOUS
+}
+"""
+        
+def test_qdrouterd(output_dir):
+    for client in clients:
+        port = random_port()
+        config = _qdrouterd_config_template.replace("@port@", str(port))
+        config_file = write_temp("qdrouterd-config", config)
+        output = join(output_dir, "qdrouterd-{}.txt".format(client))
+
+        server_args = [
+            "qdrouterd",
+            "--config", config_file,
+        ]
+        
+        proc = subprocess.Popen(server_args)
+        
+        test_client(client, port, messages, output)
+
+        proc.terminate()
+        proc.wait()
 
 script = file_name(ARGS[0])
 timestamp = time.strftime('%Y-%m-%d', time.localtime())
-output_dir = "{}-{}-{}".format(script, port, timestamp)
+output_dir = "{}-{}".format(script, timestamp)
 
 remove(output_dir)
 make_dir(output_dir)
 
-with working_dir(output_dir):
-    for impl in impls:
-        command = "quiver-launch //localhost:{}/q0 --impl {} -n {} > {}.txt"
-
-        try:
-            call(command.format(port, impl, messages, impl))
-        except KeyboardInterrupt:
-            raise
-        except:
-            pass
-            
+test_artemis(output_dir)
+test_qpidd(output_dir)
+test_qdrouterd(output_dir)
+        
 print(output_dir)
         
 for name in (list_dir(output_dir)):
