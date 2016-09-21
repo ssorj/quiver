@@ -111,7 +111,7 @@ class QuiverCommand(object):
             proc = _subprocess.Popen(args, stdout=fout)
 
             while proc.poll() == None:
-                if self.stop.wait(1):
+                if self.stop.wait(0.1):
                     proc.terminate()
 
             if proc.returncode != 0:
