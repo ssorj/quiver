@@ -86,13 +86,14 @@ container.on("message", function(context) {
     }
 });
 
-var host = domain;
-var port = 5672;
-var colon = host.indexOf(":");
+var colon = domain.indexOf(":");
 
-if (colon != -1) {
-    host = host.slice(0, colon);
-    port = host.slice(colon + 1);
+if (colon == -1) {
+    var host = domain;
+    var port = 5672;
+} else {
+    var host = domain.slice(0, colon);
+    var port = domain.slice(colon + 1);
 }
 
 var conn = container.connect({"host": host, "port": port});
