@@ -28,8 +28,7 @@ import os
 import sys
 import traceback
 
-default_home_dir = os.path.normpath("@quiver_home@")
-home_dir = os.environ.get("QUIVER_HOME", default_home_dir)
+home_dir = os.path.normpath("@quiver_home@")
 
 sys.path.insert(0, os.path.join(home_dir, "python"))
 
@@ -70,7 +69,7 @@ epilog = "operations:\n" \
          "  qpid-messaging-cpp              Client mode only\n" \
          "  qpid-messaging-python           Client mode only\n" \
          "  qpid-proton-python [python]\n" \
-         "  rhea [javascript]\n" \
+         "  rhea [javascript]               Client mode only at the moment\n" \
          "  vertx-proton                    Client mode only\n" \
          "\n" \
          "example usage:\n" \

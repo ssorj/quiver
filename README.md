@@ -3,19 +3,34 @@
 Tools for testing the performance of messaging clients and servers.
 
     [Start an AMQP server]
-    $ quiver q0 receive &
-    $ quiver q0 send
-    *        6,320        6,402 transfers/s         131.2 ms avg latency
-    *       12,942        5,206 transfers/s         382.5 ms avg latency
+    $ (quiver q0 receive &); quiver q0 send
+    *        6,115         6,022 messages/s         112.0 ms avg latency
+    *       12,976         6,650 messages/s         303.3 ms avg latency
     [...]
-    *       86,963        1,791 transfers/s       2,887.0 ms avg latency
-    *       93,984        1,743 transfers/s       3,091.8 ms avg latency
+    *      992,299         6,681 messages/s      24,297.5 ms avg latency
+    *      999,204         6,802 messages/s      24,435.7 ms avg latency
     --------------------------------------------------------------------------------
-    Duration:                                            15.1 s
-    Transfer count:                                   100,000 transfers
-    Transfer rate:                                      6,604 transfers/s
-    Latency (min, max, avg):            7.0, 3,345.7, 1,768.4 ms
+    Duration:                                               162.9 s
+    Message count:                                      1,000,000 messages
+    Message rate:                                           6,140 messages/s
+    Latency average:                                     13,998.2 ms
+    Latency by quartile:         6,844 | 14,337 | 20,966 | 25,335 ms
     --------------------------------------------------------------------------------
+
+## Overview
+
+Quiver implementations are native clients (and sometimes also servers)
+in various languages and APIs that send and receive messages and dump
+raw information about the transfers to standard output.  They are
+deliberately simple.
+
+The main Quiver tool, `quiver`, runs an implementation and captures
+its output.  It has options for defining the execution parameters,
+selecting the implementation, and reporting statistics.
+
+`quiver-launch` makes it easy to launch many `quiver` instances.  In
+the future, it will collate the results from the individual `quiver`
+runs and produce a consolidated report.
 
 ## Installation
 
@@ -35,30 +50,65 @@ By default, installs from source go to `$HOME/.local`.  Make sure
 If you don't have `dnf`, use the repo files at
 <https://copr.fedorainfracloud.org/coprs/jross/ssorj/>.
 
+## Development
+
+To setup paths in your development environment, source the `devel.sh`
+script from the project directory.
+
+    $ cd quiver/
+    $ source devel.sh
+
+The `devel` make target creates a local installation in your checkout.
+
+    $ make devel
+
+## Project layout
+
+    devel.sh              # Sets up your project environment
+    Makefile              # Defines the make targets
+    bin/                  # Command-line tools
+    exec/                 # Quiver implementations
+    python/               # Python library code
+    scripts/              # Scripts called by Makefile rules
+    java/                 # Java library code
+    javascript/           # JavaScript library code
+    build/                # The default build location
+    install/              # The devel install location
+
+## Make targets
+
+In the development environment, most things are accomplished by
+running make targets.  These are the important ones:
+
+    $ make build         # Builds the code
+    $ make install       # Installs the code
+    $ make clean         # Removes build/ and install/
+    $ make devel         # Cleans, builds, installs, tests sanity
+    $ make test          # Runs the test suite
+
 ## Command-line interface
 
 ### quiver
 
-`quiver` is the main entry point.  It sends and receives AMQP messages
+`quiver` is the main entry point.  It sends or receives AMQP messages
 as fast as it can.  When the requested transfers are done, it reports
 the throughput and latency of the overall set, from the first send to
 the last receive.
 
-    usage: quiver [-h] [-n COUNT] [-v] [--impl NAME] [--bytes COUNT] [--credit COUNT]
-                  [--timeout SECONDS] [--server] [--output DIRECTORY] [--quiet]
+    usage: quiver [-h] [-n COUNT] [--impl NAME] [--bytes COUNT] [--credit COUNT]
+                  [--timeout SECONDS] [--server] [--output DIRECTORY] [--quiet] [--debug]
                   ADDRESS OPERATION
 
-    Test the performance of AMQP servers and messaging APIs
+    Test the performance of messaging clients and servers
 
     positional arguments:
-      ADDRESS               The location of an AMQP node
+      ADDRESS               The location of a message queue
       OPERATION             Either 'send' or 'receive'
 
     optional arguments:
       -h, --help            show this help message and exit
       -n COUNT, --messages COUNT
                             Send or receive COUNT messages (default: 1000000)
-      -v, --verbose         Periodically print status to the console (default: False)
       --impl NAME           Use NAME implementation (default: qpid-proton-python)
       --bytes COUNT         Send message bodies containing COUNT bytes (default: 100)
       --credit COUNT        Sustain credit for COUNT incoming transfers (default: 1000)
@@ -66,23 +116,28 @@ the last receive.
       --server              Operate in server mode (default: False)
       --output DIRECTORY    Save output files to DIRECTORY (default: None)
       --quiet               Print nothing to the console (default: False)
+      --debug               Print debug messages (default: False)
 
     operations:
       send                  Send messages
       receive               Receive messages
 
     addresses:
-      [//DOMAIN/]PATH                 The default domain is 'localhost:5672'
+      [//DOMAIN/]PATH                 The default domain is 'localhost'
       //example.net/jobs
       //10.0.0.10:5672/jobs/alpha
       //localhost/q0
       q0
 
     implementations:
-      qpid-jms (jms)                  Supports client mode only
-      qpid-messaging-cpp              Supports client mode only
-      qpid-messaging-python           Supports client mode only
-      qpid-proton-python (python)
+      activemq-artemis-jms            Client mode only; requires Artemis server
+      activemq-jms                    Client mode only; ActiveMQ or Artemis server
+      qpid-jms [jms]                  Client mode only
+      qpid-messaging-cpp              Client mode only
+      qpid-messaging-python           Client mode only
+      qpid-proton-python [python]
+      rhea [javascript]               Client mode only at the moment
+      vertx-proton                    Client mode only
 
 ### quiver-launch
 
@@ -96,10 +151,10 @@ is an invocation of the `quiver` command.  Arguments not processed by
     Launch quiver senders and receivers
 
     Arguments not processed by quiver-launch are passed to
-    the 'quiver' command
+    the 'quiver' command.  See the output of 'quiver --help'.
 
     positional arguments:
-      ADDRESS            The location of an AMQP node
+      ADDRESS            The location of a message queue
 
     optional arguments:
       -h, --help         show this help message and exit
@@ -180,7 +235,3 @@ output are buffered.
 Implementations must give each message a unique ID to aid debugging.
 They must also set an application property named `SendTime` containing
 a `long` representing the send time in milliseconds.
-
-## Todo
-
-- Save periodic memory and CPU usage

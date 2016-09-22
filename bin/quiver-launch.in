@@ -29,17 +29,17 @@ import subprocess
 import sys
 import time
 
-default_home_dir = os.path.normpath("@quiver_home@")
-home_dir = os.environ.get("QUIVER_HOME", default_home_dir)
+home_dir = os.path.normpath("@quiver_home@")
 
 sys.path.insert(0, os.path.join(home_dir, "python"))
 
 from quiver import *
 
-description = "Launch quiver senders and receivers\n" \
-              "\n" \
-              "Arguments not processed by quiver-launch are passed to\n" \
-              "the 'quiver' command\n"
+description = \
+    "Launch quiver senders and receivers\n" \
+    "\n" \
+    "Arguments not processed by quiver-launch are passed to\n" \
+    "the 'quiver' command.  See the output of 'quiver --help'.\n"
 
 class Formatter(argparse.ArgumentDefaultsHelpFormatter,
                 argparse.RawDescriptionHelpFormatter):
@@ -49,7 +49,7 @@ parser = argparse.ArgumentParser(description=description,
                                  formatter_class=Formatter)
 
 parser.add_argument("address", metavar="ADDRESS",
-                    help="The location of an AMQP node")
+                    help="The location of a message queue")
 parser.add_argument("--pairs", metavar="COUNT",
                     help="Launch COUNT sender-receiver pairs",
                     default=1, type=int)
