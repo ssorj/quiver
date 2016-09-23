@@ -87,7 +87,7 @@ devel: clean install
 
 .PHONY: test
 test: devel
-	scripts/smoke-test 10
+	quiver-smoke-test 10
 
 build/bin/%: bin/%.in
 	@mkdir -p build/bin
