@@ -110,13 +110,18 @@ class QuiverCommand(object):
 
             proc = _subprocess.Popen(args, stdout=fout)
 
+            self.dprint("Process {} ({}) started", proc.pid, self.operation)
+
             while proc.poll() == None:
                 if self.stop.wait(0.1):
                     proc.terminate()
 
-            if proc.returncode != 0:
-                msg = "Subprocess {} exited with code {}".format \
-                      (proc.pid, proc.returncode)
+            if proc.returncode == 0:
+                self.dprint("Process {} ({}) exited normally", proc.pid,
+                            self.operation)
+            else:
+                msg = "Process {} ({}) exited with code {}".format \
+                      (proc.pid, self.operation, proc.returncode)
                 raise QuiverError(msg)
                     
             self.end_time = _time.time()

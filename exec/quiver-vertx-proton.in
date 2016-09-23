@@ -41,7 +41,7 @@ def main():
 
     args += sys.argv[1:]
 
-    subprocess.check_call(args)
+    sys.exit(subprocess.call(args))
     
 if __name__ == "__main__":
     try:

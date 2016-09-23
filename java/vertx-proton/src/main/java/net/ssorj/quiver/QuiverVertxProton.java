@@ -53,7 +53,16 @@ public class QuiverVertxProton {
 
     private static final Accepted ACCEPTED = Accepted.getInstance();
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
+        try {
+            doMain(args);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+    
+    public static void doMain(String[] args) throws Exception {
         String outputDir = args[0];
         String mode = args[1];
         String domain = args[2];

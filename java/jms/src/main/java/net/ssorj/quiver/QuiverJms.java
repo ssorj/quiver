@@ -29,6 +29,15 @@ import javax.naming.*;
 
 public class QuiverJms {
     public static void main(String[] args) {
+        try {
+            doMain(args);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+    
+    public static void doMain(String[] args) throws Exception {
         String outputDir = args[0];
         String mode = args[1];
         String domain = args[2];
@@ -51,30 +60,17 @@ public class QuiverJms {
         assert cfUrl != null;
         
         Hashtable<Object, Object> env = new Hashtable<Object, Object>();
-        Context context;
-        ConnectionFactory factory;
-        Destination queue;
-
         env.put(cfPrefix + "." + cfName, cfUrl);
         env.put("queue.queueLookup", path);
 
-        try {
-            context = new InitialContext(env);
-            factory = (ConnectionFactory) context.lookup(cfName);
-            queue = (Destination) context.lookup("queueLookup");
-        } catch (NamingException e) {
-            throw new RuntimeException(e);
-        }
+        Context context = new InitialContext(env);;
+        ConnectionFactory factory = (ConnectionFactory) context.lookup(cfName);
+        Destination queue = (Destination) context.lookup("queueLookup");
 
         Client client = new Client(outputDir, factory, queue, operation,
                                    messages, bytes);
         
-        try {
-            client.run();
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-            throw e;
-        }
+        client.run();
     }
 }
 

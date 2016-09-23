@@ -39,4 +39,6 @@ int main(int argc, char** argv) {
     std::cerr << messages << std::endl;
     std::cerr << bytes << std::endl;
     std::cerr << credit << std::endl;
+
+    return 0;
 }
