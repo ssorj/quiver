@@ -63,6 +63,11 @@ def test_artemis(output_dir):
 
         time.sleep(5)
 
+        try:
+            call("{} destination delete --name q0 --type core-queue", server_exec)
+        except:
+            pass
+        
         call("{} destination create --name q0 --type core-queue", server_exec)
         
         test_client(client, port, messages, output)

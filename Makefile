@@ -26,6 +26,7 @@ QUIVER_HOME = ${PREFIX}/lib/quiver
 TARGETS = \
 	build/bin/quiver \
 	build/bin/quiver-launch \
+	build/bin/quiver-smoke-test \
 	build/exec/quiver-activemq-jms \
 	build/exec/quiver-activemq-artemis-jms \
 	build/exec/quiver-qpid-jms \
@@ -55,6 +56,7 @@ clean:
 
 .PHONY: build
 build: ${TARGETS} build-jms build-vertx-proton
+	cp exec/amqp-test-broker build/exec
 
 .PHONY: build-jms
 build-jms:
@@ -77,7 +79,7 @@ install: build
 	scripts/install-files build/exec ${DESTDIR}${QUIVER_HOME}/exec \*
 	scripts/install-executable build/bin/quiver ${DESTDIR}${PREFIX}/bin/quiver
 	scripts/install-executable build/bin/quiver-launch ${DESTDIR}${PREFIX}/bin/quiver-launch
-	scripts/install-executable bin/quiver-smoke-test ${DESTDIR}${PREFIX}/bin/quiver-smoke-test
+	scripts/install-executable build/bin/quiver-smoke-test ${DESTDIR}${PREFIX}/bin/quiver-smoke-test
 
 .PHONY: devel
 devel: PREFIX := ${PWD}/install

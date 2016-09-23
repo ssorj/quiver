@@ -27,6 +27,7 @@ else
 fi
 
 test_failures=0
+quiver_home=@quiver_home@
 
 function random_port {
     echo $(python -S -c "import random; print random.randrange(49152, 65535)")
@@ -101,7 +102,7 @@ function test_client_mode {
     echo -n "Testing client mode, sender ${sender_impl}, receiver ${receiver_impl} ... "
 
     # XXX Using 127.0.0.1 here to avoid connection failures
-    scripts/amqp-test-broker --host 127.0.0.1 --port $port 2> /dev/null &
+    $quiver_home/exec/amqp-test-broker --host 127.0.0.1 --port $port 2> /dev/null &
     local broker_pid=$!
 
     quiver $address receive -n $MESSAGES --quiet --impl $receiver_impl &
