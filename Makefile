@@ -70,13 +70,14 @@ build-vertx-proton:
 
 .PHONY: install
 install: build
-	mkdir -p ${DESTDIR}${QUIVER_HOME}
+	@mkdir -p ${DESTDIR}${QUIVER_HOME}
 	scripts/install-files python ${DESTDIR}${QUIVER_HOME}/python \*.py
 	scripts/install-files javascript ${DESTDIR}${QUIVER_HOME}/javascript \*
 	scripts/install-files build/java ${DESTDIR}${QUIVER_HOME}/java \*
 	scripts/install-files build/exec ${DESTDIR}${QUIVER_HOME}/exec \*
 	scripts/install-executable build/bin/quiver ${DESTDIR}${PREFIX}/bin/quiver
 	scripts/install-executable build/bin/quiver-launch ${DESTDIR}${PREFIX}/bin/quiver-launch
+	scripts/install-executable bin/quiver-smoke-test ${DESTDIR}${PREFIX}/bin/quiver-smoke-test
 
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
