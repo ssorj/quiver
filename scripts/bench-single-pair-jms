@@ -1,0 +1,86 @@
+#!/usr/bin/python
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
+
+import subprocess
+import time
+
+from plano import *
+
+clients = (
+    "activemq-artemis-jms",
+    "activemq-jms",
+)
+
+messages = ARGS[1]
+
+if not is_dir(join(home_dir(), "artemis")):
+    exit("I need an artemis instance installed at $HOME/artemis")
+
+def test_client(name, port, messages, output):
+    command = "quiver-launch //localhost:{}/q0 --impl {} -n {} > {}"
+
+    try:
+        call(command, port, name, messages, output)
+    except KeyboardInterrupt:
+        raise
+    except:
+        pass
+        
+def test_artemis(output_dir):
+    for client in clients:
+        port = 61616 # XXX
+        server_exec = join(home_dir(), "artemis", "bin", "artemis")
+        server_args = [server_exec, "run"]
+        output = join(output_dir, "artemis-{}.txt".format(client))
+
+        proc = subprocess.Popen(server_args)
+
+        time.sleep(5)
+
+        try:
+            call("{} destination delete --name q0 --type jms-queue", server_exec)
+        except:
+            pass
+        
+        call("{} destination create --name q0 --type jms-queue", server_exec)
+        
+        test_client(client, port, messages, output)
+
+        proc.terminate()
+        proc.wait()
+
+script = file_name(ARGS[0])
+timestamp = time.strftime('%Y-%m-%d', time.localtime())
+output_dir = "{}-{}".format(script, timestamp)
+
+remove(output_dir)
+make_dir(output_dir)
+
+test_artemis(output_dir)
+        
+print(output_dir)
+        
+for name in (list_dir(output_dir)):
+    print("  {}".format(name))
