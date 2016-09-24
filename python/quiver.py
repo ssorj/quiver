@@ -22,8 +22,10 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import gzip as _gzip
 import numpy as _numpy
 import os as _os
+import shutil as _shutil
 import subprocess as _subprocess
 import sys as _sys
 import tempfile as _tempfile
@@ -140,6 +142,8 @@ class QuiverCommand(object):
             if not self.quiet:
                 self.print_results()
 
+        self.compress_output()
+
     def dprint(self, msg, *args):
         if not self.debug:
             return
@@ -191,6 +195,13 @@ class QuiverCommand(object):
         _print_numeric_field("Latency average", latency, "ms", "{:,.1f}")
         _print_numeric_field("Latency by quartile", fquartiles, "ms")
         _print_bracket()
+
+    def compress_output(self):
+        with open(self.transfers_file, "rb") as fin:
+            with _gzip.open("{}.gz".format(self.transfers_file), "wb") as fout:
+                _shutil.copyfileobj(fin, fout)
+
+        _os.remove(self.transfers_file)
 
 def _print_bracket():
     print("-" * 80)
