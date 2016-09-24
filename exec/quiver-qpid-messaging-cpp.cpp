@@ -35,7 +35,7 @@ using namespace std::chrono;
 static const std::string CONNECTION_OPTIONS =
     "{protocol: amqp1.0, sasl_mechanisms: ANONYMOUS}";
 static const std::string LINK_OPTIONS =
-    "{link: {durable: True, reliability: at-least-once}}";
+    "{link: {durable: False, reliability: at-least-once}}";
 
 long now() {
     return duration_cast<milliseconds>

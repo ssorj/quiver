@@ -30,7 +30,7 @@ import time
 from qpid_messaging import *
 
 home_dir = os.path.normpath("@quiver_home@")
-link_options = "{link: {durable: True, reliability: at-least-once}}"
+link_options = "{link: {durable: False, reliability: at-least-once}}"
 
 class Client(object):
     def __init__(self):
