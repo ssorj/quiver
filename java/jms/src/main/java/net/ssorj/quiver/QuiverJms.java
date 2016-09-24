@@ -81,7 +81,9 @@ class Client {
     protected final String operation;
     protected final int messages;
     protected final int bytes;
-    protected int transfers;
+
+    protected int sent;
+    protected int received;
     
     Client(String outputDir, ConnectionFactory factory, Destination queue,
            String operation, int messages, int bytes) {
@@ -91,7 +93,9 @@ class Client {
         this.operation = operation;
         this.messages = messages;
         this.bytes = bytes;
-        this.transfers = 0;
+
+        this.sent = 0;
+        this.received = 0;
     }
 
     void run() {
@@ -115,7 +119,12 @@ class Client {
         }
     }
 
+    private static PrintWriter getOutputWriter() {
+        return new PrintWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
+    }
+
     void sendMessages(Session session) throws JMSException {
+        PrintWriter out = getOutputWriter();
         MessageProducer producer = session.createProducer(this.queue);
         producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
         producer.setDisableMessageTimestamp(true);
@@ -123,7 +132,7 @@ class Client {
         byte[] body = new byte[this.bytes];
         Arrays.fill(body, (byte) 120);
         
-        while (this.transfers < this.messages) {
+        while (this.sent < this.messages) {
             BytesMessage message = session.createBytesMessage();
             long stime = System.currentTimeMillis();
 
@@ -132,15 +141,19 @@ class Client {
             
             producer.send(message);
 
-            this.transfers += 1;
+            out.printf("%s,%d\n", message.getJMSMessageID(), stime);
+
+            this.sent += 1;
         }
+
+        out.flush();
     }
 
     void receiveMessages(Session session) throws JMSException {
-        PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
+        PrintWriter out = getOutputWriter();
         MessageConsumer consumer = session.createConsumer(this.queue);
 
-        while (this.transfers < this.messages) {
+        while (this.received < this.messages) {
             BytesMessage message = (BytesMessage) consumer.receive();
 
             if (message == null) {
@@ -153,7 +166,7 @@ class Client {
 
             out.printf("%s,%d,%d\n", id, stime, rtime);
             
-            this.transfers += 1;
+            this.received += 1;
         }
 
         out.flush();

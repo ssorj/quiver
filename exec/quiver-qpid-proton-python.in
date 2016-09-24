@@ -58,13 +58,18 @@ class BaseHandler(MessagingHandler):
 
     def on_sendable(self, event):
         while event.sender.credit > 0 and self.sent < self.messages:
+            id = self.sent + 1
+            stime = long(round(time.time() * 1000))
+            
             message = Message(self.body)
-            message.id = self.sent + 1
-            message.properties = dict()
-            message.properties["SendTime"] = long(round(time.time() * 1000))
+            message.id = id
+            message.properties = dict() # XXX Obnoxious
+            message.properties["SendTime"] = stime
 
             event.sender.send(message)
 
+            sys.stdout.write("{},{}\n".format(id, stime))
+        
             self.sent += 1
             
     def on_accepted(self, event):
@@ -80,9 +85,8 @@ class BaseHandler(MessagingHandler):
         message = event.message
         rtime = long(round(time.time() * 1000))
         stime = event.message.properties["SendTime"]
-        record = "{},{},{}\n".format(message.id, stime, rtime)
         
-        sys.stdout.write(record)
+        sys.stdout.write("{},{},{}\n".format(message.id, stime, rtime))
 
         self.received += 1
 

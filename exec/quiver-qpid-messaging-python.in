@@ -40,8 +40,9 @@ class Client(object):
         self.messages = None
         self.bytes_ = None
         self.credit = None
-        
-        self.transfers = 0
+
+        self.sent = 0
+        self.received = 0
 
     def run(self):
         conn = Connection(self.domain, protocol=b"amqp1.0",
@@ -66,20 +67,26 @@ class Client(object):
 
         body = b"x" * self.bytes_
         
-        while self.transfers < self.messages:
+        while self.sent < self.messages:
+            id = str(self.sent + 1)
+            stime = long(round(time.time() * 1000))
+            record = "{},{}\n".format(id, stime)
+            
             message = Message(body)
-            message.id = str(self.transfers + 1)
-            message.properties[b"SendTime"] = long(round(time.time() * 1000))
-
+            message.id = id
+            message.properties[b"SendTime"] = stime
+            
             sender.send(message)
-        
-            self.transfers +=1
+
+            sys.stdout.write(record)
+            
+            self.sent +=1
         
     def receive_messages(self, session):
         receiver = session.receiver(self.path)
         receiver.capacity = self.credit
 
-        while self.transfers < self.messages:
+        while self.received < self.messages:
             if receiver.available() == 0:
                 continue
         
@@ -92,7 +99,7 @@ class Client(object):
 
             sys.stdout.write(record)
             
-            self.transfers +=1
+            self.received +=1
 
 def main():
     if sys.argv[2] != "client":

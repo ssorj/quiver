@@ -118,12 +118,20 @@ public class QuiverVertxProton {
         vertx.close();
     }
 
+    // TODO: adjust? The writer is [needlessly] synchronizing every
+    // write, the buffer may flush more/less often than desired?.
+    private static PrintWriter getOutputWriter() {
+        return new PrintWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
+    }
+
     private static void send(ProtonConnection connection, String address, int messages, int bytes, CountDownLatch latch) {
       connection.open();
 
       byte[] payloadContent = new byte[bytes];
       Arrays.fill(payloadContent, (byte) 120);
 
+      PrintWriter out = getOutputWriter();
+      
       AtomicLong count = new AtomicLong(1);
 
       ProtonSender sender = connection.createSender(address);
@@ -131,7 +139,8 @@ public class QuiverVertxProton {
         while (!sender.sendQueueFull() && count.get() <= messages) {
           Message msg = Message.Factory.create();
 
-          msg.setMessageId(UnsignedLong.valueOf(count.get()));
+          UnsignedLong id = UnsignedLong.valueOf(count.get());
+          msg.setMessageId(id);
 
           msg.setBody(new Data(new Binary(payloadContent)));
 
@@ -141,7 +150,12 @@ public class QuiverVertxProton {
           props.put("SendTime", stime);
 
           sender.send(msg);
+
+          out.printf("%s,%d\n", id, stime);
+
           if(count.getAndIncrement() >= messages) {
+            out.flush();
+          
             connection.closeHandler(x -> {
               latch.countDown();
             });
@@ -155,8 +169,7 @@ public class QuiverVertxProton {
     private static void receive(ProtonConnection connection, String address, int messages, int credits, CountDownLatch latch) {
       connection.open();
 
-      //TODO: adjust? The writer is [needlessly] synchronizing every write, the buffer may flush more/less often than desired?.
-      PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
+      PrintWriter out = getOutputWriter();
 
       AtomicInteger count = new AtomicInteger(1);
 

@@ -46,14 +46,19 @@ function eprint(message) {
 
 container.on("sendable", function(context) {
     while (context.sender.sendable() && sent < messages) {
+        var id = sent + 1;
+        var stime = new Date().getTime();
+        
         var message = {
-            id: sent + 1,
-            SendTime: new Date().getTime(),
+            id: id,
+            SendTime: stime,
             content_type: "application/octet-stream",
             body: body,
         };
         
         context.sender.send(message);
+
+        process.stdout.write(message.id + "," + stime + "\n");
 
         sent++;
     }
@@ -75,9 +80,9 @@ container.on("message", function(context) {
     var message = context.message;
     var rtime = new Date().getTime();
     var stime = message.SendTime;
-    var record = message.id + "," + stime + "," + rtime + "\n";
 
-    process.stdout.write(record); // XXX buffered IO
+    // XXX buffered IO?
+    process.stdout.write(message.id + "," + stime + "," + rtime + "\n");
 
     received++;
 

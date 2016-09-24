@@ -46,7 +46,8 @@ struct Client {
     int bytes;
     int credit;
 
-    int transfers = 0;
+    int sent = 0;
+    int received = 0;
 
     void run();
     void sendMessages(Session&);
@@ -79,15 +80,22 @@ void Client::sendMessages(Session& session) {
 
     std::string body(bytes, 'x');
     
-    while (transfers < messages) {
+    while (sent < messages) {
+        std::string id = std::to_string(sent + 1);
+        long stime = now();
+        
         Message message(body);
-        message.setMessageId(std::to_string(transfers + 1));
-        message.setProperty("SendTime", Variant(now()));
+        message.setMessageId(id);
+        message.setProperty("SendTime", Variant(stime));
 
         sender.send(message);
             
-        transfers++;
+        std::cout << id << "," << stime << "\n";
+        
+        sent++;
     }
+
+    // XXX flush?
 }
 
 void Client::receiveMessages(Session& session) {
@@ -96,7 +104,7 @@ void Client::receiveMessages(Session& session) {
 
     Message message;
 
-    while (transfers < messages) {
+    while (received < messages) {
         if (receiver.getAvailable() == 0) {
             continue;
         }
@@ -110,8 +118,10 @@ void Client::receiveMessages(Session& session) {
 
         std::cout << id << "," << stime << "," << rtime << "\n";
         
-        transfers++;
+        received++;
     }
+
+    // XXX flush?
 }
 
 int main(int argc, char** argv) {

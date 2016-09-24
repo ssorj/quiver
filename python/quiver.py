@@ -54,8 +54,14 @@ class QuiverCommand(object):
             self.output_dir = _tempfile.mkdtemp(prefix="quiver-")
             
         self.impl_file = _os.path.join(self.home_dir, "exec", impl_name)
-        self.transfers_file = _os.path.join(self.output_dir, "transfers.csv")
 
+        if self.operation == "send":
+            self.transfers_file = _os.path.join(self.output_dir, "sent.csv")
+        elif self.operation == "receive":
+            self.transfers_file = _os.path.join(self.output_dir, "received.csv")
+        else:
+            raise Exception()
+        
         self.start_time = None
         self.end_time = None
         
