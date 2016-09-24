@@ -93,10 +93,20 @@ build/exec/%: exec/%.cpp
 	@mkdir -p build/exec
 	gcc -std=c++11 -lqpid-proton -lqpidmessaging -lqpidtypes -lstdc++ $< -o $@
 
-build/java/quiver-%.jar: $(shell find java/%/src -type f) java/%/pom.xml
+build/java/quiver-jms.jar: $(shell find java/jms/src -type f) java/jms/pom.xml
 	@mkdir -p build/java
-	cd java/$* && mvn clean package
-	cp java/$*/target/quiver-$*-*-jar-with-dependencies.jar $@
+	cd java/jms && mvn clean package
+	cp java/jms/target/quiver-jms-*-jar-with-dependencies.jar $@
+
+build/java/quiver-vertx-proton.jar: $(shell find java/vertx-proton/src -type f) java/vertx-proton/pom.xml
+	@mkdir -p build/java
+	cd java/vertx-proton && mvn clean package
+	cp java/vertx-proton/target/quiver-vertx-proton-*-jar-with-dependencies.jar $@
+
+# build/java/quiver-%.jar: $(shell find java/%/src -type f) java/%/pom.xml
+# 	@mkdir -p build/java
+# 	cd java/$* && mvn clean package
+# 	cp java/$*/target/quiver-$*-*-jar-with-dependencies.jar $@
 
 .PHONY: update-rhea
 update-rhea:
