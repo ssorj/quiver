@@ -101,12 +101,29 @@ if (colon == -1) {
     var port = domain.slice(colon + 1);
 }
 
-var conn = container.connect({"host": host, "port": port});
+var conn = container.connect({host: host, port: port});
 
 if (operation == "send") {
-    conn.open_sender(path);
+    var options = {
+        target: {
+            address: path,
+            durable: false
+        }
+    };
+
+    // XXX How do I set delivery mode?
+    
+    conn.open_sender(options);
 } else if (operation == "receive") {
-    conn.open_receiver(path, {prefetch: credit});
+    var options = {
+        source: {
+            address: path,
+            durable: false
+        },
+        prefetch: credit
+    };
+    
+    conn.open_receiver(options);
 } else {
     throw new Error();
 }
