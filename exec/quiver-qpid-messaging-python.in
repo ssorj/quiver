@@ -30,6 +30,7 @@ import time
 from qpid_messaging import *
 
 home_dir = os.path.normpath("@quiver_home@")
+link_options = "{link: {durable: True, reliability: at-least-once}}"
 
 class Client(object):
     def __init__(self):
@@ -62,6 +63,13 @@ class Client(object):
             conn.close()
 
     def send_messages(self, session):
+        # XXX
+        # NotImplementedError: Wrong number or type of arguments for overloaded function 'Session__sender'.
+        #   Possible C/C++ prototypes are:
+        #     qpid::messaging::Session::createSender(qpid::messaging::Address const &)
+        #     qpid::messaging::Session::createSender(std::string const &)
+        #address = "{}; {}".format(self.path, link_options)
+        #sender = session.sender(address)
         sender = session.sender(self.path)
         sender.capacity = self.credit
 
@@ -83,6 +91,9 @@ class Client(object):
             self.sent +=1
         
     def receive_messages(self, session):
+        # XXX See above
+        #address = "{}; {}".format(self.path, link_options)
+        #receiver = session.receiver(address)
         receiver = session.receiver(self.path)
         receiver.capacity = self.credit
 

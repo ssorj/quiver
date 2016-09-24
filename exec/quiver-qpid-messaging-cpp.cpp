@@ -32,6 +32,11 @@ using namespace qpid::messaging;
 using namespace qpid::types;
 using namespace std::chrono;
 
+static const std::string CONNECTION_OPTIONS =
+    "{protocol: amqp1.0, sasl_mechanisms: ANONYMOUS}";
+static const std::string LINK_OPTIONS =
+    "{link: {durable: True, reliability: at-least-once}}";
+
 long now() {
     return duration_cast<milliseconds>
         (system_clock::now().time_since_epoch()).count();
@@ -55,7 +60,7 @@ struct Client {
 };
 
 void Client::run() {
-    Connection conn(domain, "{protocol: amqp1.0, sasl_mechanisms: ANONYMOUS}");
+    Connection conn(domain, CONNECTION_OPTIONS);
     conn.open();
 
     try {
@@ -75,7 +80,7 @@ void Client::run() {
 }
 
 void Client::sendMessages(Session& session) {
-    Sender sender = session.createSender(path);
+    Sender sender = session.createSender(path + "; " + LINK_OPTIONS);
     sender.setCapacity(credit);
 
     std::string body(bytes, 'x');
@@ -99,7 +104,7 @@ void Client::sendMessages(Session& session) {
 }
 
 void Client::receiveMessages(Session& session) {
-    Receiver receiver = session.createReceiver(path);
+    Receiver receiver = session.createReceiver(path + "; " + LINK_OPTIONS);
     receiver.setCapacity(credit);
 
     Message message;
