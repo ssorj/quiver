@@ -89,23 +89,14 @@ build/exec/%: exec/%.in
 	@mkdir -p build/exec
 	scripts/configure-file $< $@ quiver_home ${QUIVER_HOME}
 
-build/exec/quiver-qpid-messaging-cpp: exec/quiver-qpid-messaging-cpp.cpp
+build/exec/%: exec/%.cpp
 	@mkdir -p build/exec
-	gcc -std=c++11 -lqpidmessaging -lqpidtypes -lstdc++ $< -o $@
+	gcc -std=c++11 -lqpid-proton -lqpidmessaging -lqpidtypes -lstdc++ $< -o $@
 
-build/exec/quiver-qpid-proton-cpp: exec/quiver-qpid-proton-cpp.cpp
-	@mkdir -p build/exec
-	gcc -std=c++11 -lqpid-proton -lstdc++ $< -o $@
-
-build/java/quiver-jms.jar: $(shell find java/jms/src -type f) java/jms/pom.xml
+build/java/quiver-%.jar: $(shell find java/%/src -type f) java/%/pom.xml
 	@mkdir -p build/java
-	cd java/jms && mvn clean package
-	cp java/jms/target/quiver-jms-*-jar-with-dependencies.jar $@
-
-build/java/quiver-vertx-proton.jar: $(shell find java/vertx-proton/src -type f) java/vertx-proton/pom.xml
-	@mkdir -p build/java
-	cd java/vertx-proton && mvn clean package
-	cp java/vertx-proton/target/quiver-vertx-proton-*-jar-with-dependencies.jar $@
+	cd java/$* && mvn clean package
+	cp java/$*/target/quiver-$*-*-jar-with-dependencies.jar $@
 
 .PHONY: update-rhea
 update-rhea:
