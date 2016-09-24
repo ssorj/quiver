@@ -35,7 +35,9 @@ TARGETS = \
 	build/exec/quiver-qpid-proton-cpp \
 	build/exec/quiver-qpid-proton-python \
 	build/exec/quiver-vertx-proton \
-	build/exec/quiver-rhea
+	build/exec/quiver-rhea \
+	build/java/quiver-jms.jar \
+	build/java/quiver-vertx-proton.jar
 
 .PHONY: default
 default: devel
@@ -55,20 +57,8 @@ clean:
 	rm -rf java/target
 
 .PHONY: build
-build: ${TARGETS} build-jms build-vertx-proton
+build: ${TARGETS}
 	cp exec/amqp-test-broker build/exec
-
-.PHONY: build-jms
-build-jms:
-	@mkdir -p build/java
-	cd java/jms && mvn clean package
-	cp java/jms/target/quiver-jms-*-jar-with-dependencies.jar build/java/quiver-jms.jar
-
-.PHONY: build-vertx-proton
-build-vertx-proton:
-	@mkdir -p build/java
-	cd java/vertx-proton && mvn clean package
-	cp java/vertx-proton/target/quiver-vertx-proton-*-jar-with-dependencies.jar build/java/quiver-vertx-proton.jar
 
 .PHONY: install
 install: build
@@ -83,7 +73,7 @@ install: build
 
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
-devel: clean install
+devel: install
 	quiver --help > /dev/null
 	quiver-launch --help > /dev/null
 
@@ -106,6 +96,16 @@ build/exec/quiver-qpid-messaging-cpp: exec/quiver-qpid-messaging-cpp.cpp
 build/exec/quiver-qpid-proton-cpp: exec/quiver-qpid-proton-cpp.cpp
 	@mkdir -p build/exec
 	gcc -std=c++11 -lqpid-proton -lstdc++ $< -o $@
+
+build/java/quiver-jms.jar: $(shell find java/jms/src -type f) java/jms/pom.xml
+	@mkdir -p build/java
+	cd java/jms && mvn clean package
+	cp java/jms/target/quiver-jms-*-jar-with-dependencies.jar $@
+
+build/java/quiver-vertx-proton.jar: $(shell find java/vertx-proton/src -type f) java/vertx-proton/pom.xml
+	@mkdir -p build/java
+	cd java/vertx-proton && mvn clean package
+	cp java/vertx-proton/target/quiver-vertx-proton-*-jar-with-dependencies.jar $@
 
 .PHONY: update-rhea
 update-rhea:
