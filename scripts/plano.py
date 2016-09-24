@@ -144,6 +144,9 @@ def name_extension(file):
 
     return ext
 
+def program_name():
+    return file_name(ARGS[0])
+
 def read(file):
     with _codecs.open(file, encoding="utf-8", mode="r") as f:
         return f.read()
@@ -413,6 +416,7 @@ class working_dir(object):
     def __exit__(self, type, value, traceback):
         change_dir(self.prev_dir)
 
+# XXX Honor command as array here
 def _init_call(command, args, kwargs):
     if args:
         command = command.format(*args)
@@ -431,6 +435,41 @@ def call(command, *args, **kwargs):
 def call_for_output(command, *args, **kwargs):
     command, kwargs = _init_call(command, args, kwargs)
     return _subprocess_check_output(command, **kwargs)
+
+def start_process(command, *args, **kwargs):
+    command, kwargs = _init_call(command, args, kwargs)
+    proc = _subprocess.Popen(command, **kwargs)
+
+    notice("Started process {}", proc.pid)
+    
+    return proc
+
+def stop_process(proc):
+    notice("Stopping process {}", proc.pid)
+
+    if proc.poll() is not None:
+        if proc.returncode == 0:
+            notice("Process {} already exited normally", proc.pid)
+        else:
+            error("Process {} exited with code {}", proc.pid, proc.returncode)
+            
+        return
+    
+    proc.terminate()
+    proc.wait() # XXX Timeout, then kill harder?
+
+    if proc.returncode == 0:
+        notice("Process {} exited normally", proc.pid)
+    else:
+        error("Process {} exited with code {}", proc.pid, proc.returncode)
+
+def join_process(proc):
+    proc.wait()
+
+    if proc.returncode == 0:
+        notice("Process {} exited normally", proc.pid)
+    else:
+        error("Process {} exited with code {}", proc.pid, proc.returncode)
 
 def make_archive(input_dir, output_dir, archive_stem):
     temp_dir = make_temp_dir()
