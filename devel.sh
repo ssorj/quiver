@@ -1,1 +1,1 @@
-export PATH=$PWD/install/bin:$PATH
+export PATH=$PWD/install/bin:$PWD/scripts:$PATH
