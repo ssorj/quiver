@@ -18,6 +18,7 @@
  * under the License.
  *
  */
+
 package net.ssorj.quiver;
 
 import java.io.BufferedWriter;
@@ -77,12 +78,13 @@ public class QuiverArrowVertxProton {
         }
 
         final boolean sender;
+        
         if (SEND.equalsIgnoreCase(operation)) {
-          sender = true;
+            sender = true;
         } else if (RECEIVE.equalsIgnoreCase(operation)) {
-          sender = false;
+            sender = false;
         } else {
-          throw new java.lang.IllegalStateException("Unknown operation: " + mode);
+            throw new java.lang.IllegalStateException("Unknown operation: " + mode);
         }
 
         CountDownLatch completionLatch = new CountDownLatch(1);
@@ -90,29 +92,31 @@ public class QuiverArrowVertxProton {
 
         String hostname = uri.getHost();
         int port = uri.getPort();
-        if(port == -1) {
-          port = DEFAULT_AMQP_PORT;
+
+        if (port == -1) {
+            port = DEFAULT_AMQP_PORT;
         }
 
         Vertx vertx = Vertx.vertx();
-
         ProtonClient client = ProtonClient.create(vertx);
+        
         client.connect(hostname, port, res -> {
-          if (res.succeeded()) {
-            ProtonConnection connection = res.result();
+                if (res.succeeded()) {
+                    ProtonConnection connection = res.result();
 
-            if (sender) {
-              send(connection, path, messages, bytes, completionLatch);
-            } else {
-              receive(connection, path, messages, credit, completionLatch);
-            }
-          } else {
-            res.cause().printStackTrace();
-            completionLatch.countDown();
-          }
-        });
+                    if (sender) {
+                        send(connection, path, messages, bytes, completionLatch);
+                    } else {
+                        receive(connection, path, messages, credit, completionLatch);
+                    }
+                } else {
+                    res.cause().printStackTrace();
+                    completionLatch.countDown();
+                }
+            });
 
-        // Await the operations completing, then shut down the Vertx instance.
+        // Await the operations completing, then shut down the Vertx
+        // instance.
         completionLatch.await();
 
         vertx.close();
@@ -124,76 +128,74 @@ public class QuiverArrowVertxProton {
         return new PrintWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
     }
 
-    private static void send(ProtonConnection connection, String address, int messages, int bytes, CountDownLatch latch) {
-      connection.open();
+    private static void send(ProtonConnection connection, String address,
+                             int messages, int bytes, CountDownLatch latch) {
+        connection.open();
 
-      byte[] payloadContent = new byte[bytes];
-      Arrays.fill(payloadContent, (byte) 120);
+        byte[] payloadContent = new byte[bytes];
+        Arrays.fill(payloadContent, (byte) 120);
+        PrintWriter out = getOutputWriter();
+        AtomicLong count = new AtomicLong(1);
+        ProtonSender sender = connection.createSender(address);
+        
+        sender.sendQueueDrainHandler(s -> {
+                while (!sender.sendQueueFull() && count.get() <= messages) {
+                    Message msg = Message.Factory.create();
 
-      PrintWriter out = getOutputWriter();
-      
-      AtomicLong count = new AtomicLong(1);
+                    UnsignedLong id = UnsignedLong.valueOf(count.get());
+                    msg.setMessageId(id);
 
-      ProtonSender sender = connection.createSender(address);
-      sender.sendQueueDrainHandler(s -> {
-        while (!sender.sendQueueFull() && count.get() <= messages) {
-          Message msg = Message.Factory.create();
+                    msg.setBody(new Data(new Binary(payloadContent)));
 
-          UnsignedLong id = UnsignedLong.valueOf(count.get());
-          msg.setMessageId(id);
+                    Map<String, Object> props = new HashMap<>();
+                    msg.setApplicationProperties(new ApplicationProperties(props));
+                    long stime = System.currentTimeMillis();
+                    props.put("SendTime", stime);
 
-          msg.setBody(new Data(new Binary(payloadContent)));
+                    sender.send(msg);
 
-          Map<String, Object> props = new HashMap<>();
-          msg.setApplicationProperties(new ApplicationProperties(props));
-          long stime = System.currentTimeMillis();
-          props.put("SendTime", stime);
+                    out.printf("%s,%d\n", id, stime);
 
-          sender.send(msg);
-
-          out.printf("%s,%d\n", id, stime);
-
-          if(count.getAndIncrement() >= messages) {
-            out.flush();
+                    if (count.getAndIncrement() >= messages) {
+                        out.flush();
           
-            connection.closeHandler(x -> {
-              latch.countDown();
+                        connection.closeHandler(x -> {
+                                latch.countDown();
+                            });
+                        connection.close();
+                    };
+                }
             });
-            connection.close();
-          };
-        }
-      });
-      sender.open();
+        sender.open();
     }
 
-    private static void receive(ProtonConnection connection, String address, int messages, int credits, CountDownLatch latch) {
-      connection.open();
+    private static void receive(ProtonConnection connection, String address,
+                                int messages, int credits, CountDownLatch latch) {
+        connection.open();
 
-      PrintWriter out = getOutputWriter();
+        PrintWriter out = getOutputWriter();
+        AtomicInteger count = new AtomicInteger(1);
+        ProtonReceiver receiver = connection.createReceiver(address);
 
-      AtomicInteger count = new AtomicInteger(1);
+        receiver.setAutoAccept(false).setPrefetch(0).flow(credits);
+        receiver.handler((delivery, msg) -> {
+                Object id = msg.getMessageId();
+                long stime = (Long) msg.getApplicationProperties().getValue().get("SendTime");
+                long rtime = System.currentTimeMillis();
 
-      ProtonReceiver receiver = connection.createReceiver(address);
-      receiver.setAutoAccept(false).setPrefetch(0).flow(credits);
+                out.printf("%s,%d,%d\n", id, stime, rtime);
 
-      receiver.handler((delivery, msg) -> {
-        Object id = msg.getMessageId();
-        long stime = (Long) msg.getApplicationProperties().getValue().get("SendTime");
-        long rtime = System.currentTimeMillis();
+                delivery.disposition(ACCEPTED, true);
+                receiver.flow(1);
 
-        out.printf("%s,%d,%d\n", id, stime, rtime);
+                if (count.getAndIncrement() >= messages) {
+                    out.flush();
 
-        delivery.disposition(ACCEPTED, true);
-        receiver.flow(1);
-
-        if(count.getAndIncrement() >= messages) {
-          out.flush();
-
-          connection.closeHandler(x -> {
-            latch.countDown();
-          });
-          connection.close();
-        }
-      }).open();
+                    connection.closeHandler(x -> {
+                            latch.countDown();
+                        });
+                    connection.close();
+                }
+            }).open();
     }
 }
