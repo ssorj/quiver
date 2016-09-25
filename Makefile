@@ -24,18 +24,18 @@ PREFIX := ${HOME}/.local
 QUIVER_HOME = ${PREFIX}/lib/quiver
 
 TARGETS = \
-	build/bin/quiver \
+	build/bin/quiver-arrow \
 	build/bin/quiver-launch \
 	build/bin/quiver-smoke-test \
-	build/exec/quiver-activemq-jms \
-	build/exec/quiver-activemq-artemis-jms \
-	build/exec/quiver-qpid-jms \
-	build/exec/quiver-qpid-messaging-cpp \
-	build/exec/quiver-qpid-messaging-python \
-	build/exec/quiver-qpid-proton-cpp \
-	build/exec/quiver-qpid-proton-python \
-	build/exec/quiver-vertx-proton \
-	build/exec/quiver-rhea \
+	build/exec/arrow-activemq-jms \
+	build/exec/arrow-activemq-artemis-jms \
+	build/exec/arrow-qpid-jms \
+	build/exec/arrow-qpid-messaging-cpp \
+	build/exec/arrow-qpid-messaging-python \
+	build/exec/arrow-qpid-proton-cpp \
+	build/exec/arrow-qpid-proton-python \
+	build/exec/arrow-vertx-proton \
+	build/exec/arrow-rhea \
 	build/java/quiver-jms.jar \
 	build/java/quiver-vertx-proton.jar
 
@@ -67,14 +67,12 @@ install: build
 	scripts/install-files javascript ${DESTDIR}${QUIVER_HOME}/javascript \*
 	scripts/install-files build/java ${DESTDIR}${QUIVER_HOME}/java \*
 	scripts/install-files build/exec ${DESTDIR}${QUIVER_HOME}/exec \*
-	scripts/install-executable build/bin/quiver ${DESTDIR}${PREFIX}/bin/quiver
-	scripts/install-executable build/bin/quiver-launch ${DESTDIR}${PREFIX}/bin/quiver-launch
-	scripts/install-executable build/bin/quiver-smoke-test ${DESTDIR}${PREFIX}/bin/quiver-smoke-test
+	scripts/install-files build/bin ${DESTDIR}${PREFIX}/bin \*
 
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
 devel: install
-	quiver --help > /dev/null
+	quiver-arrow --help > /dev/null
 	quiver-launch --help > /dev/null
 
 .PHONY: test

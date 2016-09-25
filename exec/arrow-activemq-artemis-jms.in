@@ -40,11 +40,11 @@ def main():
         "java",
         "-classpath", jar_file,
         "-Djava.naming.factory.initial=org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory",
-        "-Dquiver.jms.cf.prefix=connectionFactory",
-        "-Dquiver.jms.cf.name=ConnectionFactory",
-        "-Dquiver.jms.cf.url={}".format(url),
+        "-Darrow.jms.cf.prefix=connectionFactory",
+        "-Darrow.jms.cf.name=ConnectionFactory",
+        "-Darrow.jms.cf.url={}".format(url),
         "-Dorg.slf4j.simpleLogger.defaultLogLevel=warn",
-        "net.ssorj.quiver.QuiverJms",
+        "net.ssorj.quiver.QuiverArrowJms",
     ]
 
     args += sys.argv[1:]

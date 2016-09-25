@@ -3,7 +3,7 @@
 Tools for testing the performance of messaging clients and servers.
 
     [Start an AMQP server]
-    $ (quiver q0 receive &); quiver q0 send
+    $ (quiver-arrow q0 receive &); quiver-arrow q0 send
     *        6,115         6,022 messages/s         112.0 ms avg latency
     *       12,976         6,650 messages/s         303.3 ms avg latency
     [...]
@@ -20,17 +20,17 @@ Tools for testing the performance of messaging clients and servers.
 ## Overview
 
 Quiver implementations are native clients (and sometimes also servers)
-in various languages and APIs that send and receive messages and dump
+in various languages and APIs that send or receive messages and dump
 raw information about the transfers to standard output.  They are
 deliberately simple.
 
-The main Quiver tool, `quiver`, runs an implementation and captures
-its output.  It has options for defining the execution parameters,
-selecting the implementation, and reporting statistics.
+`quiver-arrow` runs an implementation in send or receive mode and
+captures its output.  It has options for defining the execution
+parameters, selecting the implementation, and reporting statistics.
 
-`quiver-launch` makes it easy to launch many `quiver` instances.  In
-the future, it will collate the results from the individual `quiver`
-runs and produce a consolidated report.
+`quiver-launch` makes it easy to launch many `quiver-arrow` instances.
+In the future, it will collate the results from the individual
+`quiver-arrow` runs and produce a consolidated report.
 
 ## Installation
 
@@ -88,16 +88,15 @@ running make targets.  These are the important ones:
 
 ## Command-line interface
 
-### quiver
+### `quiver-arrow`
 
-`quiver` is the main entry point.  It sends or receives AMQP messages
-as fast as it can.  When the requested transfers are done, it reports
-the throughput and latency of the overall set, from the first send to
-the last receive.
+This command sends or receives AMQP messages as fast as it can.  When
+the requested transfers are done, it reports the throughput and
+latency of the overall set, from the first send to the last receive.
 
-    usage: quiver [-h] [-n COUNT] [--impl NAME] [--bytes COUNT] [--credit COUNT]
-                  [--timeout SECONDS] [--server] [--output DIRECTORY] [--quiet] [--debug]
-                  ADDRESS OPERATION
+    usage: quiver-arrow [-h] [-n COUNT] [--impl NAME] [--bytes COUNT] [--credit COUNT]
+                        [--timeout SECONDS] [--server] [--output DIRECTORY] [--quiet] [--debug]
+                        ADDRESS OPERATION
 
     Test the performance of messaging clients and servers
 
@@ -139,19 +138,19 @@ the last receive.
       rhea [javascript]               Client mode only at the moment
       vertx-proton                    Client mode only
 
-### quiver-launch
+### `quiver-launch`
 
-`quiver-launch` starts sender-receiver pairs.  Each sender or receiver
-is an invocation of the `quiver` command.  Arguments not processed by
-`quiver-launch` are passed to `quiver`.
+This command starts sender-receiver pairs.  Each sender or receiver is
+an invocation of the `quiver-arrow` command.  Arguments not processed
+by `quiver-launch` are passed to `quiver-arrow`.
 
     usage: quiver-launch [-h] [--pairs COUNT] [--senders COUNT]
                          [--receivers COUNT] ADDRESS
 
-    Launch quiver senders and receivers
+    Launch Quiver senders and receivers
 
-    Arguments not processed by quiver-launch are passed to
-    the 'quiver' command.  See the output of 'quiver --help'.
+    Arguments not processed by 'quiver-launch' are passed to the
+    'quiver-arrow' command.  See the output of 'quiver-arrow --help'.
 
     positional arguments:
       ADDRESS            The location of a message queue
@@ -167,41 +166,38 @@ is an invocation of the `quiver` command.  Arguments not processed by
 ### Running Quiver with Dispatch Router
 
     $ qdrouterd &
-    $ quiver q0 receive &
-    $ quiver q0 send
+    $ quiver-launch q0
 
 ### Running Quiver with Artemis
 
     $ <instance-dir>/bin/artemis run &
     $ <instance-dir>/bin/artemis destination create --name q0 --type core-queue
-    $ quiver q0 receive &
-    $ quiver q0 send
+    $ quiver-launch q0
     
 ### Running Quiver with the Qpid C++ broker
 
     $ qpidd --auth no &
     $ qpid-config add queue q0
-    $ quiver q0 receive &
-    $ quiver q0 send
+    $ quiver-launch q0
 
 ### Running Quiver peer-to-peer
 
-    $ quiver --server q0 receive &
-    $ quiver q0 send
+    $ quiver-arrow --server q0 receive &
+    $ quiver-arrow q0 send
 
     [or]
 
-    $ quiver --server q0 send &
-    $ quiver q0 receive
+    $ quiver-arrow --server q0 send &
+    $ quiver-arrow q0 receive
 
 ## Implementations
 
-The `quiver` command is a wrapper that invokes an implementation
-executable using standard arguments.  `quiver` tries to take
+The `quiver-arrow` command is a wrapper that invokes an implementation
+executable using standard arguments.  `quiver-arrow` tries to take
 responsibility for "cooking" its inputs so implementations can focus
 on mechanics.  By the same token, implementation outputs are
-intentionally left raw so `quiver` can do the work of presenting the
-results.
+intentionally left raw so `quiver-arrow` can do the work of presenting
+the results.
 
 ### Input
 
@@ -217,6 +213,11 @@ Implementations must process the following positional arguments.
     [8] credit          Amount of credit to maintain
 
 ### Output
+
+Implementations must print sent transfers to standard output, one
+transfer per line.
+
+    <message-id>,<send-time>\n
 
 Implementations must print received transfers to standard output, one
 transfer per line.
@@ -235,3 +236,5 @@ output are buffered.
 Implementations must give each message a unique ID to aid debugging.
 They must also set an application property named `SendTime` containing
 a `long` representing the send time in milliseconds.
+
+- XXX at-least-once, non-durable

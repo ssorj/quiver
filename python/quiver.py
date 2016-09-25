@@ -33,7 +33,10 @@ import threading as _threading
 import time as _time
 import traceback as _traceback
 
-class QuiverCommand(object):
+#class QuiverCommand(object):
+#    pass
+
+class QuiverArrowCommand(object):
     def __init__(self, home_dir, output_dir, impl, mode, address,
                  operation, messages, bytes_, credit, timeout):
         self.home_dir = home_dir
@@ -50,7 +53,7 @@ class QuiverCommand(object):
         self.quiet = False
         self.debug = False
 
-        impl_name = "quiver-{}".format(self.impl)
+        impl_name = "arrow-{}".format(self.impl)
 
         if self.output_dir is None:
             self.output_dir = _tempfile.mkdtemp(prefix="quiver-")

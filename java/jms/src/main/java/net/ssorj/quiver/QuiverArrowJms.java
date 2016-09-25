@@ -27,7 +27,7 @@ import java.util.*;
 import javax.jms.*;
 import javax.naming.*;
 
-public class QuiverJms {
+public class QuiverArrowJms {
     public static void main(String[] args) {
         try {
             doMain(args);

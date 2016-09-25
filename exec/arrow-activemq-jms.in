@@ -32,19 +32,19 @@ home_dir = os.path.normpath("@quiver_home@")
 def main():
     domain = sys.argv[3]
     credit = sys.argv[8]
-
+    
     jar_file = os.path.join(home_dir, "java", "quiver-jms.jar")
-    url = "amqp://{}?jms.prefetchPolicy.all={}".format(domain, credit)
+    url = "tcp://{}?jms.prefetchPolicy.all={}".format(domain, credit)
 
     args = [
         "java",
         "-classpath", jar_file,
-        "-Djava.naming.factory.initial=org.apache.qpid.jms.jndi.JmsInitialContextFactory",
-        "-Dquiver.jms.cf.prefix=connectionfactory", # Note the lowercase 'f'
-        "-Dquiver.jms.cf.name=ConnectionFactory",
-        "-Dquiver.jms.cf.url={}".format(url),
+        "-Djava.naming.factory.initial=org.apache.activemq.jndi.ActiveMQInitialContextFactory",
+        "-Darrow.jms.cf.prefix=connectionFactory",
+        "-Darrow.jms.cf.name=ConnectionFactory", # ActiveMQ JMS seems to require 'ConnectionFactory'
+        "-Darrow.jms.cf.url={}".format(url),
         "-Dorg.slf4j.simpleLogger.defaultLogLevel=warn",
-        "net.ssorj.quiver.QuiverJms",
+        "net.ssorj.quiver.QuiverArrowJms",
     ]
 
     args += sys.argv[1:]

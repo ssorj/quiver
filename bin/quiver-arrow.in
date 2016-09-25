@@ -74,8 +74,8 @@ epilog = "operations:\n" \
          "\n" \
          "example usage:\n" \
          "  $ qdrouterd &                   # Start a message server\n" \
-         "  $ quiver q0 receive &           # Start receiving\n" \
-         "  $ quiver q0 send                # Start sending\n" \
+         "  $ quiver-arrow q0 receive &     # Start receiving\n" \
+         "  $ quiver-arrow q0 send          # Start sending\n" \
          "\n"
 
 class Formatter(argparse.ArgumentDefaultsHelpFormatter,
@@ -125,9 +125,10 @@ def main():
     
     mode = "server" if args.server else "client"
     
-    command = QuiverCommand(home_dir, args.output, impl, mode, args.address,
-                            args.operation, args.messages, args.bytes,
-                            args.credit, args.timeout)
+    command = QuiverArrowCommand \
+        (home_dir, args.output, impl, mode, args.address,
+         args.operation, args.messages, args.bytes,
+         args.credit, args.timeout)
 
     command.quiet = args.quiet
     command.debug = args.debug

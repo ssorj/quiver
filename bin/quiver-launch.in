@@ -36,10 +36,10 @@ sys.path.insert(0, os.path.join(home_dir, "python"))
 from quiver import *
 
 description = \
-    "Launch quiver senders and receivers\n" \
+    "Launch Quiver senders and receivers\n" \
     "\n" \
-    "Arguments not processed by quiver-launch are passed to\n" \
-    "the 'quiver' command.  See the output of 'quiver --help'.\n"
+    "Arguments not processed by 'quiver-launch' are passed to the\n" \
+    "'quiver-arrow' command.  See the output of 'quiver-arrow --help'.\n"
 
 class Formatter(argparse.ArgumentDefaultsHelpFormatter,
                 argparse.RawDescriptionHelpFormatter):
@@ -66,24 +66,24 @@ def main():
     sender_count = max(args.pairs, args.senders)
     receiver_count = max(args.pairs, args.receivers)
     
-    sender_args = ["quiver", args.address, "send"]
+    sender_args = ["quiver-arrow", args.address, "send"]
     sender_args += passthrough_args
 
-    receiver_args = ["quiver", args.address, "receive"]
+    receiver_args = ["quiver-arrow", args.address, "receive"]
     receiver_args += passthrough_args
 
     senders = list()
     receivers = list()
     
-    for i in range(sender_count):
-        sender = subprocess.Popen(sender_args)
-        senders.append(sender)
-
-    time.sleep(0.1)
-
     for i in range(receiver_count):
         receiver = subprocess.Popen(receiver_args)
         receivers.append(receiver)
+
+    time.sleep(0.1)
+
+    for i in range(sender_count):
+        sender = subprocess.Popen(sender_args)
+        senders.append(sender)
 
     for sender in senders:
         sender.wait()

@@ -26,7 +26,7 @@ IMPL=$1
 ADDRESS=$2
 MESSAGES=$3
 
-quiver $ADDRESS receive -n $MESSAGES --impl $IMPL &
-quiver $ADDRESS send -n $MESSAGES --impl $IMPL &
+quiver-arrow $ADDRESS receive -n $MESSAGES --impl $IMPL &
+quiver-arrow $ADDRESS send -n $MESSAGES --impl $IMPL &
 
 wait
