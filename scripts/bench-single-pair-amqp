@@ -43,7 +43,7 @@ if not is_dir(join(home_dir(), "artemis")):
     exit("I need an artemis instance installed at $HOME/artemis")
 
 def test_client(name, port, messages, output):
-    command = "quiver-launch //localhost:{}/q0 --debug --impl {} -n {} > {}"
+    command = "quiver //localhost:{}/q0 --debug --impl {} -n {} > {}"
 
     try:
         call(command, port, name, messages, output)

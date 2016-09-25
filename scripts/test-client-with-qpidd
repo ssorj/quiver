@@ -38,7 +38,7 @@ def test(client, messages):
     cmd = "qpid-config -b localhost:{} add queue q0" 
     call(cmd, port)
     
-    cmd = "quiver-launch //localhost:{}/q0 --impl {} -n {} --debug"
+    cmd = "quiver //localhost:{}/q0 --impl {} -n {} --debug"
     call(cmd, port, client, messages)
 
     stop_process(server)

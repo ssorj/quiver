@@ -49,9 +49,9 @@ function test_server_receive_mode {
 
     echo -n "Testing server receive mode, sender ${sender_impl}, receiver ${receiver_impl} ... "
     
-    quiver $address receive -n $MESSAGES --quiet --impl $receiver_impl --server &
+    quiver-arrow $address receive -n $MESSAGES --quiet --impl $receiver_impl --server &
     receiver_pid=$!
-    quiver $address send -n $MESSAGES --quiet --impl $sender_impl &
+    quiver-arrow $address send -n $MESSAGES --quiet --impl $sender_impl &
     sender_pid=$!
 
     wait $sender_pid || let "failures+=1"
@@ -75,9 +75,9 @@ function test_server_send_mode {
 
     echo -n "Testing server send mode, sender ${sender_impl}, receiver ${receiver_impl} ... "
     
-    quiver $address send -n $MESSAGES --quiet --impl $sender_impl --server &
+    quiver-arrow $address send -n $MESSAGES --quiet --impl $sender_impl --server &
     sender_pid=$!
-    quiver $address receive -n $MESSAGES --quiet --impl $receiver_impl &
+    quiver-arrow $address receive -n $MESSAGES --quiet --impl $receiver_impl &
     receiver_pid=$!
 
     wait $sender_pid || let "failures+=1"
@@ -105,10 +105,10 @@ function test_client_mode {
     $quiver_home/exec/amqp-test-broker --host 127.0.0.1 --port $port 2> /dev/null &
     local broker_pid=$!
 
-    quiver $address receive -n $MESSAGES --quiet --impl $receiver_impl &
+    quiver-arrow $address receive -n $MESSAGES --quiet --impl $receiver_impl &
     local receiver_pid=$!
     
-    quiver $address send -n $MESSAGES --quiet --impl $sender_impl &
+    quiver-arrow $address send -n $MESSAGES --quiet --impl $sender_impl &
     local sender_pid=$!
 
     wait $sender_pid || let "failures+=1"

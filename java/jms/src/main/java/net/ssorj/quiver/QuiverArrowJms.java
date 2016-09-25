@@ -51,9 +51,9 @@ public class QuiverArrowJms {
             throw new RuntimeException("This impl supports client mode only");
         }
 
-        String cfPrefix = System.getProperty("quiver.jms.cf.prefix");
-        String cfName = System.getProperty("quiver.jms.cf.name");
-        String cfUrl = System.getProperty("quiver.jms.cf.url");
+        String cfPrefix = System.getProperty("arrow.jms.cf.prefix");
+        String cfName = System.getProperty("arrow.jms.cf.name");
+        String cfUrl = System.getProperty("arrow.jms.cf.url");
 
         assert cfPrefix != null;
         assert cfName != null;

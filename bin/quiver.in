@@ -38,8 +38,8 @@ from quiver import *
 description = \
     "Launch Quiver senders and receivers\n" \
     "\n" \
-    "Arguments not processed by 'quiver-launch' are passed to the\n" \
-    "'quiver-arrow' command.  See the output of 'quiver-arrow --help'.\n"
+    "Arguments not processed by 'quiver' are passed to the 'quiver-arrow'\n" \
+    "command.  See the output of 'quiver-arrow --help'.\n"
 
 class Formatter(argparse.ArgumentDefaultsHelpFormatter,
                 argparse.RawDescriptionHelpFormatter):

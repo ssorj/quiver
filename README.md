@@ -28,7 +28,7 @@ deliberately simple.
 captures its output.  It has options for defining the execution
 parameters, selecting the implementation, and reporting statistics.
 
-`quiver-launch` makes it easy to launch many `quiver-arrow` instances.
+`quiver` makes it easy to launch many `quiver-arrow` instances.
 In the future, it will collate the results from the individual
 `quiver-arrow` runs and produce a consolidated report.
 
@@ -138,19 +138,19 @@ latency of the overall set, from the first send to the last receive.
       rhea [javascript]               Client mode only at the moment
       vertx-proton                    Client mode only
 
-### `quiver-launch`
+### `quiver`
 
 This command starts sender-receiver pairs.  Each sender or receiver is
 an invocation of the `quiver-arrow` command.  Arguments not processed
-by `quiver-launch` are passed to `quiver-arrow`.
+by `quiver` are passed to `quiver-arrow`.
 
-    usage: quiver-launch [-h] [--pairs COUNT] [--senders COUNT]
-                         [--receivers COUNT] ADDRESS
+    usage: quiver [-h] [--pairs COUNT] [--senders COUNT]
+                  [--receivers COUNT] ADDRESS
 
     Launch Quiver senders and receivers
 
-    Arguments not processed by 'quiver-launch' are passed to the
-    'quiver-arrow' command.  See the output of 'quiver-arrow --help'.
+    Arguments not processed by 'quiver' are passed to the 'quiver-arrow'
+    command.  See the output of 'quiver-arrow --help'.
 
     positional arguments:
       ADDRESS            The location of a message queue
@@ -166,19 +166,19 @@ by `quiver-launch` are passed to `quiver-arrow`.
 ### Running Quiver with Dispatch Router
 
     $ qdrouterd &
-    $ quiver-launch q0
+    $ quiver q0
 
 ### Running Quiver with Artemis
 
     $ <instance-dir>/bin/artemis run &
     $ <instance-dir>/bin/artemis destination create --name q0 --type core-queue
-    $ quiver-launch q0
+    $ quiver q0
     
 ### Running Quiver with the Qpid C++ broker
 
     $ qpidd --auth no &
     $ qpid-config add queue q0
-    $ quiver-launch q0
+    $ quiver q0
 
 ### Running Quiver peer-to-peer
 

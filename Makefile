@@ -24,8 +24,8 @@ PREFIX := ${HOME}/.local
 QUIVER_HOME = ${PREFIX}/lib/quiver
 
 TARGETS = \
+	build/bin/quiver \
 	build/bin/quiver-arrow \
-	build/bin/quiver-launch \
 	build/bin/quiver-smoke-test \
 	build/exec/arrow-activemq-jms \
 	build/exec/arrow-activemq-artemis-jms \
@@ -73,7 +73,7 @@ install: build
 devel: PREFIX := ${PWD}/install
 devel: install
 	quiver-arrow --help > /dev/null
-	quiver-launch --help > /dev/null
+	quiver --help > /dev/null
 
 .PHONY: test
 test: devel
