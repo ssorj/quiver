@@ -26,6 +26,7 @@ import gzip as _gzip
 import numpy as _numpy
 import os as _os
 import shutil as _shutil
+import string as _string
 import subprocess as _subprocess
 import sys as _sys
 import tempfile as _tempfile
@@ -90,6 +91,8 @@ class QuiverArrowCommand(object):
             raise QuiverError(msg)
 
     def run(self):
+        self.periodic_status_thread.start()
+        
         if self.address.startswith("//"):
             domain, path = self.address[2:].split("/", 1)
         else:
@@ -112,9 +115,6 @@ class QuiverArrowCommand(object):
         if not self.quiet:
             self.print_config()
 
-        if self.operation == "receive":
-            self.periodic_status_thread.start()
-        
         with open(self.transfers_file, "w") as fout:
             self.started.set()
             self.start_time = _time.time()
@@ -234,6 +234,13 @@ class _PeriodicStatusThread(_threading.Thread):
         self.period_start_time = None
         self.period_end_time = None
         self.timeout_checkpoint = None # timestamp, transfers
+
+        if self.command.operation == "send":
+            self.parse_func = self.parse_send
+        elif self.command.operation == "receive":
+            self.parse_func = self.parse_receive
+        else:
+            raise Exception()
         
         self.daemon = True
 
@@ -250,16 +257,23 @@ class _PeriodicStatusThread(_threading.Thread):
         self.command.started.wait()
 
         self.period_end_time = _time.time()
-        self.timeout_checkpoint = _time.time(), self.transfers
+        self.timeout_checkpoint = self.period_end_time, self.transfers
 
         with open(self.command.transfers_file, "r") as fin:
             while not self.command.ended.wait(1):
-                # XXX separate reporting from stats collection
-                self.print_status(fin)
-                self.check_timeout()
+                transfers = self.collect_transfers(fin, self.parse_func)
 
-    def print_status(self, fin):
-        latencies = list()
+                self.transfers += len(transfers)
+                self.period_start_time = self.period_end_time
+                self.period_end_time = _time.time()
+
+                self.check_timeout(self.period_end_time)
+
+                if self.command.operation == "receive" and not self.command.quiet:
+                    self.print_status(transfers)
+                
+    def collect_transfers(self, fin, parse_func):
+        transfers = list()
 
         while True:
             fpos = fin.tell()
@@ -270,52 +284,64 @@ class _PeriodicStatusThread(_threading.Thread):
                 break
             
             line = line[:-1]
-            
+
             try:
-                message_id, send_time, receive_time = line.split(",", 2)
-                send_time = long(send_time)
-                receive_time = long(receive_time)
-            except ValueError as e:
+                record = parse_func(line)
+            except Exception as e:
                 print("Failed to parse line '{}': {}".format(line, e))
                 continue
             
-            latency = long(receive_time) - long(send_time)
+            transfers.append(record)
+
+        return transfers
+
+    def parse_send(self, line):
+        message_id, send_time = line.split(",", 1)
+        send_time = long(send_time)
+
+        return message_id, send_time
+
+    def parse_receive(self, line):
+        message_id, send_time, receive_time = line.split(",", 2)
+        send_time = long(send_time)
+        receive_time = long(receive_time)
+
+        return message_id, send_time, receive_time
+
+    def print_status(self, transfers):
+        count = len(transfers)
+
+        if count == 0:
+            print("* {:12,}".format(self.transfers))
+            return
+        
+        latencies = list()
+
+        for id, send_time, receive_time in transfers:
+            latency = receive_time - send_time
             latencies.append(latency)
 
-        transfers = len(latencies)
-        self.transfers += transfers
-        
-        if transfers == 0:
-            if not self.command.quiet:
-                print("* {:12,}".format(self.transfers))
-
-            return
-
-        self.period_start_time = self.period_end_time
-        self.period_end_time = _time.time()
-        
         duration = self.period_end_time - self.period_start_time
-        rate = int(round(transfers / duration))
-        latency = float(sum(latencies)) / transfers
+        rate = int(round(count / duration))
+        latency = float(sum(latencies)) / count
 
-        frate = "{:,d} messages/s".format(rate)
-        flatency = "{:,.1f} ms avg latency".format(latency)
+        rate = "{:,d} messages/s".format(rate)
+        latency = "{:,.1f} ms avg latency".format(latency)
 
-        if not self.command.quiet:
-            msg = "* {:12,} {:>24} {:>28}".format \
-                  (self.transfers, frate, flatency)
-            print(msg)
+        args = self.transfers, rate, latency
+        msg = "* {:12,} {:>24} {:>28}".format(*args)
 
-    def check_timeout(self):
-        now = _time.time()
+        print(msg)
+
+    def check_timeout(self, now):
         then, transfers_then = self.timeout_checkpoint
         elapsed = now - then
 
         if self.transfers == transfers_then and elapsed > self.command.timeout:
             self.command.stop.set()
 
-            msg = "quiver: error: {} operation timed out".format \
-                  (self.command.operation)
+            operation = _string.capitalize(self.command.operation)
+            msg = "quiver: error: {} operation timed out".format(operation)
             eprint(msg)
 
             return
