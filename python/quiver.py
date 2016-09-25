@@ -38,22 +38,34 @@ import traceback as _traceback
 #    pass
 
 class QuiverArrowCommand(object):
-    def __init__(self, home_dir, output_dir, impl, mode, address,
-                 operation, messages, bytes_, credit, timeout):
+    def __init__(self, home_dir, impl, mode, operation, address,
+                 messages, bytes_, credit):
         self.home_dir = home_dir
-        self.output_dir = output_dir
         self.impl = impl
         self.mode = mode
-        self.address = address
         self.operation = operation
+        self.address = address
         self.messages = messages
         self.bytes_ = bytes_
         self.credit = credit
-        self.timeout = timeout
 
+        self.output_dir = None
         self.quiet = False
         self.debug = False
+        self.timeout = 10
 
+        self.impl_file = None
+        self.transfers_file = None
+        self.start_time = None
+        self.end_time = None
+        
+        self.started = _threading.Event()
+        self.stop = _threading.Event()
+        self.ended = _threading.Event()
+
+        self.periodic_status_thread = _PeriodicStatusThread(self)
+
+    def init(self):
         impl_name = "arrow-{}".format(self.impl)
 
         if self.output_dir is None:
@@ -68,16 +80,6 @@ class QuiverArrowCommand(object):
         else:
             raise Exception()
         
-        self.start_time = None
-        self.end_time = None
-        
-        self.started = _threading.Event()
-        self.stop = _threading.Event()
-        self.ended = _threading.Event()
-
-        self.periodic_status_thread = _PeriodicStatusThread(self)
-
-    def init(self):
         if not _os.path.exists(self.output_dir):
             _os.makedirs(self.output_dir)
         

@@ -49,7 +49,7 @@ impls_by_name = {
     "vertx-proton": "vertx-proton",
 }
 
-description = "Test the performance of messaging clients and servers"
+description = "Send or receive messages"
 
 epilog = "operations:\n" \
          "  send                  Send messages\n" \
@@ -74,8 +74,8 @@ epilog = "operations:\n" \
          "\n" \
          "example usage:\n" \
          "  $ qdrouterd &                   # Start a message server\n" \
-         "  $ quiver-arrow q0 receive &     # Start receiving\n" \
-         "  $ quiver-arrow q0 send          # Start sending\n" \
+         "  $ quiver-arrow receive q0 &     # Start receiving\n" \
+         "  $ quiver-arrow send q0          # Start sending\n" \
          "\n"
 
 class Formatter(argparse.ArgumentDefaultsHelpFormatter,
@@ -86,34 +86,34 @@ parser = argparse.ArgumentParser(description=description,
                                  epilog=epilog,
                                  formatter_class=Formatter)
 
-parser.add_argument("address", metavar="ADDRESS",
-                    help="The location of a message queue")
 parser.add_argument("operation", metavar="OPERATION",
                     choices=["send", "receive"],
                     help="Either 'send' or 'receive'")
+parser.add_argument("address", metavar="ADDRESS",
+                    help="The location of a message queue")
 parser.add_argument("-n", "--messages", metavar="COUNT",
                     help="Send or receive COUNT messages",
                     default=1000000, type=int)
 parser.add_argument("--impl", metavar="NAME",
                     help="Use NAME implementation",
                     default="qpid-proton-python")
+parser.add_argument("--server", action="store_true",
+                    help="Operate in server mode")
 parser.add_argument("--bytes", metavar="COUNT",
                     help="Send message bodies containing COUNT bytes",
                     default=100, type=int)
 parser.add_argument("--credit", metavar="COUNT",
                     help="Sustain credit for COUNT incoming transfers",
                     default=1000, type=int)
-parser.add_argument("--timeout", metavar="SECONDS",
-                    help="Fail after SECONDS without transfers",
-                    default=10, type=int)
-parser.add_argument("--server", action="store_true",
-                    help="Operate in server mode")
 parser.add_argument("--output", metavar="DIRECTORY",
                     help="Save output files to DIRECTORY")
 parser.add_argument("--quiet", action="store_true",
                     help="Print nothing to the console")
 parser.add_argument("--debug", action="store_true",
                     help="Print debug messages")
+parser.add_argument("--timeout", metavar="SECONDS",
+                    help="Fail after SECONDS without transfers",
+                    default=10, type=int)
 
 def main():
     args = parser.parse_args()
@@ -126,12 +126,13 @@ def main():
     mode = "server" if args.server else "client"
     
     command = QuiverArrowCommand \
-        (home_dir, args.output, impl, mode, args.address,
-         args.operation, args.messages, args.bytes,
-         args.credit, args.timeout)
+        (home_dir, impl, mode, args.operation, args.address,
+         args.messages, args.bytes, args.credit)
 
+    command.output_dir = args.output
     command.quiet = args.quiet
     command.debug = args.debug
+    command.timeout = args.timeout
     
     command.init()
     command.check()
