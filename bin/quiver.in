@@ -72,15 +72,6 @@ parser.add_argument("address", metavar="ADDRESS",
 parser.add_argument("-n", "--messages", metavar="COUNT",
                     help="Send or receive COUNT messages",
                     default=1000000, type=int)
-parser.add_argument("--pairs", metavar="COUNT",
-                    help="Start COUNT sender-receiver pairs",
-                    default=1, type=int)
-parser.add_argument("--senders", metavar="COUNT",
-                    help="Start COUNT senders",
-                    default=1, type=int)
-parser.add_argument("--receivers", metavar="COUNT",
-                    help="Start COUNT receivers",
-                    default=1, type=int)
 parser.add_argument("--impl", metavar="NAME",
                     help="Use NAME implementation",
                     default="qpid-proton-python")
@@ -103,8 +94,8 @@ parser.add_argument("--debug", action="store_true",
 def main():
     args = parser.parse_args()
 
-    sender_count = max(args.pairs, args.senders)
-    receiver_count = max(args.pairs, args.receivers)
+    sender_count = 1 # max(args.pairs, args.senders)
+    receiver_count = 1 # max(args.pairs, args.receivers)
     
     sender_args = ["quiver-arrow", "send", args.address]
     sender_args += sys.argv[2:]
