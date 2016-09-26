@@ -2,8 +2,8 @@
 
 Tools for testing the performance of messaging clients and servers.
 
-    [Start an AMQP server]
-    $ (quiver-arrow q0 receive &); quiver-arrow q0 send
+    [Start an AMQP server with a queue called 'q0']
+    $ quiver q0
     *        6,115         6,022 messages/s         112.0 ms avg latency
     *       12,976         6,650 messages/s         303.3 ms avg latency
     [...]
@@ -28,9 +28,9 @@ deliberately simple.
 captures its output.  It has options for defining the execution
 parameters, selecting the implementation, and reporting statistics.
 
-`quiver` makes it easy to launch many `quiver-arrow` instances.
-In the future, it will collate the results from the individual
-`quiver-arrow` runs and produce a consolidated report.
+`quiver` makes it easy to launch `quiver-arrow` instances.  In the
+future, it will collate the results from the individual `quiver-arrow`
+runs and produce a consolidated report.
 
 ## Installation
 
@@ -144,23 +144,6 @@ This command starts sender-receiver pairs.  Each sender or receiver is
 an invocation of the `quiver-arrow` command.  Arguments not processed
 by `quiver` are passed to `quiver-arrow`.
 
-    usage: quiver [-h] [--pairs COUNT] [--senders COUNT]
-                  [--receivers COUNT] ADDRESS
-
-    Launch Quiver senders and receivers
-
-    Arguments not processed by 'quiver' are passed to the 'quiver-arrow'
-    command.  See the output of 'quiver-arrow --help'.
-
-    positional arguments:
-      ADDRESS            The location of a message queue
-
-    optional arguments:
-      -h, --help         show this help message and exit
-      --pairs COUNT      Launch COUNT sender-receiver pairs (default: 1)
-      --senders COUNT    Launch COUNT senders (default: 1)
-      --receivers COUNT  Launch COUNT receivers (default: 1)
-
 ## Examples
 
 ### Running Quiver with Dispatch Router
@@ -205,12 +188,13 @@ Implementations must process the following positional arguments.
 
     [1] output-dir      A directory for output files
     [2] mode            'client' or 'server'
-    [3] domain          <host>[:<port>]
-    [4] path            An AMQP address path
-    [5] operation       'send' or 'receive'
-    [6] messages        Number of messages to transfer
-    [7] bytes           Length of generated message body
-    [8] credit          Amount of credit to maintain
+    [3] operation       'send' or 'receive'
+    [4] host            The socket name
+    [5] port            The socket port
+    [6] path            An AMQP address path
+    [7] messages        Number of messages to transfer
+    [8] bytes           Length of generated message body
+    [9] credit          Amount of credit to maintain
 
 ### Output
 
@@ -237,4 +221,6 @@ Implementations must give each message a unique ID to aid debugging.
 They must also set an application property named `SendTime` containing
 a `long` representing the send time in milliseconds.
 
-- XXX at-least-once, non-durable
+- Non-persistent messages
+- At-least-once delivery
+- Acknowledgments, please
