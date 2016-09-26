@@ -44,9 +44,10 @@ long now() {
 
 struct Client {
     std::string output_dir;
-    std::string domain;
-    std::string path;
     std::string operation;
+    std::string host;
+    std::string port;
+    std::string path;
     int messages;
     int bytes;
     int credit;
@@ -60,7 +61,7 @@ struct Client {
 };
 
 void Client::run() {
-    Connection conn(domain, CONNECTION_OPTIONS);
+    Connection conn(host + ":" + port, CONNECTION_OPTIONS);
     conn.open();
 
     try {
@@ -131,16 +132,28 @@ void Client::receiveMessages(Session& session) {
 
 int main(int argc, char** argv) {
     std::string mode = argv[2];
-
+    
+    if (mode != "client") {
+        std::cerr << "quiver: error: This impl supports client mode only"
+                  << std::endl;
+        return 1;
+    }
+    
     Client client;
-    client.output_dir = argv[1];
-    client.domain = argv[3];
-    client.path = argv[4];
-    client.operation = argv[5];
-    client.messages = std::atoi(argv[6]);
-    client.bytes = std::atoi(argv[7]);
-    client.credit = std::atoi(argv[8]);
 
+    client.output_dir = argv[1];
+    client.operation = argv[3];
+    client.host = argv[4];
+    client.port = argv[5];
+    client.path = argv[6];
+    client.messages = std::atoi(argv[7]);
+    client.bytes = std::atoi(argv[8]);
+    client.credit = std::atoi(argv[9]);
+
+    if (client.port == "-") {
+        client.port = "5672";
+    }
+    
     try {
         client.run();
     } catch (const std::exception& e) {

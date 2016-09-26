@@ -25,19 +25,20 @@ var container = require("@quiver_home@/javascript/node_modules/rhea");
 
 var ouputDir = process.argv[2];
 var mode = process.argv[3];
-var domain = process.argv[4];
-var path = process.argv[5];
-var operation = process.argv[6];
-var messages = process.argv[7];
-var bytes = process.argv[8];
-var credit = process.argv[9];
+var operation = process.argv[4];
+var host = process.argv[5];
+var port = process.argv[6];
+var path = process.argv[7];
+var messages = process.argv[8];
+var bytes = process.argv[9];
+var credit = process.argv[10];
 
 var body = new Uint8Array(bytes);
 body.fill(120);
 
 var sent = 0;
-var accepted = 0;
 var received = 0;
+var accepted = 0;
 
 function eprint(message) {
     process.stderr.write(message);
@@ -91,27 +92,20 @@ container.on("message", function(context) {
     }
 });
 
-var colon = domain.indexOf(":");
-
-if (colon == -1) {
-    var host = domain;
-    var port = 5672;
-} else {
-    var host = domain.slice(0, colon);
-    var port = domain.slice(colon + 1);
+if (port == "-") {
+    port = "5672"
 }
 
 var conn = container.connect({host: host, port: port});
 
 if (operation == "send") {
+    // XXX How do I set delivery mode?
     var options = {
         target: {
             address: path,
             durable: false
         }
     };
-
-    // XXX How do I set delivery mode?
     
     conn.open_sender(options);
 } else if (operation == "receive") {

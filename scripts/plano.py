@@ -32,6 +32,7 @@ import subprocess as _subprocess
 import sys as _sys
 import tarfile as _tarfile
 import tempfile as _tempfile
+import time as _time
 import traceback as _traceback
 import uuid as _uuid
 
@@ -112,6 +113,8 @@ ENV = _os.environ
 ARGS = _sys.argv
 
 current_dir = _os.getcwd
+
+sleep = _time.sleep
 
 def home_dir(user=""):
     return _os.path.expanduser("~{0}".format(user))

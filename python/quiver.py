@@ -100,13 +100,19 @@ class QuiverArrowCommand(object):
         else:
             domain, path = "localhost", self.address
 
+        if ":" in domain:
+            host, port = domain.split(":", 1)
+        else:
+            host, port = domain, "-"
+
         args = [
             self.impl_file,
             self.output_dir,
             self.mode,
-            domain,
-            path,
             self.operation,
+            host,
+            port,
+            path,
             str(self.messages),
             str(self.bytes_),
             str(self.credit),
@@ -155,18 +161,18 @@ class QuiverArrowCommand(object):
         
         msg = "quiver: {}".format(msg)
         print(msg.format(*args))
-            
+
     def print_config(self):
         _print_bracket()
         _print_field("Output dir", self.output_dir)
         _print_field("Implementation", self.impl)
         _print_field("Mode", self.mode)
-        _print_field("Address", self.address)
         _print_field("Operation", self.operation)
+        _print_field("Address", self.address)
         _print_field("Messages", "{:,d}".format(self.messages))
         _print_field("Bytes", "{:,d}".format(self.bytes_))
         _print_field("Credit", "{:,d}".format(self.credit))
-        _print_field("Timeout", "{:,d}".format(self.timeout))
+        #_print_field("Timeout", "{:,d}".format(self.timeout))
         _print_bracket()
             
     def print_results(self):

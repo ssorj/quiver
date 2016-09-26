@@ -30,11 +30,15 @@ import sys
 home_dir = os.path.normpath("@quiver_home@")
 
 def main():
-    domain = sys.argv[3]
-    credit = sys.argv[8]
+    host = sys.argv[4]
+    port = sys.argv[5]
+    credit = sys.argv[9]
 
+    if port == "-":
+        port = "5672"
+    
     jar_file = os.path.join(home_dir, "java", "quiver-jms.jar")
-    url = "amqp://{}?jms.prefetchPolicy.all={}".format(domain, credit)
+    url = "amqp://{}:{}?jms.prefetchPolicy.all={}".format(host, port, credit)
 
     args = [
         "java",

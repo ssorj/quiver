@@ -24,7 +24,6 @@ package net.ssorj.quiver;
 import java.io.BufferedWriter;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,12 +65,13 @@ public class QuiverArrowVertxProton {
     public static void doMain(String[] args) throws Exception {
         String outputDir = args[0];
         String mode = args[1];
-        String domain = args[2];
-        String path = args[3];
-        String operation = args[4];
-        int messages = Integer.parseInt(args[5]);
-        int bytes = Integer.parseInt(args[6]);
-        int credit = Integer.parseInt(args[7]);
+        String operation = args[2];
+        String host = args[3];
+        String port = args[4];
+        String path = args[5];
+        int messages = Integer.parseInt(args[6]);
+        int bytes = Integer.parseInt(args[7]);
+        int credit = Integer.parseInt(args[8]);
 
         if (!CLIENT.equalsIgnoreCase(mode)) {
             throw new RuntimeException("This impl currently supports client mode only");
@@ -87,20 +87,19 @@ public class QuiverArrowVertxProton {
             throw new java.lang.IllegalStateException("Unknown operation: " + mode);
         }
 
-        CountDownLatch completionLatch = new CountDownLatch(1);
-        URI uri = new URI("amqp://" + domain);
-
-        String hostname = uri.getHost();
-        int port = uri.getPort();
-
-        if (port == -1) {
-            port = DEFAULT_AMQP_PORT;
+        final int portNumber;
+        
+        if (port.equals("-")) {
+            portNumber = DEFAULT_AMQP_PORT;
+        } else {
+            portNumber = Integer.parseInt(port);
         }
-
+        
+        CountDownLatch completionLatch = new CountDownLatch(1);
         Vertx vertx = Vertx.vertx();
         ProtonClient client = ProtonClient.create(vertx);
         
-        client.connect(hostname, port, res -> {
+        client.connect(host, portNumber, res -> {
                 if (res.succeeded()) {
                     ProtonConnection connection = res.result();
 

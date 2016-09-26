@@ -35,9 +35,10 @@ link_options = "{link: {durable: False, reliability: at-least-once}}"
 class Client(object):
     def __init__(self):
         self.output_dir = None
-        self.domain = None
-        self.path = None
         self.operation = None
+        self.host = None
+        self.port = None
+        self.path = None
         self.messages = None
         self.bytes_ = None
         self.credit = None
@@ -46,7 +47,8 @@ class Client(object):
         self.received = 0
 
     def run(self):
-        conn = Connection(self.domain, protocol=b"amqp1.0",
+        conn = Connection("{}:{}".format(self.host, self.port),
+                          protocol=b"amqp1.0",
                           sasl_mechanisms=b"ANONYMOUS")
         conn.open()
 
@@ -117,14 +119,19 @@ def main():
         raise Exception("This impl supports client mode only")
 
     client = Client()
-    client.output_dir = sys.argv[1]
-    client.domain = sys.argv[3]
-    client.path = sys.argv[4]
-    client.operation = sys.argv[5]
-    client.messages = int(sys.argv[6])
-    client.bytes_ = int(sys.argv[7])
-    client.credit = int(sys.argv[8])
 
+    client.output_dir = sys.argv[1]
+    client.operation = sys.argv[3]
+    client.host = sys.argv[4]
+    client.port = sys.argv[5]
+    client.path = sys.argv[6]
+    client.messages = int(sys.argv[7])
+    client.bytes_ = int(sys.argv[8])
+    client.credit = int(sys.argv[9])
+
+    if client.port == "-":
+        client.port = "5672"
+    
     client.run()
     
 if __name__ == "__main__":

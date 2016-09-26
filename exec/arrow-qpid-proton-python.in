@@ -38,17 +38,18 @@ class BaseHandler(MessagingHandler):
         super(BaseHandler, self).__init__(**kwargs)
 
         self.output_dir = None
-        self.domain = None
-        self.path = None
         self.operation = None
+        self.host = None
+        self.port = None
+        self.path = None
         self.messages = None
         self.bytes_ = None
 
         self.body = None
 
         self.sent = 0
-        self.accepted = 0
         self.received = 0
+        self.accepted = 0
 
     def init(self):
         self.body = b"x" * self.bytes_
@@ -104,7 +105,7 @@ class Client(BaseHandler):
         super(Client, self).on_start(event)
         
         self.connection = event.container.connect \
-            (self.domain, allowed_mechs=b"ANONYMOUS")
+            ("{}:{}".format(self.host, self.port), allowed_mechs=b"ANONYMOUS")
 
         if self.operation == "send":
             event.container.create_sender(self.connection, self.path)
@@ -125,7 +126,8 @@ class Server(BaseHandler):
     def on_start(self, event):
         super(Server, self).on_start(event)
 
-        self.acceptor = event.container.listen(self.domain)
+        self.acceptor = event.container.listen \
+            ("{}:{}".format(self.host, self.port))
 
     def on_connection_opened(self, event):
         if self.operation == "send":
@@ -140,7 +142,7 @@ class Server(BaseHandler):
 
 def main():
     mode = sys.argv[2]
-    credit = int(sys.argv[8])
+    credit = int(sys.argv[9])
 
     if mode == "client":
         handler = Client(prefetch=credit)
@@ -150,12 +152,16 @@ def main():
         raise Exception()
 
     handler.output_dir = sys.argv[1]
-    handler.domain = sys.argv[3]
-    handler.path = sys.argv[4]
-    handler.operation = sys.argv[5]
-    handler.messages = int(sys.argv[6])
-    handler.bytes_ = int(sys.argv[7])
+    handler.operation = sys.argv[3]
+    handler.host = sys.argv[4]
+    handler.port = sys.argv[5]
+    handler.path = sys.argv[6]
+    handler.messages = int(sys.argv[7])
+    handler.bytes_ = int(sys.argv[8])
 
+    if handler.port == "-":
+        handler.port = "5672"
+    
     handler.init()
     
     container = Container(handler)
