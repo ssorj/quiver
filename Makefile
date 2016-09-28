@@ -89,7 +89,7 @@ build/exec/%: exec/%.in
 
 build/exec/%: exec/%.cpp
 	@mkdir -p build/exec
-	gcc -std=c++11 -lqpid-proton -lqpidmessaging -lqpidtypes -lstdc++ $< -o $@
+	gcc -Os -std=c++11 -lqpid-proton -lqpidmessaging -lqpidtypes -lstdc++ $< -o $@
 
 build/java/quiver-jms.jar: $(shell find java/jms/src -type f) java/jms/pom.xml
 	@mkdir -p build/java
