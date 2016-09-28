@@ -29,15 +29,27 @@ import time
 
 from plano import *
 
+config_template = """
+router {
+    mode: standalone
+    id: test-client-with-qdrouterd-1
+}
+
+listener {
+    host: ::
+    port: @port@
+    authenticatePeer: off
+    saslMechanisms: ANONYMOUS
+}
+"""
+        
 def test(client, messages):
     port = random_port()
 
-    cmd = "qpidd --port {} --auth no --default-queue-limit 0 --no-data-dir"
-    server = start_process(cmd, port)
+    config = config_template.replace("@port@", str(port))
+    config_file = write_temp("qdrouterd-config", config)
+    server = start_process("qdrouterd --config {}", config_file)
 
-    cmd = "qpid-config -b localhost:{} add queue q0" 
-    call(cmd, port)
-    
     cmd = "quiver //localhost:{}/q0 --impl {} -n {} --debug"
     call(cmd, port, client, messages)
 

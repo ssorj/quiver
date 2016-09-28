@@ -60,4 +60,7 @@ if not is_dir(join(home_dir(), "artemis")):
 client = ARGS[1]
 messages = ARGS[2]
 
-test(client, messages)
+try:
+    test(client, messages)
+except KeyboardInterrupt:
+    pass
