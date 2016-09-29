@@ -54,7 +54,8 @@ help:
 clean:
 	rm -rf build
 	rm -rf install
-	rm -rf java/target
+	rm -rf java/jms/target
+	rm -rf java/vertx-proton/target
 
 .PHONY: build
 build: ${TARGETS}
