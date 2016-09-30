@@ -20,11 +20,7 @@
 
 set -eu
 
-if (( $# == 0 )); then
-    PORT=5672
-else
-    PORT=$1
-fi
+QUEUE=$1
 
-qpid-config -b localhost:$PORT del queue q0 --force > /dev/null || :
-qpid-config -b localhost:$PORT add queue q0
+$HOME/artemis/bin/artemis destination delete --name $QUEUE --type core-queue 2> /dev/null || :
+$HOME/artemis/bin/artemis destination create --name $QUEUE --type core-queue
