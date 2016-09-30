@@ -122,8 +122,8 @@ def _add_common_arguments(parser):
                         help="Save output files to DIRECTORY")
     parser.add_argument("--quiet", action="store_true",
                         help="Print nothing to the console")
-    parser.add_argument("--debug", action="store_true",
-                        help="Print debug messages")
+    parser.add_argument("--verbose", action="store_true",
+                        help="Print details to the console")
 
 class QuiverError(Exception):
     pass
@@ -186,7 +186,7 @@ class QuiverArrowCommand(object):
         self.output_dir = None
         self.timeout = 10
         self.quiet = False
-        self.debug = False
+        self.verbose = False
 
         self.impl_file = None
         self.transfers_file = None
@@ -232,7 +232,7 @@ class QuiverArrowCommand(object):
         self.output_dir = args.output
         self.timeout = args.timeout
         self.quiet = args.quiet
-        self.debug = args.debug
+        self.verbose = args.verbose
     
     def init(self):
         impl_name = "arrow-{}".format(self.impl)
@@ -289,7 +289,7 @@ class QuiverArrowCommand(object):
             str(self.credit),
         ]
 
-        self.dprint("Calling '{}'", " ".join(args))
+        self.vprint("Calling '{}'", " ".join(args))
 
         if not self.quiet:
             self.print_config()
@@ -300,14 +300,14 @@ class QuiverArrowCommand(object):
 
             proc = _subprocess.Popen(args, stdout=fout)
 
-            self.dprint("Process {} ({}) started", proc.pid, self.operation)
+            self.vprint("Process {} ({}) started", proc.pid, self.operation)
 
             while proc.poll() == None:
                 if self.stop.wait(0.1):
                     proc.terminate()
 
             if proc.returncode == 0:
-                self.dprint("Process {} ({}) exited normally", proc.pid,
+                self.vprint("Process {} ({}) exited normally", proc.pid,
                             self.operation)
             else:
                 msg = "Process {} ({}) exited with code {}".format \
@@ -326,8 +326,8 @@ class QuiverArrowCommand(object):
 
         self.compress_output()
 
-    def dprint(self, msg, *args):
-        if not self.debug:
+    def vprint(self, msg, *args):
+        if not self.verbose:
             return
         
         msg = "quiver: {}".format(msg)
