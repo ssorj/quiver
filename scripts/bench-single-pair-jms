@@ -33,43 +33,21 @@ clients = (
     "activemq-jms",
 )
 
+def test_artemis(output_dir, messages):
+    for client in clients:
+        output_file = join(output_dir, "artemis-{}.txt".format(client))
+        cmd = "scripts/test-client-with-artemis {} {} 2>&1 | tee {}" 
+
+        call(cmd, client, messages, output_file)
+        
+if len(ARGS) != 2:
+    print("Usage: {} MESSAGES".format(program_name()))
+    exit("Wrong arguments")
+        
 messages = ARGS[1]
 
 if not is_dir(join(home_dir(), "artemis")):
     exit("I need an artemis instance installed at $HOME/artemis")
-
-def test_client(name, port, messages, output):
-    command = "quiver //localhost:{}/q0 --impl {} -n {} > {}"
-
-    try:
-        call(command, port, name, messages, output)
-    except KeyboardInterrupt:
-        raise
-    except:
-        pass
-        
-def test_artemis(output_dir):
-    for client in clients:
-        port = 61616 # XXX
-        server_exec = join(home_dir(), "artemis", "bin", "artemis")
-        server_args = [server_exec, "run"]
-        output = join(output_dir, "artemis-{}.txt".format(client))
-
-        proc = subprocess.Popen(server_args)
-
-        time.sleep(5)
-
-        try:
-            call("{} destination delete --name q0 --type jms-queue", server_exec)
-        except:
-            pass
-        
-        call("{} destination create --name q0 --type jms-queue", server_exec)
-        
-        test_client(client, port, messages, output)
-
-        proc.terminate()
-        proc.wait()
 
 script = file_name(ARGS[0])
 timestamp = time.strftime('%Y-%m-%d', time.localtime())
@@ -78,7 +56,7 @@ output_dir = "{}-{}".format(script, timestamp)
 remove(output_dir)
 make_dir(output_dir)
 
-test_artemis(output_dir)
+test_artemis(output_dir, messages)
         
 print(output_dir)
         
