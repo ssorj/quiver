@@ -29,35 +29,26 @@ import time
 
 from plano import *
 
-config_template = """
-router {
-    mode: standalone
-    id: test-client-with-qdrouterd-1
-}
-
-listener {
-    host: ::
-    port: @port@
-    authenticatePeer: off
-    saslMechanisms: ANONYMOUS
-}
-"""
-        
 def test(client, messages):
-    port = random_port()
+    executable = "{}/activemq/bin/activemq".format(home_dir())
 
-    config = config_template.replace("@port@", str(port))
-    config_file = write_temp("qdrouterd-config", config)
-    server = start_process("qdrouterd --config {}", config_file)
+    call("{} start", executable)
 
-    cmd = "quiver //localhost:{}/q0 --impl {} -m {} --debug"
-    call(cmd, port, client, messages)
+    sleep(5)
 
-    stop_process(server)
+    cmd = "quiver //localhost/q0 --impl {} -m {} --debug"
+    call(cmd, client, messages)
+
+    call("{} stop", executable)
 
 if len(ARGS) != 3:
     print("Usage: {} CLIENT MESSAGES".format(program_name()))
     exit("Wrong arguments")
+    
+if not is_dir(join(home_dir(), "activemq")):
+    exit("I need an activemq instance installed at $HOME/activemq")
+
+# XXX Also make sure port 61616 is free
     
 client = ARGS[1]
 messages = ARGS[2]

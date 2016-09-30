@@ -93,7 +93,7 @@ container.on("message", function(context) {
 });
 
 if (port == "-") {
-    port = "5672"
+    port = "5672";
 }
 
 var conn = container.connect({host: host, port: port});

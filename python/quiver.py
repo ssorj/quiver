@@ -101,7 +101,7 @@ _quiver_arrow_epilog = _quiver_arrow_epilog.format(_common_epilog)
 def _add_common_arguments(parser):
     parser.add_argument("address", metavar="ADDRESS",
                         help="The location of a message queue")
-    parser.add_argument("-n", "--messages", metavar="COUNT",
+    parser.add_argument("-m", "--messages", metavar="COUNT",
                         help="Send or receive COUNT messages",
                         default="1m")
     parser.add_argument("--impl", metavar="NAME",

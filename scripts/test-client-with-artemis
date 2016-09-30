@@ -43,7 +43,7 @@ def test(client, messages):
     cmd = "{} destination create --name q0 --type {}"
     call(cmd, executable, queue_type)
     
-    cmd = "quiver //localhost/q0 --impl {} -n {} --debug"
+    cmd = "quiver //localhost/q0 --impl {} -m {} --debug"
     call(cmd, client, messages)
 
     stop_process(server)
