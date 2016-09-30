@@ -29,9 +29,15 @@ import time
 from plano import *
 
 clients = (
-    "activemq-artemis-jms",
     "activemq-jms",
 )
+
+def test_activemq(output_dir, messages):
+    for client in clients:
+        output_file = join(output_dir, "activemq-{}.txt".format(client))
+        cmd = "scripts/test-client-with-activemq {} {} 2>&1 | tee {}" 
+
+        call(cmd, client, messages, output_file)
 
 def test_artemis(output_dir, messages):
     for client in clients:
@@ -46,8 +52,11 @@ if len(ARGS) != 2:
         
 messages = ARGS[1]
 
+if not is_dir(join(home_dir(), "activemq")):
+    exit("I need an ActiveMQ instance installed at $HOME/activemq")
+
 if not is_dir(join(home_dir(), "artemis")):
-    exit("I need an artemis instance installed at $HOME/artemis")
+    exit("I need an Artemis instance installed at $HOME/artemis")
 
 script = file_name(ARGS[0])
 timestamp = time.strftime('%Y-%m-%d', time.localtime())
@@ -56,6 +65,7 @@ output_dir = "{}-{}".format(script, timestamp)
 remove(output_dir)
 make_dir(output_dir)
 
+test_activemq(output_dir, messages)
 test_artemis(output_dir, messages)
         
 print(output_dir)
