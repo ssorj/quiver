@@ -22,6 +22,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import argparse as _argparse
 import gzip as _gzip
 import numpy as _numpy
 import os as _os
@@ -34,25 +35,158 @@ import threading as _threading
 import time as _time
 import traceback as _traceback
 
-#class QuiverCommand(object):
-#    pass
+_impls_by_name = {
+    "activemq-jms": "activemq-jms",
+    "activemq-artemis-jms": "activemq-artemis-jms",
+    "artemis-jms": "activemq-artemis-jms",
+    "javascript": "rhea",
+    "jms": "qpid-jms",
+    "python": "qpid-proton-python",
+    "qpid-jms": "qpid-jms",
+    "qpid-messaging-cpp": "qpid-messaging-cpp",
+    "qpid-messaging-python": "qpid-messaging-python",
+    "qpid-proton-python": "qpid-proton-python",
+    "rhea": "rhea",
+    "vertx-proton": "vertx-proton",
+}
 
-class QuiverArrowCommand(object):
-    def __init__(self, home_dir, impl, mode, operation, address,
-                 messages, bytes_, credit):
+_common_epilog = """
+addresses:
+  [//DOMAIN/]PATH                 The default domain is 'localhost'
+  //example.net/jobs
+  //10.0.0.10:5672/jobs/alpha
+  //localhost/q0
+  q0
+
+implementations:
+  activemq-artemis-jms            Client mode only; requires Artemis server
+  activemq-jms                    Client mode only; ActiveMQ or Artemis server
+  qpid-jms [jms]                  Client mode only
+  qpid-messaging-cpp              Client mode only
+  qpid-messaging-python           Client mode only
+  qpid-proton-python [python]
+  rhea [javascript]               Client mode only at the moment
+  vertx-proton                    Client mode only
+"""
+
+_quiver_description = "Test the performance of messaging clients and servers"
+_quiver_epilog = """
+{}
+example usage:
+  $ qdrouterd &                   # Start a message server
+  $ quiver q0                     # Start test
+"""
+
+_quiver_arrow_description = "Send or receive messages" # XXX Expand
+_quiver_arrow_epilog = """
+operations:
+  send                  Send messages
+  receive               Receive messages
+
+{}
+example usage:
+  $ qdrouterd &                   # Start a message server
+  $ quiver-arrow receive q0 &     # Start receiving
+  $ quiver-arrow send q0          # Start sending
+"""
+
+_common_epilog = _common_epilog.lstrip()
+
+_quiver_epilog = _quiver_epilog.lstrip()
+_quiver_epilog = _quiver_epilog.format(_common_epilog)
+
+_quiver_arrow_epilog = _quiver_arrow_epilog.lstrip()
+_quiver_arrow_epilog = _quiver_arrow_epilog.format(_common_epilog)
+
+def _add_common_arguments(parser):
+    parser.add_argument("address", metavar="ADDRESS",
+                        help="The location of a message queue")
+    parser.add_argument("-n", "--messages", metavar="COUNT",
+                        help="Send or receive COUNT messages",
+                        default="1m")
+    parser.add_argument("--impl", metavar="NAME",
+                        help="Use NAME implementation",
+                        default="qpid-proton-python")
+    parser.add_argument("--server", action="store_true",
+                        help="Operate in server mode")
+    parser.add_argument("--bytes", metavar="COUNT",
+                        help="Send message bodies containing COUNT bytes",
+                        default="100")
+    parser.add_argument("--credit", metavar="COUNT",
+                        help="Sustain credit for COUNT incoming transfers",
+                        default="1k")
+    parser.add_argument("--timeout", metavar="SECONDS",
+                        help="Fail after SECONDS without transfers",
+                        default=10, type=int)
+    parser.add_argument("--output", metavar="DIRECTORY",
+                        help="Save output files to DIRECTORY")
+    parser.add_argument("--quiet", action="store_true",
+                        help="Print nothing to the console")
+    parser.add_argument("--debug", action="store_true",
+                        help="Print debug messages")
+
+class QuiverError(Exception):
+    pass
+
+class QuiverCommand(object):
+    def __init__(self, home_dir):
         self.home_dir = home_dir
-        self.impl = impl
-        self.mode = mode
-        self.operation = operation
-        self.address = address
-        self.messages = messages
-        self.bytes_ = bytes_
-        self.credit = credit
 
+        self.parser = _argparse.ArgumentParser \
+            (description=_quiver_description,
+             epilog=_quiver_epilog,
+             formatter_class=_Formatter)
+        _add_common_arguments(self.parser)
+
+        self.args = None
+        
+    def parse_args(self):
+        self.args = self.parser.parse_args()
+
+    def run(self):
+        sender_count = 1 # max(args.pairs, args.senders)
+        receiver_count = 1 # max(args.pairs, args.receivers)
+        
+        sender_args = ["quiver-arrow", "send", self.args.address]
+        sender_args += _sys.argv[2:]
+
+        receiver_args = ["quiver-arrow", "receive", self.args.address]
+        receiver_args += _sys.argv[2:]
+
+        senders = list()
+        receivers = list()
+        
+        for i in range(receiver_count):
+            receiver = _subprocess.Popen(receiver_args)
+            receivers.append(receiver)
+
+        _time.sleep(0.1)
+
+        for i in range(sender_count):
+            sender = _subprocess.Popen(sender_args)
+            senders.append(sender)
+
+        for sender in senders:
+            sender.wait()
+
+        for receiver in receivers:
+            receiver.wait()
+        
+class QuiverArrowCommand(object):
+    def __init__(self, home_dir):
+        self.home_dir = home_dir
+
+        self.impl = None
+        self.mode = None
+        self.operation = None
+        self.address = None
+        self.messages = None
+        self.bytes_ = None
+        self.credit = None
         self.output_dir = None
+        self.timeout = 10
         self.quiet = False
         self.debug = False
-        self.timeout = 10
 
         self.impl_file = None
         self.transfers_file = None
@@ -63,8 +197,43 @@ class QuiverArrowCommand(object):
         self.stop = _threading.Event()
         self.ended = _threading.Event()
 
+        self.parser = _argparse.ArgumentParser \
+            (description=_quiver_arrow_description,
+             epilog=_quiver_arrow_epilog,
+             formatter_class=_Formatter)
+        self.parser.add_argument("operation", metavar="OPERATION",
+                                 choices=["send", "receive"],
+                                 help="Either 'send' or 'receive'")
+        _add_common_arguments(self.parser)
+        
         self.periodic_status_thread = _PeriodicStatusThread(self)
 
+    def parse_args(self):
+        args = self.parser.parse_args()
+        
+        try:
+            impl = _impls_by_name[args.impl]
+        except KeyError:
+            parser.error("Implementation '{}' is unknown".format(args.impl))
+
+        mode = "server" if args.server else "client"
+
+        messages = _parse_int_with_unit(self.parser, args.messages)
+        bytes_ = _parse_int_with_unit(self.parser, args.bytes)
+        credit = _parse_int_with_unit(self.parser, args.credit)
+        
+        self.impl = impl
+        self.mode = mode
+        self.operation = args.operation
+        self.address = args.address
+        self.messages = messages
+        self.bytes_ = bytes_
+        self.credit = credit
+        self.output_dir = args.output
+        self.timeout = args.timeout
+        self.quiet = args.quiet
+        self.debug = args.debug
+    
     def init(self):
         impl_name = "arrow-{}".format(self.impl)
 
@@ -82,7 +251,9 @@ class QuiverArrowCommand(object):
         
         if not _os.path.exists(self.output_dir):
             _os.makedirs(self.output_dir)
-        
+
+        self.periodic_status_thread.init()
+            
     def check(self):
         if not _os.path.exists(self.impl_file):
             msg = "No impl at '{}'".format(self.impl_file)
@@ -214,6 +385,14 @@ class QuiverArrowCommand(object):
 
         _os.remove(self.transfers_file)
 
+def _parse_int_with_unit(parser, value):
+    try:
+        if value.endswith("m"): return int(value[:-1]) * 1000 * 1000
+        if value.endswith("k"): return int(value[:-1]) * 1000
+        return int(value)
+    except ValueError:
+        parser.error("Failure parsing '{}' as integer with unit".format(value))
+
 def _print_bracket():
     print("-" * 80)
         
@@ -229,7 +408,8 @@ def _print_numeric_field(name, value, unit, fmt=None):
     
     print("{:<24} {:>36} {}".format(name, value, unit))
 
-class QuiverError(Exception):
+class _Formatter(_argparse.ArgumentDefaultsHelpFormatter,
+                 _argparse.RawDescriptionHelpFormatter):
     pass
 
 class _PeriodicStatusThread(_threading.Thread):
@@ -238,11 +418,16 @@ class _PeriodicStatusThread(_threading.Thread):
 
         self.command = command
 
+        self.parse_func = None
+        
         self.transfers = 0
         self.period_start_time = None
         self.period_end_time = None
         self.timeout_checkpoint = None # timestamp, transfers
 
+        self.daemon = True
+
+    def init(self):
         if self.command.operation == "send":
             self.parse_func = self.parse_send
         elif self.command.operation == "receive":
@@ -250,8 +435,6 @@ class _PeriodicStatusThread(_threading.Thread):
         else:
             raise Exception()
         
-        self.daemon = True
-
     def run(self):
         try:
             self.do_run()
