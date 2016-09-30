@@ -23,11 +23,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
-import argparse
 import os
-import subprocess
 import sys
-import time
 
 home_dir = os.path.normpath("@quiver_home@")
 
