@@ -29,31 +29,22 @@ import time
 
 from plano import *
 
-def test(client, messages):
-    executable = "{}/activemq/bin/activemq".format(home_dir())
+def main():
+    port = random_port()
 
-    call("{} start", executable)
+    command = "qpidd --port {} --auth no --default-queue-limit 0 --no-data-dir"
+    server = start_process(command, port)
 
-    sleep(5)
-
-    cmd = "quiver //localhost/q0 --impl {} -m {} --debug"
-    call(cmd, client, messages)
-
-    call("{} stop", executable)
-
-if len(ARGS) != 3:
-    print("Usage: {} CLIENT MESSAGES".format(program_name()))
-    exit("Wrong arguments")
+    command = "qpid-config -b localhost:{} add queue q0" 
+    call(command, port)
     
-if not is_dir(join(home_dir(), "activemq")):
-    exit("I need an activemq instance installed at $HOME/activemq")
+    command = "quiver //localhost:{}/q0 {}"
+    args = " ".join(ARGS[1:])
+    call(command, port, args)
 
-# XXX Also make sure port 61616 is free
-    
-client = ARGS[1]
-messages = ARGS[2]
+    stop_process(server)
 
 try:
-    test(client, messages)
+    main()
 except KeyboardInterrupt:
     pass

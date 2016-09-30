@@ -23,44 +23,27 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
-import subprocess
-import sys
-import time
-
 from plano import *
 
-def test(client, messages):
-    executable = join(home_dir(), "artemis", "bin", "artemis")
-    queue_type = "core-queue"
-    
-    if client in ("activemq-artemis-jms", "activemq-jms"):
-        queue_type = "jms-queue"
-    
-    server = start_process("{} run", executable)
+def main():
+    if not is_dir(join(home_dir(), "activemq")):
+        exit("I need an activemq instance installed at $HOME/activemq")
 
-    sleep(5)
+    # XXX Also make sure port 61616 is free
 
-    cmd = "{} destination create --name q0 --type {}"
-    call(cmd, executable, queue_type)
-    
-    cmd = "quiver //localhost/q0 --impl {} -m {} --debug"
-    call(cmd, client, messages)
+    server_command = "{}/activemq/bin/activemq".format(home_dir())
 
-    stop_process(server)
+    call("{} start", server_command)
 
-if len(ARGS) != 3:
-    print("Usage: {} CLIENT MESSAGES".format(program_name()))
-    exit("Wrong arguments")
-    
-if not is_dir(join(home_dir(), "artemis")):
-    exit("I need an artemis instance installed at $HOME/artemis")
+    sleep(1)
 
-# XXX Also make sure port 61616 is free
-    
-client = ARGS[1]
-messages = ARGS[2]
+    command = "quiver //localhost/q0 {}"
+    args = " ".join(ARGS[1:])
+    call(command, args)
+
+    call("{} stop", server_command)
 
 try:
-    test(client, messages)
+    main()
 except KeyboardInterrupt:
     pass

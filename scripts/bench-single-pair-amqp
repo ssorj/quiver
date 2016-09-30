@@ -37,35 +37,29 @@ clients = (
     "vertx-proton",
 )
 
-def test_artemis(output_dir, messages):
+def test_activemq(output_dir, args):
+    for client in clients:
+        output_file = join(output_dir, "activemq-{}.txt".format(client))
+        command = "scripts/test-activemq --impl {} {} 2>&1 | tee {}"
+        call(command, client, args, output_file)
+
+def test_artemis(output_dir, args):
     for client in clients:
         output_file = join(output_dir, "artemis-{}.txt".format(client))
-        cmd = "scripts/test-client-with-artemis {} {} 2>&1 | tee {}" 
+        command = "scripts/test-artemis --impl {} {} 2>&1 | tee {}"
+        call(command, client, args, output_file)
 
-        call(cmd, client, messages, output_file)
-
-def test_qpidd(output_dir, messages):
+def test_qpidd(output_dir, args):
     for client in clients:
         output_file = join(output_dir, "qpidd-{}.txt".format(client))
-        cmd = "scripts/test-client-with-qpidd {} {} 2>&1 | tee {}" 
+        command = "scripts/test-qpidd --impl {} {} 2>&1 | tee {}" 
+        call(command, client, args, output_file)
 
-        call(cmd, client, messages, output_file)
-
-def test_qdrouterd(output_dir, messages):
+def test_qdrouterd(output_dir, args):
     for client in clients:
         output_file = join(output_dir, "qdrouterd-{}.txt".format(client))
-        cmd = "scripts/test-client-with-qdrouterd {} {} 2>&1 | tee {}" 
-
-        call(cmd, client, messages, output_file)
-
-if len(ARGS) != 2:
-    print("Usage: {} MESSAGES".format(program_name()))
-    exit("Wrong arguments")
-        
-messages = ARGS[1]
-
-if not is_dir(join(home_dir(), "artemis")):
-    exit("I need an artemis instance installed at $HOME/artemis")
+        command = "scripts/test-qdrouterd --impl {} {} 2>&1 | tee {}" 
+        call(command, client, args, output_file)
 
 script = file_name(ARGS[0])
 timestamp = time.strftime('%Y-%m-%d', time.localtime())
@@ -74,10 +68,17 @@ output_dir = "{}-{}".format(script, timestamp)
 remove(output_dir)
 make_dir(output_dir)
 
+args = " ".join(ARGS[1:])
+
 try:
-    test_artemis(output_dir, messages)
-    test_qpidd(output_dir, messages)
-    test_qdrouterd(output_dir, messages)
+    if is_dir(join(home_dir(), "activemq")):
+        test_activemq(output_dir, args)
+    
+    if is_dir(join(home_dir(), "artemis")):
+        test_artemis(output_dir, args)
+
+    test_qpidd(output_dir, args)
+    test_qdrouterd(output_dir, args)
 except KeyboardInterrupt:
     pass
 

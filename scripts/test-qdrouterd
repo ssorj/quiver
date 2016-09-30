@@ -23,34 +23,37 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
-import subprocess
-import sys
-import time
-
 from plano import *
 
-def test(client, messages):
+config_template = """
+router {
+    mode: standalone
+    id: test-qdrouterd-1
+}
+
+listener {
+    host: ::
+    port: @port@
+    linkCapacity: 1000
+    authenticatePeer: off
+    saslMechanisms: ANONYMOUS
+}
+"""
+        
+def main():
     port = random_port()
 
-    cmd = "qpidd --port {} --auth no --default-queue-limit 0 --no-data-dir"
-    server = start_process(cmd, port)
+    config = config_template.replace("@port@", str(port))
+    config_file = write_temp("qdrouterd-config", config)
+    server = start_process("qdrouterd --config {}", config_file)
 
-    cmd = "qpid-config -b localhost:{} add queue q0" 
-    call(cmd, port)
-    
-    cmd = "quiver //localhost:{}/q0 --impl {} -m {} --debug"
-    call(cmd, port, client, messages)
+    command = "quiver //localhost:{}/q0 {}"
+    args = " ".join(ARGS[1:])
+    call(command, port, args)
 
     stop_process(server)
 
-if len(ARGS) != 3:
-    print("Usage: {} CLIENT MESSAGES".format(program_name()))
-    exit("Wrong arguments")
-    
-client = ARGS[1]
-messages = ARGS[2]
-
 try:
-    test(client, messages)
+    main()
 except KeyboardInterrupt:
     pass
