@@ -499,6 +499,13 @@ def wait_for_process(proc):
 
     return proc.returncode
 
+# def compress_output(self):
+#     with open(self.transfers_file, "rb") as fin:
+#         with _gzip.open("{}.gz".format(self.transfers_file), "wb") as fout:
+#             _shutil.copyfileobj(fin, fout)
+#
+#     _os.remove(self.transfers_file)
+        
 def make_archive(input_dir, output_dir, archive_stem):
     temp_dir = make_temp_dir()
     temp_input_dir = join(temp_dir, archive_stem)
