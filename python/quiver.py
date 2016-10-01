@@ -23,10 +23,8 @@ from __future__ import unicode_literals
 from __future__ import with_statement
 
 import argparse as _argparse
-import gzip as _gzip
 import numpy as _numpy
 import os as _os
-import shutil as _shutil
 import signal as _signal
 import string as _string
 import subprocess as _subprocess
@@ -380,11 +378,8 @@ class QuiverArrowCommand(object):
         _print_bracket()
 
     def compress_output(self):
-        with open(self.transfers_file, "rb") as fin:
-            with _gzip.open("{}.gz".format(self.transfers_file), "wb") as fout:
-                _shutil.copyfileobj(fin, fout)
-
-        _os.remove(self.transfers_file)
+        args = "xz", "--compress", "-0", "--threads", "0", self.transfers_file
+        _subprocess.check_call(args)
 
 def _parse_int_with_unit(parser, value):
     try:
