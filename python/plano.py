@@ -22,6 +22,7 @@ from __future__ import print_function
 import atexit as _atexit
 import binascii as _binascii
 import codecs as _codecs
+import collections as _collections
 import fnmatch as _fnmatch
 import getpass as _getpass
 import os as _os
@@ -34,6 +35,7 @@ import tarfile as _tarfile
 import tempfile as _tempfile
 import time as _time
 import traceback as _traceback
+import types as _types
 import uuid as _uuid
 
 # See documentation at http://www.ssorj.net/projects/plano.html
@@ -53,18 +55,23 @@ def warn(message, *args):
     _print_message("Warn", message, args, _sys.stderr)
 
 def notice(message, *args):
-    _print_message(None, message, args, _sys.stdout)
+    _print_message(None, message, args, _sys.stderr)
 
 def debug(message, *args):
-    _print_message("Debug", message, args, _sys.stdout)
+    _print_message("Debug", message, args, _sys.stderr)
 
-def exit(message=None, *args):
-    if message is None:
+def exit(arg=None, *args):
+    if arg in (0, None):
         _sys.exit()
 
-    _print_message("Error", message, args, _sys.stderr)
-
-    _sys.exit(1)
+    if isinstance(arg, _types.StringTypes):
+        error(arg, args)
+        _sys.exit(1)
+    elif isinstance(arg, _types.IntegerType):
+        error("Exiting with code {}", (arg,))
+        _sys.exit(arg)
+    else:
+        raise Exception()
 
 def _print_message(category, message, args, file):
     message = _format_message(category, message, args)
@@ -419,21 +426,37 @@ class working_dir(object):
     def __exit__(self, type, value, traceback):
         change_dir(self.prev_dir)
 
-# XXX Honor command as array here
+# XXX Move toward _start_process instead
 def _init_call(command, args, kwargs):
-    if args:
-        command = command.format(*args)
+    assert command is not None
+    
+    if isinstance(command, _types.StringTypes):
+        if args:
+            command = command.format(*args)
 
-    if "shell" not in kwargs:
-        kwargs["shell"] = True
+        if "shell" not in kwargs:
+            kwargs["shell"] = True
 
-    notice("Calling '{0}'", command)
+        notice("Calling '{0}'", command)
+    elif isinstance(command, _collections.Iterable):
+        notice("Calling '{0}'", " ".join(command))
+    else:
+        raise Exception()
+
+    #if "preexec_fn" not in kwargs:
+    #    kwargs["preexec_fn"] = _os.setsid
+
+    # XXX close_fds in kwargs as well?
 
     return command, kwargs
 
 def call(command, *args, **kwargs):
     command, kwargs = _init_call(command, args, kwargs)
     _subprocess.check_call(command, **kwargs)
+
+def call_for_exit_code(command, *args, **kwargs):
+    command, kwargs = _init_call(command, args, kwargs)
+    return _subprocess.call(command, **kwargs)
 
 def call_for_output(command, *args, **kwargs):
     command, kwargs = _init_call(command, args, kwargs)
@@ -457,22 +480,24 @@ def stop_process(proc):
             error("Process {} exited with code {}", proc.pid, proc.returncode)
             
         return
-    
+
+    # XXX Consider killpg here instead
+    # _os.killpg(_os.getpgid(proc.pid), _signal.SIGTERM)
     proc.terminate()
-    proc.wait() # XXX Timeout, then kill harder?
 
-    if proc.returncode == 0:
-        notice("Process {} exited normally", proc.pid)
-    else:
-        error("Process {} exited with code {}", proc.pid, proc.returncode)
+    return wait_for_process(proc)
 
-def join_process(proc):
+def wait_for_process(proc):
+    notice("Waiting for process {} to exit", proc.pid)
+
     proc.wait()
 
     if proc.returncode == 0:
         notice("Process {} exited normally", proc.pid)
     else:
         error("Process {} exited with code {}", proc.pid, proc.returncode)
+
+    return proc.returncode
 
 def make_archive(input_dir, output_dir, archive_stem):
     temp_dir = make_temp_dir()
