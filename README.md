@@ -32,6 +32,23 @@ parameters, selecting the implementation, and reporting statistics.
 future, it will collate the results from the individual `quiver-arrow`
 runs and produce a consolidated report.
 
+## Dependencies
+
+    NAME                     FEDORA PACKAGES
+    ------------------------ --------------------------------------------
+    Java 8                   java-1.8.0-openjdk, java-1.8.0-openjdk-devel
+    Maven                    maven
+    GNU Make                 make
+    Node.js                  nodejs
+    NumPy                    numpy
+    Python 2.7               python
+    Qpid Messaging Python    python-qpid-messaging
+    Qpid Proton Python       python-qpid-proton
+    Qpid Messaging C++       qpid-cpp-client, qpid-cpp-client-devel
+    Qpid Proton C            qpid-proton-c, qpid-proton-c-devel
+    XZ                       xc
+    GCC C++ compiler         gcc-c++
+
 ## Installation
 
 ### Installing from source
@@ -64,16 +81,16 @@ The `devel` make target creates a local installation in your checkout.
 
 ## Project layout
 
-    devel.sh              # Sets up your project environment
-    Makefile              # Defines the make targets
+    devel.sh              # Sets up your project environment for development
+    Makefile              # Defines the build and test targets
     bin/                  # Command-line tools
-    exec/                 # Quiver implementations
-    python/               # Python library code
+    exec/                 # Library executables and quiver-arrow implementations
     scripts/              # Scripts called by Makefile rules
     java/                 # Java library code
     javascript/           # JavaScript library code
+    python/               # Python library code
     build/                # The default build location
-    install/              # The devel install location
+    install/              # The development-mode install location
 
 ## Make targets
 
@@ -88,39 +105,34 @@ running make targets.  These are the important ones:
 
 ## Command-line interface
 
-### `quiver-arrow`
+### `quiver`
 
-This command sends or receives AMQP messages as fast as it can.  When
-the requested transfers are done, it reports the throughput and
-latency of the overall set, from the first send to the last receive.
+This command starts sender-receiver pairs.  By default it creates a
+single pair.  Each sender or receiver is an invocation of the
+`quiver-arrow` command.
 
-    usage: quiver-arrow [-h] [-n COUNT] [--impl NAME] [--bytes COUNT] [--credit COUNT]
-                        [--timeout SECONDS] [--server] [--output DIRECTORY] [--quiet] [--debug]
-                        ADDRESS OPERATION
+    usage: quiver [-h] [-m COUNT] [--impl NAME] [--server] [--bytes COUNT] [--credit COUNT]
+                  [--timeout SECONDS] [--output DIRECTORY] [--quiet] [--verbose]
+                  ADDRESS
 
     Test the performance of messaging clients and servers
 
     positional arguments:
       ADDRESS               The location of a message queue
-      OPERATION             Either 'send' or 'receive'
 
     optional arguments:
       -h, --help            show this help message and exit
-      -n COUNT, --messages COUNT
-                            Send or receive COUNT messages (default: 1000000)
+      -m COUNT, --messages COUNT
+                            Send or receive COUNT messages (default: 1m)
       --impl NAME           Use NAME implementation (default: qpid-proton-python)
-      --bytes COUNT         Send message bodies containing COUNT bytes (default: 100)
-      --credit COUNT        Sustain credit for COUNT incoming transfers (default: 1000)
-      --timeout SECONDS     Fail after SECONDS without transfers (default: 10)
       --server              Operate in server mode (default: False)
+      --bytes COUNT         Send message bodies containing COUNT bytes (default: 100)
+      --credit COUNT        Sustain credit for COUNT incoming transfers (default: 1k)
+      --timeout SECONDS     Fail after SECONDS without transfers (default: 10)
       --output DIRECTORY    Save output files to DIRECTORY (default: None)
       --quiet               Print nothing to the console (default: False)
-      --debug               Print debug messages (default: False)
-
-    operations:
-      send                  Send messages
-      receive               Receive messages
-
+      --verbose             Print details to the console (default: False)
+  
     addresses:
       [//DOMAIN/]PATH                 The default domain is 'localhost'
       //example.net/jobs
@@ -138,11 +150,38 @@ latency of the overall set, from the first send to the last receive.
       rhea [javascript]               Client mode only at the moment
       vertx-proton                    Client mode only
 
-### `quiver`
+### `quiver-arrow`
 
-This command starts sender-receiver pairs.  Each sender or receiver is
-an invocation of the `quiver-arrow` command.  Arguments not processed
-by `quiver` are passed to `quiver-arrow`.
+This command sends or receives AMQP messages as fast as it can.  Each
+invocation creates a single connection.  It terminates when the target
+number of messages are all sent or received.
+
+    usage: quiver-arrow [-h] [-m COUNT] [--impl NAME] [--server] [--bytes COUNT] [--credit COUNT]
+                        [--timeout SECONDS] [--output DIRECTORY] [--quiet] [--verbose]
+                        OPERATION ADDRESS
+
+    Send or receive messages
+
+    positional arguments:
+      OPERATION             Either 'send' or 'receive'
+      ADDRESS               The location of a message queue
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -m COUNT, --messages COUNT
+                            Send or receive COUNT messages (default: 1m)
+      --impl NAME           Use NAME implementation (default: qpid-proton-python)
+      --server              Operate in server mode (default: False)
+      --bytes COUNT         Send message bodies containing COUNT bytes (default: 100)
+      --credit COUNT        Sustain credit for COUNT incoming transfers (default: 1k)
+      --timeout SECONDS     Fail after SECONDS without transfers (default: 10)
+      --output DIRECTORY    Save output files to DIRECTORY (default: None)
+      --quiet               Print nothing to the console (default: False)
+      --verbose             Print details to the console (default: False)
+
+    operations:
+      send                  Send messages
+      receive               Receive messages
 
 ## Examples
 
