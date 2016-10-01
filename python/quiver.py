@@ -27,6 +27,7 @@ import gzip as _gzip
 import numpy as _numpy
 import os as _os
 import shutil as _shutil
+import signal as _signal
 import string as _string
 import subprocess as _subprocess
 import sys as _sys
@@ -304,7 +305,7 @@ class QuiverArrowCommand(object):
 
             while proc.poll() == None:
                 if self.stop.wait(0.1):
-                    proc.terminate()
+                    _os.killpg(_os.getpgid(proc.pid), _signal.SIGTERM)
 
             if proc.returncode == 0:
                 self.vprint("Process {} ({}) exited normally", proc.pid,
