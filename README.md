@@ -20,7 +20,7 @@ Tools for testing the performance of messaging clients and servers.
 ## Overview
 
 Quiver implementations are native clients (and sometimes also servers)
-in various languages and APIs that send or receive messages and dump
+in various languages and APIs that send or receive messages and write
 raw information about the transfers to standard output.  They are
 deliberately simple.
 
@@ -191,11 +191,6 @@ number of messages are all sent or received.
 
 ## Examples
 
-### Running Quiver with Dispatch Router
-
-    $ qdrouterd &
-    $ quiver q0
-
 ### Running Quiver with ActiveMQ
 
     [Configure ActiveMQ for anonymous connections and AMQP]
@@ -212,6 +207,11 @@ number of messages are all sent or received.
 
     $ qpidd --auth no &
     $ qpid-config add queue q0
+    $ quiver q0
+
+### Running Quiver with the Qpid Dispatch router
+
+    $ qdrouterd &
     $ quiver q0
 
 ### Running Quiver peer-to-peer
