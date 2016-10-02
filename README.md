@@ -196,7 +196,13 @@ number of messages are all sent or received.
     $ qdrouterd &
     $ quiver q0
 
-### Running Quiver with Artemis
+### Running Quiver with ActiveMQ
+
+    [Configure ActiveMQ for anonymous connections and AMQP]
+    $ <instance-dir>/bin/activemq start
+    $ quiver q0
+    
+### Running Quiver with ActiveMQ Artemis
 
     $ <instance-dir>/bin/artemis run &
     $ <instance-dir>/bin/artemis destination create --name q0 --type core-queue
@@ -210,13 +216,8 @@ number of messages are all sent or received.
 
 ### Running Quiver peer-to-peer
 
-    $ quiver-arrow --server q0 receive &
-    $ quiver-arrow q0 send
-
-    [or]
-
-    $ quiver-arrow --server q0 send &
-    $ quiver-arrow q0 receive
+    $ quiver-arrow --server receive q0 &
+    $ quiver-arrow send q0
 
 ## Implementations
 
