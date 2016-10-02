@@ -19,18 +19,19 @@ Tools for testing the performance of messaging clients and servers.
 
 ## Overview
 
-Quiver implementations are native clients (and sometimes also servers)
-in various languages and APIs that send or receive messages and write
-raw information about the transfers to standard output.  They are
-deliberately simple.
+Quiver arrow implementations are native clients (and sometimes also
+servers) in various languages and APIs that send or receive messages
+and write raw information about the transfers to standard output.
+They are deliberately simple.
 
-`quiver-arrow` runs an implementation in send or receive mode and
-captures its output.  It has options for defining the execution
-parameters, selecting the implementation, and reporting statistics.
+The `quiver-arrow` command runs an implementation in send or receive
+mode and captures its output.  It has options for defining the
+execution parameters, selecting the implementation, and reporting
+statistics.
 
-`quiver` makes it easy to launch `quiver-arrow` instances.  In the
-future, it will collate the results from the individual `quiver-arrow`
-runs and produce a consolidated report.
+The `quiver` command makes it easy to launch `quiver-arrow` instances.
+In the future, it will collate the results from the individual
+`quiver-arrow` runs and produce a consolidated report.
 
 ## Dependencies
 
@@ -86,6 +87,7 @@ The `devel` make target creates a local installation in your checkout.
     bin/                  # Command-line tools
     exec/                 # Library executables and quiver-arrow implementations
     scripts/              # Scripts called by Makefile rules
+    docs/                 # Documentation and notes
     java/                 # Java library code
     javascript/           # JavaScript library code
     python/               # Python library code
