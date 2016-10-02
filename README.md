@@ -100,8 +100,14 @@ running make targets.  These are the important ones:
     $ make build         # Builds the code
     $ make install       # Installs the code
     $ make clean         # Removes build/ and install/
-    $ make devel         # Cleans, builds, installs, tests sanity
+    $ make devel         # Builds, installs in the checkout, tests sanity
     $ make test          # Runs the test suite
+
+To alter the GCC header and library search paths, use the
+`LIBRARY_PATH`, `C_INCLUDE_PATH`, or `CPLUS_INCLUDE_PATH` environment
+variables.
+
+    $ LIBRARY_PATH=~/.local/lib make clean devel
 
 ## Command-line interface
 
