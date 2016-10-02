@@ -80,7 +80,7 @@ The `devel` make target creates a local installation in your checkout.
 
     $ make devel
 
-## Project layout
+### Project layout
 
     devel.sh              # Sets up your project environment for development
     Makefile              # Defines the build and test targets
@@ -94,7 +94,7 @@ The `devel` make target creates a local installation in your checkout.
     build/                # The default build location
     install/              # The development-mode install location
 
-## Make targets
+### Make targets
 
 In the development environment, most things are accomplished by
 running make targets.  These are the important ones:
