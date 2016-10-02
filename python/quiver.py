@@ -68,7 +68,14 @@ implementations:
   vertx-proton                    Client mode only
 """
 
-_quiver_description = "Test the performance of messaging clients and servers"
+_quiver_description = """
+Start message senders and receivers for a particular messaging
+address.
+
+'quiver' is one of the Quiver tools for testing the performance of
+message servers and APIs.
+"""
+
 _quiver_epilog = """
 {}
 example usage:
@@ -76,7 +83,14 @@ example usage:
   $ quiver q0                     # Start test
 """
 
-_quiver_arrow_description = "Send or receive messages" # XXX Expand
+_quiver_arrow_description = """
+Send or receive a set number of messages as fast as possible using a
+single connection.
+
+'quiver-arrow' is one of the Quiver tools for testing the performance
+of message servers and APIs.
+"""
+
 _quiver_arrow_epilog = """
 operations:
   send                  Send messages
@@ -91,9 +105,11 @@ example usage:
 
 _common_epilog = _common_epilog.lstrip()
 
+_quiver_description = _quiver_description.lstrip()
 _quiver_epilog = _quiver_epilog.lstrip()
 _quiver_epilog = _quiver_epilog.format(_common_epilog)
 
+_quiver_arrow_description = _quiver_arrow_description.lstrip()
 _quiver_arrow_epilog = _quiver_arrow_epilog.lstrip()
 _quiver_arrow_epilog = _quiver_arrow_epilog.format(_common_epilog)
 

@@ -54,6 +54,8 @@ Time values are unix epoch milliseconds.
 To avoid any performance impact, take care that writes to standard
 output are buffered.
 
+<!-- XXX Flushing buffers -->
+
 ## Exit code
 
 Implementations must return zero on successful completion.  If there
