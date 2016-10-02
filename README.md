@@ -33,7 +33,9 @@ The `quiver` command makes it easy to launch `quiver-arrow` instances.
 In the future, it will collate the results from the individual
 `quiver-arrow` runs and produce a consolidated report.
 
-## Dependencies
+## Installation
+
+### Dependencies
 
     NAME                     FEDORA PACKAGES
     ------------------------ --------------------------------------------
@@ -49,8 +51,6 @@ In the future, it will collate the results from the individual
     Qpid Proton C            qpid-proton-c, qpid-proton-c-devel
     XZ                       xc
     GCC C++ compiler         gcc-c++
-
-## Installation
 
 ### Installing from source
 
