@@ -333,7 +333,7 @@ class QuiverArrowCommand(object):
                             self.operation)
             else:
                 msg = "Process {} ({}) exited with code {}".format \
-                      (self.proc.pid, self.operation, proc.returncode)
+                      (self.proc.pid, self.operation, self.proc.returncode)
                 raise QuiverError(msg)
                     
         if self.operation == "receive":
