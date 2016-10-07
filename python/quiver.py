@@ -25,6 +25,7 @@ from __future__ import with_statement
 import argparse as _argparse
 import numpy as _numpy
 import os as _os
+import resource as _resource
 import signal as _signal
 import string as _string
 import subprocess as _subprocess
@@ -207,11 +208,13 @@ class QuiverArrowCommand(object):
         self.transfers_file = None
         self.start_time = None
         self.end_time = None
-        
+
         self.started = _threading.Event()
         self.stop = _threading.Event()
         self.ended = _threading.Event()
 
+        self.proc = None
+        
         self.parser = _argparse.ArgumentParser \
             (description=_quiver_arrow_description,
              epilog=_quiver_arrow_epilog,
@@ -310,28 +313,29 @@ class QuiverArrowCommand(object):
             self.print_config()
 
         with open(self.transfers_file, "w") as fout:
+            self.proc = _subprocess.Popen(args, stdout=fout)
+
+            self.vprint("Process {} ({}) started", self.proc.pid,
+                        self.operation)
+
             self.started.set()
             self.start_time = _time.time()
 
-            proc = _subprocess.Popen(args, stdout=fout)
-
-            self.vprint("Process {} ({}) started", proc.pid, self.operation)
-
-            while proc.poll() == None:
+            while self.proc.poll() == None:
                 if self.stop.wait(0.1):
-                    _os.killpg(_os.getpgid(proc.pid), _signal.SIGTERM)
+                    _os.killpg(_os.getpgid(self.proc.pid), _signal.SIGTERM)
 
-            if proc.returncode == 0:
-                self.vprint("Process {} ({}) exited normally", proc.pid,
-                            self.operation)
-            else:
-                msg = "Process {} ({}) exited with code {}".format \
-                      (proc.pid, self.operation, proc.returncode)
-                raise QuiverError(msg)
-                    
             self.end_time = _time.time()
             self.ended.set()
 
+            if self.proc.returncode == 0:
+                self.vprint("Process {} ({}) exited normally", self.proc.pid,
+                            self.operation)
+            else:
+                msg = "Process {} ({}) exited with code {}".format \
+                      (self.proc.pid, self.operation, proc.returncode)
+                raise QuiverError(msg)
+                    
         if self.operation == "receive":
             if _os.path.getsize(self.transfers_file) == 0:
                 raise QuiverError("No transfers")
@@ -430,14 +434,11 @@ class _PeriodicStatusThread(_threading.Thread):
 
         self.command = command
 
+        self.daemon = True
         self.parse_func = None
         
-        self.transfers = 0
-        self.period_start_time = None
-        self.period_end_time = None
-        self.timeout_checkpoint = None # timestamp, transfers
-
-        self.daemon = True
+        self.messages = 0
+        self.timeout_checkpoint = None # timestamp, messages
 
     def init(self):
         if self.command.operation == "send":
@@ -451,7 +452,7 @@ class _PeriodicStatusThread(_threading.Thread):
         try:
             self.do_run()
         except QuiverError as e:
-            exit("quiver: error: {}".format(e))
+            exit("quiver-arrow: error: {}".format(e))
         except:
             _traceback.print_exc()
             exit(1)
@@ -459,22 +460,30 @@ class _PeriodicStatusThread(_threading.Thread):
     def do_run(self):
         self.command.started.wait()
 
-        self.period_end_time = _time.time()
-        self.timeout_checkpoint = self.period_end_time, self.transfers
+        snap = _StatusSnapshot(self, None)
+
+        self.timeout_checkpoint = snap.timestamp, self.messages
 
         with open(self.command.transfers_file, "r") as fin:
             while not self.command.ended.wait(1):
                 transfers = self.collect_transfers(fin, self.parse_func)
 
-                self.transfers += len(transfers)
-                self.period_start_time = self.period_end_time
-                self.period_end_time = _time.time()
+                self.messages += len(transfers)
 
-                self.check_timeout(self.period_end_time)
+                snap.previous = None
 
-                if self.command.operation == "receive" and not self.command.quiet:
-                    self.print_status(transfers)
+                try:
+                    snap = _StatusSnapshot(self, snap)
+                except IOError:
+                    break
+
+                snap.capture_transfers(transfers)
                 
+                if self.command.operation == "receive" and not self.command.quiet:
+                    snap.report()
+                
+                self.check_timeout(snap.timestamp)
+
     def collect_transfers(self, fin, parse_func):
         transfers = list()
 
@@ -511,48 +520,95 @@ class _PeriodicStatusThread(_threading.Thread):
 
         return message_id, send_time, receive_time
 
-    def print_status(self, transfers):
-        count = len(transfers)
-
-        if count == 0:
-            print("* {:12,}".format(self.transfers))
-            return
-        
-        latencies = list()
-
-        for id, send_time, receive_time in transfers:
-            latency = receive_time - send_time
-            latencies.append(latency)
-
-        duration = self.period_end_time - self.period_start_time
-        rate = int(round(count / duration))
-        latency = float(sum(latencies)) / count
-
-        rate = "{:,d} messages/s".format(rate)
-        latency = "{:,.1f} ms avg latency".format(latency)
-
-        args = self.transfers, rate, latency
-        msg = "* {:12,} {:>24} {:>28}".format(*args)
-
-        print(msg)
-
     def check_timeout(self, now):
-        then, transfers_then = self.timeout_checkpoint
+        then, messages_then = self.timeout_checkpoint
         elapsed = now - then
 
-        if self.transfers == transfers_then and elapsed > self.command.timeout:
+        if self.messages == messages_then and elapsed > self.command.timeout:
             self.command.stop.set()
 
             operation = _string.capitalize(self.command.operation)
-            msg = "quiver: error: {} operation timed out".format(operation)
+            msg = "quiver-arrow: error: {} operation timed out".format(operation)
             eprint(msg)
 
             return
 
-        if self.transfers > transfers_then:
+        if self.messages > messages_then:
             then = now
             
-        self.timeout_checkpoint = then, self.transfers
+        self.timeout_checkpoint = then, self.messages
 
+class _StatusSnapshot(object):
+    def __init__(self, thread, previous):
+        self.thread = thread
+        self.previous = previous
+        
+        assert self.thread.command.proc is not None
+
+        self.timestamp = _time.time()
+
+        self.message_total = 0
+        self.message_count = None
+        self.message_rate = None
+        self.message_latency = None
+
+        self.capture_proc_info()
+
+    def capture_proc_info(self):
+        stat_file = "/proc/{}/stat".format(self.thread.command.proc.pid)
+
+        with open(stat_file, "r") as f:
+            stat_line = f.read()
+
+        stat_fields = stat_line.split()
+        self.stat_start_time = int(stat_fields[21])
+        self.stat_utime = int(stat_fields[13]) + int(stat_fields[15])
+        self.stat_stime = int(stat_fields[14]) + int(stat_fields[16])
+        self.stat_rss = int(stat_fields[23])
+        
+    def capture_transfers(self, transfers):
+        period = self.timestamp - self.previous.timestamp
+
+        self.message_total = self.thread.messages
+        self.message_count = len(transfers)
+        self.message_rate = int(round(self.message_count / period))
+
+        if self.message_count > 0 and self.thread.command.operation == "receive":
+            latencies = list()
+
+            for id, send_time, receive_time in transfers:
+                latency = receive_time - send_time
+                latencies.append(latency)
+
+            self.message_latency = _numpy.mean(latencies)
+
+    def report(self):
+        assert self.previous is not None
+        
+        total = "{:,d}".format(self.message_total)
+        rate = "{:,d} messages/s".format(self.message_rate)
+        latency = "-"
+
+        if self.message_latency is not None:
+            latency = "{:,.1f} ms avg latency".format(self.message_latency)
+        
+        elapsed_seconds = self.timestamp - self.previous.timestamp
+        prev_cpu_ticks = self.previous.stat_utime + self.previous.stat_stime
+        curr_cpu_ticks = self.stat_utime + self.stat_stime
+        cpu_seconds = float(curr_cpu_ticks - prev_cpu_ticks) / _user_hz
+        cpu_percent = (cpu_seconds / elapsed_seconds) * 100
+        cpu = "{:,.1f} %".format(cpu_percent)
+
+        rss_mb = float(self.stat_rss * _page_size) / (1000 * 1024)
+        rss = "{:,.1f} MB".format(rss_mb)
+
+        args = total, rate, latency, cpu, rss
+        line = "* {:>12} {:>24} {:>28} {:>10} {:>12}".format(*args)
+
+        print(line)
+        
 def eprint(*args, **kwargs):
     print(*args, file=_sys.stderr, **kwargs)
+
+_user_hz = _os.sysconf(_os.sysconf_names["SC_CLK_TCK"])
+_page_size = _resource.getpagesize()
