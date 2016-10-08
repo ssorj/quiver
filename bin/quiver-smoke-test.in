@@ -125,51 +125,66 @@ function test_client_mode {
     fi
 }
 
-test_server_receive_mode qpid-jms qpid-proton-python   
-# XXX Connect failed to amqp:tcp:127.0.0.1:55536: Reconnect disabled
-#test_server_receive_mode qpid-messaging-cpp qpid-proton-python
-# XXX _qpid_messaging.NotFound: No such target : q0
-#test_server_receive_mode qpid-messaging-python qpid-proton-python
+test_server_receive_mode qpid-jms qpid-proton-python
 test_server_receive_mode qpid-proton-python qpid-proton-python
-#test_server_send_mode qpid-proton-python qpid-proton-python
+test_server_receive_mode rhea qpid-proton-python
+test_server_receive_mode rhea rhea
+test_server_receive_mode vertx-proton qpid-proton-python
 
-# XXX javax.jms.JMSException: Failed to create connection to: amqp://localhost:65407
-# Issue is use of 'localhost'; 127.0.0.1 works
 test_client_mode qpid-jms qpid-jms
 test_client_mode qpid-jms qpid-messaging-cpp
 test_client_mode qpid-jms qpid-messaging-python
 test_client_mode qpid-jms qpid-proton-python
-#test_client_mode qpid-jms rhea
+test_client_mode qpid-jms rhea
 test_client_mode qpid-jms vertx-proton
 test_client_mode qpid-messaging-cpp qpid-jms
 test_client_mode qpid-messaging-cpp qpid-messaging-cpp
 test_client_mode qpid-messaging-cpp qpid-messaging-python
 test_client_mode qpid-messaging-cpp qpid-proton-python
-#test_client_mode qpid-messaging-cpp rhea
+test_client_mode qpid-messaging-cpp rhea
 test_client_mode qpid-messaging-cpp vertx-proton
 test_client_mode qpid-messaging-python qpid-jms
 test_client_mode qpid-messaging-python qpid-messaging-cpp
 test_client_mode qpid-messaging-python qpid-messaging-python
 test_client_mode qpid-messaging-python qpid-proton-python
-#test_client_mode qpid-messaging-python rhea
+test_client_mode qpid-messaging-python rhea
 test_client_mode qpid-messaging-python vertx-proton
 test_client_mode qpid-proton-python qpid-jms
 test_client_mode qpid-proton-python qpid-messaging-cpp
 test_client_mode qpid-proton-python qpid-messaging-python
 test_client_mode qpid-proton-python qpid-proton-python
-#test_client_mode qpid-proton-python rhea
+test_client_mode qpid-proton-python rhea
 test_client_mode qpid-proton-python vertx-proton
-#test_client_mode rhea qpid-jms
-#test_client_mode rhea qpid-messaging-cpp
-#test_client_mode rhea qpid-messaging-python
-#test_client_mode rhea qpid-proton-python
-#test_client_mode rhea rhea
-#test_client_mode rhea vertx-proton
+test_client_mode rhea qpid-messaging-cpp
+test_client_mode rhea qpid-messaging-python
+test_client_mode rhea qpid-proton-python
+test_client_mode rhea rhea
 test_client_mode vertx-proton qpid-jms
 test_client_mode vertx-proton qpid-messaging-cpp
 test_client_mode vertx-proton qpid-messaging-python
 test_client_mode vertx-proton qpid-proton-python
-#test_client_mode vertx-proton rhea
+test_client_mode vertx-proton rhea
 test_client_mode vertx-proton vertx-proton
+
+# XXX Error: Invalid AMQP protocol id 3 expecting: 0
+#test_server_receive_mode qpid-jms rhea
+#test_server_receive_mode qpid-proton-python rhea
+#test_server_receive_mode vertx-proton rhea
+
+# XXX Connect failed to amqp:tcp:127.0.0.1:55536: Reconnect disabled
+#test_server_receive_mode qpid-messaging-cpp qpid-proton-python
+
+# XXX _qpid_messaging.NotFound: No such target : q0
+#test_server_receive_mode qpid-messaging-python qpid-proton-python
+#test_server_send_mode qpid-proton-python qpid-proton-python
+
+# XXX javax.jms.JMSException: Failed to create connection to: amqp://localhost:65407
+# Issue is use of 'localhost'; 127.0.0.1 works
+
+# XXX java.lang.ClassCastException: org.apache.qpid.jms.message.JmsObjectMessage cannot be cast to javax.jms.BytesMessage
+#test_client_mode rhea qpid-jms
+
+# XXX java.lang.ClassCastException: org.apache.qpid.proton.amqp.UnsignedLong cannot be cast to java.lang.Long
+#test_client_mode rhea vertx-proton
 
 echo "Test failures: ${test_failures}"

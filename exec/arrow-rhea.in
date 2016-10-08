@@ -40,6 +40,8 @@ var sent = 0;
 var received = 0;
 var accepted = 0;
 
+var listener;
+
 function eprint(message) {
     process.stderr.write(message);
     process.stderr.write("\n");
@@ -70,6 +72,10 @@ container.on("accepted", function(context) {
 
     if (accepted == messages) {
         context.connection.close();
+
+        if (mode == "server") {
+            listener.close();
+        }
     }
 });
 
@@ -89,6 +95,10 @@ container.on("message", function(context) {
 
     if (received == messages) {
         context.connection.close();
+
+        if (mode == "server") {
+            listener.close();
+        }
     }
 });
 
@@ -96,28 +106,34 @@ if (port == "-") {
     port = "5672";
 }
 
-var conn = container.connect({host: host, port: port});
+if (mode == "client") {
+    var conn = container.connect({user: "anonymous", host: host, port: port});
 
-if (operation == "send") {
-    // XXX How do I set delivery mode?
-    var options = {
-        target: {
-            address: path,
-            durable: false
-        }
-    };
-    
-    conn.open_sender(options);
-} else if (operation == "receive") {
-    var options = {
-        source: {
-            address: path,
-            durable: false
-        },
-        prefetch: credit
-    };
-    
-    conn.open_receiver(options);
+    if (operation == "send") {
+        // XXX How do I set delivery mode?
+        var options = {
+            target: {
+                address: path,
+                durable: false
+            }
+        };
+        
+        conn.open_sender(options);
+    } else if (operation == "receive") {
+        var options = {
+            source: {
+                address: path,
+                durable: false
+            },
+            prefetch: credit
+        };
+        
+        conn.open_receiver(options);
+    } else {
+        throw new Error();
+    }
+} else if (mode == "server") {
+    listener = container.listen({host: host, port: port});
 } else {
     throw new Error();
 }
