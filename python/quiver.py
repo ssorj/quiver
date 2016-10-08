@@ -500,7 +500,7 @@ class _PeriodicStatusThread(_threading.Thread):
             try:
                 record = parse_func(line)
             except Exception as e:
-                print("Failed to parse line '{}': {}".format(line, e))
+                eprint("Failed to parse line '{}': {}".format(line, e))
                 continue
             
             transfers.append(record)
