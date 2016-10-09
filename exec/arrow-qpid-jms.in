@@ -49,7 +49,7 @@ def main():
         "amqp.saslMechanisms=ANONYMOUS",
     )
     
-    url = "amqp://{}:{}?{}".format(host, port, "&".join(params)),
+    url = "amqp://{}:{}?{}".format(host, port, "&".join(params))
     
     args = [
         "java",
