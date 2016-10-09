@@ -42,7 +42,7 @@ long now() {
 }
 
 void eprint(std::string message) {
-    std::cerr << "quiver: error: " << message << std::endl;
+    std::cerr << "quiver-arrow: error: " << message << std::endl;
 }
 
 struct Client {

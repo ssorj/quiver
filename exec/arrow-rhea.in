@@ -45,6 +45,7 @@ var accepted = 0;
 var listener;
 
 function eprint(message) {
+    process.stderr.write("quiver-arrow: error: ");
     process.stderr.write(message);
     process.stderr.write("\n");
 }

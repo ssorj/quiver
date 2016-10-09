@@ -98,6 +98,8 @@ of message servers and APIs.
 # By default arrow operates in client, active mode ...
 
 _quiver_arrow_epilog = """
+server and 
+
 operations:
   send                  Send messages
   receive               Receive messages
@@ -128,12 +130,6 @@ def _add_common_arguments(parser):
     parser.add_argument("--impl", metavar="NAME",
                         help="Use NAME implementation",
                         default="qpid-proton-python")
-    parser.add_argument("--id", metavar="ID",
-                        help="Use ID as the client or server identity")
-    parser.add_argument("--server", action="store_true",
-                        help="Operate in server mode")
-    parser.add_argument("--passive", action="store_true",
-                        help="Operate in passive mode")
     parser.add_argument("--bytes", metavar="COUNT",
                         help="Send message bodies containing COUNT bytes",
                         default="100")
@@ -167,8 +163,10 @@ class QuiverCommand(object):
         _add_common_arguments(self.parser)
         
     def init(self):
-        self.args = self.parser.parse_args()
-        self.init_only = self.args.init_only
+        args = self.parser.parse_args()
+
+        self.address = args.address
+        self.init_only = args.init_only
 
     def run(self):
         sender_count = 1 # max(args.pairs, args.senders)
@@ -179,10 +177,10 @@ class QuiverCommand(object):
         if "--output" not in args:
             args += "--output", _tempfile.mkdtemp(prefix="quiver-")
         
-        sender_args = ["quiver-arrow", "send", self.args.address]
+        sender_args = ["quiver-arrow", "send", self.address]
         sender_args += args
 
-        receiver_args = ["quiver-arrow", "receive", self.args.address]
+        receiver_args = ["quiver-arrow", "receive", self.address]
         receiver_args += args
 
         senders = list()
@@ -228,6 +226,13 @@ class QuiverArrowCommand(object):
         
         _add_common_arguments(self.parser)
         
+        self.parser.add_argument("--id", metavar="ID",
+                                 help="Use ID as the client or server identity")
+        self.parser.add_argument("--server", action="store_true",
+                                 help="Operate in server mode")
+        self.parser.add_argument("--passive", action="store_true",
+                                 help="Operate in passive mode")
+    
         self.periodic_status_thread = _PeriodicStatusThread(self)
 
     def init(self):
@@ -379,7 +384,6 @@ class QuiverArrowCommand(object):
         _print_field("Messages", "{:,d}".format(self.messages))
         _print_field("Bytes", "{:,d}".format(self.bytes_))
         _print_field("Credit", "{:,d}".format(self.credit))
-        #_print_field("Timeout", "{:,d}".format(self.timeout))
         _print_bracket()
             
     def print_results(self):
@@ -545,8 +549,7 @@ class _PeriodicStatusThread(_threading.Thread):
             self.command.stop.set()
 
             operation = _string.capitalize(self.command.operation)
-            msg = "quiver-arrow: error: {} operation timed out".format(operation)
-            eprint(msg)
+            eprint("{} operation timed out".format(operation))
 
             return
 
@@ -623,8 +626,9 @@ class _StatusSnapshot(object):
         line = "* {:>12} {:>24} {:>28} {:>10} {:>12}".format(*args)
 
         print(line)
-        
+
 def eprint(*args, **kwargs):
+    args = ["{}: error:".format(_program)] + list(args)
     print(*args, file=_sys.stderr, **kwargs)
 
 def _unique_id(length=16):
@@ -636,5 +640,6 @@ def _unique_id(length=16):
 
     return _binascii.hexlify(uuid_bytes).decode("utf-8")
 
+_program = _os.path.split(_sys.argv[0])[1]
 _user_hz = _os.sysconf(_os.sysconf_names["SC_CLK_TCK"])
 _page_size = _resource.getpagesize()
