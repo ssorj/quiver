@@ -231,7 +231,7 @@ def tail_lines(file, n):
 
         return lines[-n:]
 
-_temp_dir = _tempfile.mkdtemp(prefix="plano.")
+_temp_dir = _tempfile.mkdtemp(prefix="plano-")
 
 def _get_temp_file(key):
     assert not key.startswith("_")
