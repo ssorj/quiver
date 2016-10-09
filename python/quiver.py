@@ -138,7 +138,7 @@ def _add_common_arguments(parser):
                         default="1k")
     parser.add_argument("--timeout", metavar="SECONDS",
                         help="Fail after SECONDS without transfers",
-                        default=10, type=int)
+                        default="10")
     parser.add_argument("--output", metavar="DIRECTORY",
                         help="Save output files to DIRECTORY")
     parser.add_argument("--init-only", action="store_true",
@@ -238,9 +238,10 @@ class QuiverArrowCommand(object):
     def init(self):
         args = self.parser.parse_args()
 
-        messages = _parse_int_with_unit(self.parser, args.messages)
-        bytes_ = _parse_int_with_unit(self.parser, args.bytes)
-        credit = _parse_int_with_unit(self.parser, args.credit)
+        messages = self.parse_int_with_unit(args.messages)
+        bytes_ = self.parse_int_with_unit(args.bytes)
+        credit = self.parse_int_with_unit(args.credit)
+        timeout = self.parse_int_with_unit(args.timeout)
         
         try:
             self.impl = _impls_by_name[args.impl]
@@ -258,7 +259,7 @@ class QuiverArrowCommand(object):
 
         self.output_dir = args.output
         self.init_only = args.init_only
-        self.timeout = args.timeout
+        self.timeout = timeout
         self.quiet = args.quiet
         self.verbose = args.verbose
         
@@ -308,6 +309,15 @@ class QuiverArrowCommand(object):
 
         self.periodic_status_thread.init()
             
+    def parse_int_with_unit(self, value):
+        try:
+            if value.endswith("m"): return int(value[:-1]) * 1000 * 1000
+            if value.endswith("k"): return int(value[:-1]) * 1000
+            return int(value)
+        except ValueError:
+            message = "Failure parsing '{}' as integer with unit".format(value)
+            self.parser.error(message)
+
     def run(self):
         self.periodic_status_thread.start()
 
@@ -421,29 +431,6 @@ class QuiverArrowCommand(object):
     def compress_output(self):
         args = "xz", "--compress", "-0", "--threads", "0", self.output_file
         _subprocess.check_call(args)
-
-def _parse_int_with_unit(parser, value):
-    try:
-        if value.endswith("m"): return int(value[:-1]) * 1000 * 1000
-        if value.endswith("k"): return int(value[:-1]) * 1000
-        return int(value)
-    except ValueError:
-        parser.error("Failure parsing '{}' as integer with unit".format(value))
-
-def _print_bracket():
-    print("-" * 80)
-        
-def _print_field(name, value):
-    name = "{}:".format(name)
-    print("{:<24} {}".format(name, value))
-    
-def _print_numeric_field(name, value, unit, fmt=None):
-    name = "{}:".format(name)
-    
-    if fmt is not None:
-        value = fmt.format(value)
-    
-    print("{:<24} {:>36} {}".format(name, value, unit))
 
 class _Formatter(_argparse.ArgumentDefaultsHelpFormatter,
                  _argparse.RawDescriptionHelpFormatter):
@@ -632,6 +619,21 @@ def eprint(message, *args, **kwargs):
     message = "{}: {}".format(_program, message)
     print(message.format(*args), file=_sys.stderr, **kwargs)
 
+def _print_bracket():
+    print("-" * 80)
+        
+def _print_field(name, value):
+    name = "{}:".format(name)
+    print("{:<24} {}".format(name, value))
+    
+def _print_numeric_field(name, value, unit, fmt=None):
+    name = "{}:".format(name)
+    
+    if fmt is not None:
+        value = fmt.format(value)
+    
+    print("{:<24} {:>36} {}".format(name, value, unit))
+    
 def _unique_id(length=16):
     assert length >= 1
     assert length <= 16
