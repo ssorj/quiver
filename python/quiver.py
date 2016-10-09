@@ -365,12 +365,12 @@ class QuiverArrowCommand(object):
 
         self.compress_output()
 
-    def vprint(self, msg, *args):
+    def vprint(self, message, *args, **kwargs):
         if not self.verbose:
             return
         
-        msg = "quiver: {}".format(msg)
-        print(msg.format(*args))
+        message = "{}: {}".format(_program, message)
+        print(message.format(*args), **kwargs)
 
     def print_config(self):
         _print_bracket()
@@ -473,10 +473,11 @@ class _PeriodicStatusThread(_threading.Thread):
         try:
             self.do_run()
         except QuiverError as e:
-            exit("quiver-arrow: error: {}".format(e))
+            eprint(str(e))
+            _sys.exit(1)
         except:
             _traceback.print_exc()
-            exit(1)
+            _sys.exit(1)
         
     def do_run(self):
         self.command.started.wait()
@@ -627,9 +628,9 @@ class _StatusSnapshot(object):
 
         print(line)
 
-def eprint(*args, **kwargs):
-    args = ["{}: error:".format(_program)] + list(args)
-    print(*args, file=_sys.stderr, **kwargs)
+def eprint(message, *args, **kwargs):
+    message = "{}: {}".format(_program, message)
+    print(message.format(*args), file=_sys.stderr, **kwargs)
 
 def _unique_id(length=16):
     assert length >= 1
