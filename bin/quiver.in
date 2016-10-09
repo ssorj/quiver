@@ -27,7 +27,6 @@ import os
 import sys
 
 home_dir = os.path.normpath("@quiver_home@")
-
 sys.path.insert(0, os.path.join(home_dir, "python"))
 
 from quiver import *
@@ -45,6 +44,7 @@ if __name__ == "__main__":
     try:
         main()
     except QuiverError as e:
-        exit("quiver: error: {}".format(e))
+        eprint(str(e))
+        sys.exit(1)
     except KeyboardInterrupt:
         pass
