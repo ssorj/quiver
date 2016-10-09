@@ -42,9 +42,15 @@ def main():
         port = "5672"
     
     jar_file = os.path.join(home_dir, "java", "quiver-jms.jar")
-    url = "amqp://{}:{}?jms.clientID={}&jms.prefetchPolicy.all={}".format \
-        (host, port, id_, credit)
 
+    params = (
+        "jms.clientID={}".format(id_),
+        "jms.prefetchPolicy.all={}".format(credit),
+        "amqp.saslMechanisms=ANONYMOUS",
+    )
+    
+    url = "amqp://{}:{}?{}".format(host, port, "&".join(params)),
+    
     args = [
         "java",
         "-Darrow.jms.url={}".format(url),
