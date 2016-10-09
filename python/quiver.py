@@ -324,7 +324,7 @@ class QuiverArrowCommand(object):
         
         self.vprint("Calling '{}'", " ".join(args))
 
-        if not self.quiet:
+        if self.verbose:
             self.print_config()
 
         with open(self.output_file, "w") as fout:
