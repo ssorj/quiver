@@ -24,7 +24,6 @@ from __future__ import unicode_literals
 from __future__ import with_statement
 
 import os
-import subprocess
 import sys
 
 home_dir = os.path.normpath("@quiver_home@")
@@ -52,6 +51,8 @@ def main():
     url = "amqp://{}:{}?{}".format(host, port, "&".join(params))
     
     args = [
+        "/usr/bin/env",
+        "--",
         "java",
         "-Darrow.jms.url={}".format(url),
         "-Djava.naming.factory.initial=org.apache.qpid.jms.jndi.JmsInitialContextFactory",
@@ -62,10 +63,7 @@ def main():
 
     args += sys.argv[1:]
 
-    sys.exit(subprocess.call(args))
+    os.execl(*args)
     
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        pass
+    main()
