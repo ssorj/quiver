@@ -24,6 +24,7 @@ from __future__ import with_statement
 
 import argparse as _argparse
 import binascii as _binascii
+import json as _json
 import numpy as _numpy
 import os as _os
 import resource as _resource
@@ -171,8 +172,8 @@ class _Command(object):
             if value.endswith("k"): return int(value[:-1]) * 1000
             return int(value)
         except ValueError:
-            message = "Failure parsing '{}' as integer with unit".format(value)
-            self.parser.error(message)
+            msg = "Failure parsing '{}' as integer with unit".format(value)
+            self.parser.error(msg)
 
     def vprint(self, message, *args, **kwargs):
         if not self.verbose:
@@ -205,7 +206,7 @@ class QuiverCommand(_Command):
         self.init_only = args.init_only
 
         if self.output_dir is None:
-            self.output_dir = _tempfile.mkdtemp(prefix="quiver-")
+            self.output_dir = _make_temp_dir()
 
     def run(self):
         sender_count = 1 # max(args.pairs, args.senders)
@@ -364,18 +365,22 @@ class QuiverArrowCommand(_Command):
             self.channel_mode = "passive"
         
         if self.output_dir is None:
-            self.output_dir = _tempfile.mkdtemp(prefix="quiver-")
+            self.output_dir = _make_temp_dir()
             
         if not _os.path.exists(self.output_dir):
             _os.makedirs(self.output_dir)
 
         impl_name = "arrow-{}".format(self.impl)
-        self.impl_file = _os.path.join(self.home_dir, "exec", impl_name)
+        self.impl_file = "{}/exec/{}".format(self.home_dir, impl_name)
 
         if self.operation == "send":
-            self.output_file = _os.path.join(self.output_dir, "sender.csv")
+            self.snapshots_file = _join(self.output_dir, "sender-snapshots.csv")
+            self.summary_file = _join(self.output_dir, "sender-summary.json")
+            self.transfers_file = _join(self.output_dir, "sender-transfers.csv")
         elif self.operation == "receive":
-            self.output_file = _os.path.join(self.output_dir, "receiver.csv")
+            self.snapshots_file = _join(self.output_dir, "receiver-snapshots.csv")
+            self.summary_file = _join(self.output_dir, "receiver-summary.json")
+            self.transfers_file = _join(self.output_dir, "receiver-transfers.csv")
         else:
             raise Exception()
         
@@ -399,8 +404,6 @@ class QuiverArrowCommand(_Command):
         if not _os.path.isdir(self.output_dir):
             msg = "Invalid output dir at '{}'".format(self.output_dir)
             raise QuiverError(msg)
-
-        self.periodic_status_thread.init()
             
     def run(self):
         self.periodic_status_thread.start()
@@ -426,7 +429,7 @@ class QuiverArrowCommand(_Command):
         if self.verbose:
             self.print_config()
 
-        with open(self.output_file, "w") as fout:
+        with open(self.transfers_file, "w") as fout:
             self.proc = _subprocess.Popen(args, stdout=fout)
 
             self.vprint("Process {} ({}) started", self.proc.pid,
@@ -449,34 +452,98 @@ class QuiverArrowCommand(_Command):
                 msg = "Process {} ({}) exited with code {}".format \
                       (self.proc.pid, self.operation, self.proc.returncode)
                 raise QuiverError(msg)
-                    
-        if self.operation == "receive":
-            if _os.path.getsize(self.output_file) == 0:
-                raise QuiverError("No transfers")
-        
+
+        if _os.path.getsize(self.transfers_file) == 0:
+            raise QuiverError("No transfers")
+
+        if self.operation == "send":
+            self.compute_sender_results()
+        elif self.operation == "receive":
+            self.compute_receiver_results()
+            
             if not self.quiet:
                 self.print_results()
+        else:
+            raise Exception()
 
+        self.save_summary()
         self.compress_output()
 
-    def print_config(self):
-        _print_bracket()
-        _print_field("Output", self.output_file)
-        _print_field("Implementation", self.impl)
-        _print_field("Connection mode", self.connection_mode)
-        _print_field("Channel mode", self.channel_mode)
-        _print_field("Operation", self.operation)
-        _print_field("ID", self.id_)
-        _print_field("Address", self.address)
-        _print_field("Messages", "{:,d}".format(self.messages))
-        _print_field("Bytes", "{:,d}".format(self.bytes_))
-        _print_field("Credit", "{:,d}".format(self.credit))
-        _print_bracket()
-            
+    def compute_sender_results(self):
+        count = 0
+        
+        with open(self.transfers_file, "r") as f:
+            for line in f:
+                message_id, send_time = _parse_send(line)
+                count += 1
+
+        duration = self.end_time - self.start_time
+
+        self.message_count = count
+        self.message_rate = int(round(self.message_count / duration))
+        self.message_latency = None
+        self.message_latency_by_quartile = None
+        
+    def compute_receiver_results(self):
+        latencies = list()
+
+        with open(self.transfers_file, "r") as f:
+            for line in f:
+                message_id, send_time, receive_time = _parse_receive(line)
+
+                send_time = long(send_time)
+                receive_time = long(receive_time)
+                latency = receive_time - send_time
+
+                latencies.append(latency)
+
+        duration = self.end_time - self.start_time
+
+        self.message_count = len(latencies)
+        self.message_rate = int(round(self.message_count / duration))
+        self.message_latency = _numpy.mean(latencies)
+
+        self.message_latency_by_quartile = (
+            _numpy.percentile(latencies, 25),
+            _numpy.percentile(latencies, 50),
+            _numpy.percentile(latencies, 75),
+            _numpy.percentile(latencies, 100),
+        )
+
+        # XXX fquartiles = "{:,.0f} | {:,.0f} | {:,.0f} | {:,.0f}".format(*quartiles)
+        
+    def save_summary(self):
+        props = {
+            "config": {
+                "impl": self.impl,
+                "address": self.address,
+                "output_dir": self.output_dir,
+                "connection_mode": self.connection_mode,
+                "channel_mode": self.channel_mode,
+                "operation": self.operation,
+                "id": self.id_,
+                "messages": self.messages,
+                "payload_size": self.bytes_, # XXX
+                "credit_window": self.credit, # XXX
+                "timeout": self.timeout,
+            },
+            "results": {
+                "message_count": self.message_count,
+                "message_rate": self.message_rate,
+            },
+        }
+
+        # XXX Conditionally add latency figures
+        #"message_latency": self.message_latency,
+        #"message_latency_by_quartile": self.message_latency_by_quartile,
+                
+        with open(self.summary_file, "w") as f:
+            _json.dump(props, f, indent=2)
+        
     def print_results(self):
         latencies = list()
 
-        with open(self.output_file, "r") as f:
+        with open(self.transfers_file, "r") as f:
             for line in f:
                 message_id, send_time, receive_time = line.split(",", 2)
 
@@ -506,7 +573,7 @@ class QuiverArrowCommand(_Command):
         _print_bracket()
 
     def compress_output(self):
-        args = "xz", "--compress", "-0", "--threads", "0", self.output_file
+        args = "xz", "--compress", "-0", "--threads", "0", self.transfers_file
         _subprocess.check_call(args)
 
 class _Formatter(_argparse.ArgumentDefaultsHelpFormatter,
@@ -520,19 +587,10 @@ class _PeriodicStatusThread(_threading.Thread):
         self.command = command
 
         self.daemon = True
-        self.parse_func = None
         
         self.messages = 0
         self.timeout_checkpoint = None # timestamp, messages
 
-    def init(self):
-        if self.command.operation == "send":
-            self.parse_func = self.parse_send
-        elif self.command.operation == "receive":
-            self.parse_func = self.parse_receive
-        else:
-            raise Exception()
-        
     def run(self):
         try:
             self.do_run()
@@ -544,15 +602,22 @@ class _PeriodicStatusThread(_threading.Thread):
             _sys.exit(1)
         
     def do_run(self):
+        if self.command.operation == "send":
+            parse_func = _parse_send
+        elif self.command.operation == "receive":
+            parse_func = _parse_receive
+        else:
+            raise Exception()
+        
         self.command.started.wait()
 
         snap = _StatusSnapshot(self, None)
 
         self.timeout_checkpoint = snap.timestamp, self.messages
 
-        with open(self.command.output_file, "r") as fin:
+        with open(self.command.transfers_file, "r") as fin:
             while not self.command.ended.wait(1):
-                transfers = self.collect_transfers(fin, self.parse_func)
+                transfers = self.collect_transfers(fin, parse_func)
 
                 self.messages += len(transfers)
 
@@ -564,6 +629,7 @@ class _PeriodicStatusThread(_threading.Thread):
                     break
 
                 snap.capture_transfers(transfers)
+                snap.save()
                 
                 if self.command.operation == "receive" and not self.command.quiet:
                     snap.report()
@@ -592,19 +658,6 @@ class _PeriodicStatusThread(_threading.Thread):
             transfers.append(record)
 
         return transfers
-
-    def parse_send(self, line):
-        message_id, send_time = line.split(",", 1)
-        send_time = long(send_time)
-
-        return message_id, send_time
-
-    def parse_receive(self, line):
-        message_id, send_time, receive_time = line.split(",", 2)
-        send_time = long(send_time)
-        receive_time = long(receive_time)
-
-        return message_id, send_time, receive_time
 
     def check_timeout(self, now):
         then, messages_then = self.timeout_checkpoint
@@ -640,16 +693,16 @@ class _StatusSnapshot(object):
         self.capture_proc_info()
 
     def capture_proc_info(self):
-        stat_file = "/proc/{}/stat".format(self.thread.command.proc.pid)
+        file_ = _join("/", "proc", str(self.thread.command.proc.pid), "stat")
 
-        with open(stat_file, "r") as f:
-            stat_line = f.read()
+        with open(file_, "r") as f:
+            line = f.read()
 
-        stat_fields = stat_line.split()
-        self.stat_start_time = int(stat_fields[21])
-        self.stat_utime = int(stat_fields[13]) + int(stat_fields[15])
-        self.stat_stime = int(stat_fields[14]) + int(stat_fields[16])
-        self.stat_rss = int(stat_fields[23])
+        fields = line.split()
+        
+        self.utime = float(int(fields[13]) + int(fields[15])) / _user_hz
+        self.stime = float(int(fields[14]) + int(fields[16])) / _user_hz
+        self.rss = int(fields[23]) * _page_size
         
     def capture_transfers(self, transfers):
         period = self.timestamp - self.previous.timestamp
@@ -678,13 +731,13 @@ class _StatusSnapshot(object):
             latency = "{:,.1f} ms avg latency".format(self.message_latency)
         
         elapsed_seconds = self.timestamp - self.previous.timestamp
-        prev_cpu_ticks = self.previous.stat_utime + self.previous.stat_stime
-        curr_cpu_ticks = self.stat_utime + self.stat_stime
-        cpu_seconds = float(curr_cpu_ticks - prev_cpu_ticks) / _user_hz
+        prev_cpu_seconds = self.previous.utime + self.previous.stime
+        curr_cpu_seconds = self.utime + self.stime
+        cpu_seconds = curr_cpu_seconds - prev_cpu_seconds
         cpu_percent = (cpu_seconds / elapsed_seconds) * 100
         cpu = "{:,.1f} %".format(cpu_percent)
 
-        rss_mb = float(self.stat_rss * _page_size) / (1000 * 1024)
+        rss_mb = float(self.rss) / (1000 * 1024)
         rss = "{:,.1f} MB".format(rss_mb)
 
         args = total, rate, latency, cpu, rss
@@ -692,9 +745,39 @@ class _StatusSnapshot(object):
 
         print(line)
 
+    def save(self):
+        args = (
+            self.timestamp,
+            self.message_total,
+            self.message_count,
+            self.message_rate,
+            self.utime,
+            self.stime,
+            self.rss,
+        )
+
+        args = map(str, args)
+        line = "{}\n".format(",".join(args))
+
+        with open(self.thread.command.snapshots_file, "a") as f:
+            f.write(line)
+
 def eprint(message, *args, **kwargs):
     message = "{}: {}".format(_program, message)
     print(message.format(*args), file=_sys.stderr, **kwargs)
+
+def _parse_send(line):
+    message_id, send_time = line.split(",", 1)
+    send_time = long(send_time)
+
+    return message_id, send_time
+
+def _parse_receive(line):
+    message_id, send_time, receive_time = line.split(",", 2)
+    send_time = long(send_time)
+    receive_time = long(receive_time)
+
+    return message_id, send_time, receive_time
 
 def _print_bracket():
     print("-" * 80)
@@ -719,6 +802,11 @@ def _unique_id(length=16):
     uuid_bytes = uuid_bytes[:length]
 
     return _binascii.hexlify(uuid_bytes).decode("utf-8")
+
+def _make_temp_dir():
+    return _tempfile.mkdtemp(prefix="quiver-")
+
+_join = _os.path.join
 
 _program = _os.path.split(_sys.argv[0])[1]
 _user_hz = _os.sysconf(_os.sysconf_names["SC_CLK_TCK"])
