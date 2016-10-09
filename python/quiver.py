@@ -155,9 +155,35 @@ def _add_common_arguments(parser):
 class QuiverError(Exception):
     pass
 
-class QuiverCommand(object):
+class _Command(object):
     def __init__(self, home_dir):
         self.home_dir = home_dir
+
+        self.parser = None
+        self.verbose = False
+        self.quiet = False
+        
+    def parse_int_with_unit(self, value):
+        assert self.parser is not None
+        
+        try:
+            if value.endswith("m"): return int(value[:-1]) * 1000 * 1000
+            if value.endswith("k"): return int(value[:-1]) * 1000
+            return int(value)
+        except ValueError:
+            message = "Failure parsing '{}' as integer with unit".format(value)
+            self.parser.error(message)
+
+    def vprint(self, message, *args, **kwargs):
+        if not self.verbose:
+            return
+        
+        message = "{}: {}".format(_program, message)
+        print(message.format(*args), **kwargs)
+
+class QuiverCommand(_Command):
+    def __init__(self, home_dir):
+        super(QuiverCommand, self).__init__(home_dir)
 
         self.parser = _argparse.ArgumentParser \
             (description=_quiver_description,
@@ -170,7 +196,16 @@ class QuiverCommand(object):
         args = self.parser.parse_args()
 
         self.address = args.address
+        self.output_dir = args.output
+        self.messages = self.parse_int_with_unit(args.messages)
+        self.bytes_ = self.parse_int_with_unit(args.bytes)
+        self.credit = self.parse_int_with_unit(args.credit)
+        self.timeout = self.parse_int_with_unit(args.timeout)
+        
         self.init_only = args.init_only
+
+        if self.output_dir is None:
+            self.output_dir = _tempfile.mkdtemp(prefix="quiver-")
 
     def run(self):
         sender_count = 1 # max(args.pairs, args.senders)
@@ -179,7 +214,7 @@ class QuiverCommand(object):
         args = _sys.argv[2:]
 
         if "--output" not in args:
-            args += "--output", _tempfile.mkdtemp(prefix="quiver-")
+            args += "--output", self.output_dir
         
         sender_args = ["quiver-arrow", "send", self.address]
         sender_args += args
@@ -205,11 +240,65 @@ class QuiverCommand(object):
 
         for receiver in receivers:
             receiver.wait()
-        
-class QuiverArrowCommand(object):
-    def __init__(self, home_dir):
-        self.home_dir = home_dir
 
+        self.report()
+
+    def report(self):
+        print("-" * 80)
+        print()
+
+        print("# Quiver results #")
+        print()
+
+        print("## Configuration ##")
+        print()
+
+        _print_field("Address", self.address)
+        _print_field("Output dir", self.output_dir)
+        _print_numeric_field("Messages", self.messages, "messages")
+        _print_numeric_field("Payload size", self.bytes_, "bytes")
+        _print_numeric_field("Credit window", self.credit, "messages")
+        _print_numeric_field("Timeout", self.timeout, "s")
+
+        print()
+        print("## Sender ##")
+        print()
+
+        _print_field("ID", "XXX")
+        _print_field("Implementation", "XXX")
+        _print_numeric_field("Message rate", 0, "messages/s")
+        _print_numeric_field("Average latency", 0, "ms")
+        _print_numeric_field("Average CPU", 0, "%")
+        _print_numeric_field("Max RSS", 0, "MB")
+        
+        print()
+        print("## Receiver ##")
+        print()
+
+        _print_field("ID", "XXX")
+        _print_field("Implementation", "XXX")
+        _print_numeric_field("Message rate", 0, "messages/s")
+        _print_numeric_field("Average latency", 0, "ms")
+        _print_numeric_field("Average CPU", 0, "%")
+        _print_numeric_field("Max RSS", 0, "MB")
+        
+        print()
+        print("## Overall ##")
+        print()
+
+        _print_numeric_field("Duration", 0, "s")
+        _print_numeric_field("Message count", 0, "messages")
+        _print_numeric_field("Message rate", 0, "messages/s")
+        _print_numeric_field("Average latency", 0, "ms")
+        _print_numeric_field("Latency by quartile", 0, "ms")
+
+        print()
+        print("-" * 80)
+        
+class QuiverArrowCommand(_Command):
+    def __init__(self, home_dir):
+        super(QuiverArrowCommand, self).__init__(home_dir)
+        
         self.start_time = None
         self.end_time = None
 
@@ -313,15 +402,6 @@ class QuiverArrowCommand(object):
 
         self.periodic_status_thread.init()
             
-    def parse_int_with_unit(self, value):
-        try:
-            if value.endswith("m"): return int(value[:-1]) * 1000 * 1000
-            if value.endswith("k"): return int(value[:-1]) * 1000
-            return int(value)
-        except ValueError:
-            message = "Failure parsing '{}' as integer with unit".format(value)
-            self.parser.error(message)
-
     def run(self):
         self.periodic_status_thread.start()
 
@@ -378,13 +458,6 @@ class QuiverArrowCommand(object):
                 self.print_results()
 
         self.compress_output()
-
-    def vprint(self, message, *args, **kwargs):
-        if not self.verbose:
-            return
-        
-        message = "{}: {}".format(_program, message)
-        print(message.format(*args), **kwargs)
 
     def print_config(self):
         _print_bracket()
@@ -625,10 +698,10 @@ def eprint(message, *args, **kwargs):
 
 def _print_bracket():
     print("-" * 80)
-        
+
 def _print_field(name, value):
     name = "{}:".format(name)
-    print("{:<24} {}".format(name, value))
+    print("    {:<24} {}".format(name, value))
     
 def _print_numeric_field(name, value, unit, fmt=None):
     name = "{}:".format(name)
@@ -636,7 +709,7 @@ def _print_numeric_field(name, value, unit, fmt=None):
     if fmt is not None:
         value = fmt.format(value)
     
-    print("{:<24} {:>36} {}".format(name, value, unit))
+    print("    {:<24} {:>32} {}".format(name, value, unit))
     
 def _unique_id(length=16):
     assert length >= 1
