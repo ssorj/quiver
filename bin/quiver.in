@@ -34,8 +34,11 @@ from quiver import *
 
 def main():
     command = QuiverCommand(home_dir)
+    command.init()
 
-    command.parse_args()
+    if command.init_only:
+        return
+    
     command.run()
 
 if __name__ == "__main__":

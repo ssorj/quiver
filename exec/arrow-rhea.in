@@ -21,17 +21,19 @@
 
 "use strict";
 
-var container = require("@quiver_home@/javascript/node_modules/rhea");
+var rhea = require("@quiver_home@/javascript/node_modules/rhea");
 
-var ouputDir = process.argv[2];
-var mode = process.argv[3];
+var container = rhea.create_container({id: process.argv[5]});
+
+var connection_mode = process.argv[2];
+var channel_mode = process.argv[3];
 var operation = process.argv[4];
-var host = process.argv[5];
-var port = process.argv[6];
-var path = process.argv[7];
-var messages = process.argv[8];
-var bytes = process.argv[9];
-var credit = process.argv[10];
+var host = process.argv[6];
+var port = process.argv[7];
+var path = process.argv[8];
+var messages = process.argv[9];
+var bytes = process.argv[10];
+var credit = process.argv[11];
 
 var body = new Uint8Array(bytes);
 body.fill(120);
@@ -46,6 +48,34 @@ function eprint(message) {
     process.stderr.write(message);
     process.stderr.write("\n");
 }
+
+container.on("connection_open", function(context) {
+    if (channel_mode == "active") {
+        if (operation == "send") {
+            // XXX How do I set delivery mode?
+            var options = {
+                target: {
+                    address: path,
+                    durable: false
+                }
+            };
+            
+            context.connection.open_sender(options);
+        } else if (operation == "receive") {
+            var options = {
+                source: {
+                    address: path,
+                    durable: false
+                },
+                prefetch: credit
+            };
+            
+            context.connection.open_receiver(options);
+        } else {
+            throw new Error();
+        }
+    }
+});
 
 container.on("sendable", function(context) {
     while (context.sender.sendable() && sent < messages) {
@@ -73,7 +103,7 @@ container.on("accepted", function(context) {
     if (accepted == messages) {
         context.connection.close();
 
-        if (mode == "server") {
+        if (connection_mode == "server") {
             listener.close();
         }
     }
@@ -96,7 +126,7 @@ container.on("message", function(context) {
     if (received == messages) {
         context.connection.close();
 
-        if (mode == "server") {
+        if (connection_mode == "server") {
             listener.close();
         }
     }
@@ -106,33 +136,9 @@ if (port == "-") {
     port = "5672";
 }
 
-if (mode == "client") {
-    var conn = container.connect({user: "anonymous", host: host, port: port});
-
-    if (operation == "send") {
-        // XXX How do I set delivery mode?
-        var options = {
-            target: {
-                address: path,
-                durable: false
-            }
-        };
-        
-        conn.open_sender(options);
-    } else if (operation == "receive") {
-        var options = {
-            source: {
-                address: path,
-                durable: false
-            },
-            prefetch: credit
-        };
-        
-        conn.open_receiver(options);
-    } else {
-        throw new Error();
-    }
-} else if (mode == "server") {
+if (connection_mode == "client") {
+    container.connect({user: "anonymous", host: host, port: port});
+} else if (connection_mode == "server") {
     listener = container.listen({host: host, port: port});
 } else {
     throw new Error();

@@ -16,18 +16,20 @@ implementation together constitute a pair of communicating endpoints.
 
 Implementations must process the following positional arguments.
 
-    [1] output-dir      A directory for output files
-    [2] mode            'client' or 'server'
-    [3] operation       'send' or 'receive'
-    [4] host            The socket name
-    [5] port            The socket port
-    [6] path            A named source or target for a message, often a queue
-    [7] messages        Number of messages to transfer
-    [8] bytes           Length of generated message body
-    [9] credit          Size of credit window to maintain
+     [1] connection-mode   'client' or 'server'
+     [2] channel-mode      'active' or 'passive'
+     [3] operation         'send' or 'receive'
+     [4] id                A unique identifier for the application
+     [5] host              The socket name
+     [6] port              The socket port (or '-')
+     [7] path              A named source or target for a message, often a queue
+     [8] messages          Number of messages to transfer
+     [9] bytes             Length of generated message body
+    [10] credit            Size of credit window to maintain
 
-If an implementation does not support a particular `mode`, for
-instance `server`, it should raise an error at start time.
+If an implementation does not support a particular `connection-mode`
+or `channel-mode`, for instance `server`, it should raise an error at
+start time.
 
 If the user doesn't supply an explicit `port`, the wrapper will pass a
 hyphen (`-`) for that parameter.  The implementation must determine

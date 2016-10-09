@@ -48,6 +48,7 @@ public class QuiverArrowVertxProton {
     private static final int DEFAULT_AMQP_PORT = 5672;
 
     private static final String CLIENT = "client";
+    private static final String ACTIVE = "active";
     private static final String RECEIVE = "receive";
     private static final String SEND = "send";
 
@@ -63,18 +64,23 @@ public class QuiverArrowVertxProton {
     }
     
     public static void doMain(String[] args) throws Exception {
-        String outputDir = args[0];
-        String mode = args[1];
+        String connectionMode = args[0];
+        String channelMode = args[1];
         String operation = args[2];
-        String host = args[3];
-        String port = args[4];
-        String path = args[5];
-        int messages = Integer.parseInt(args[6]);
-        int bytes = Integer.parseInt(args[7]);
-        int credit = Integer.parseInt(args[8]);
+        String id = args[3];
+        String host = args[4];
+        String port = args[5];
+        String path = args[6];
+        int messages = Integer.parseInt(args[7]);
+        int bytes = Integer.parseInt(args[8]);
+        int credit = Integer.parseInt(args[9]);
 
-        if (!CLIENT.equalsIgnoreCase(mode)) {
+        if (!CLIENT.equalsIgnoreCase(connectionMode)) {
             throw new RuntimeException("This impl currently supports client mode only");
+        }
+
+        if (!ACTIVE.equalsIgnoreCase(channelMode)) {
+            throw new RuntimeException("This impl currently supports active mode only");
         }
 
         final boolean sender;
@@ -84,7 +90,7 @@ public class QuiverArrowVertxProton {
         } else if (RECEIVE.equalsIgnoreCase(operation)) {
             sender = false;
         } else {
-            throw new java.lang.IllegalStateException("Unknown operation: " + mode);
+            throw new java.lang.IllegalStateException("Unknown operation: " + operation);
         }
 
         final int portNumber;
@@ -102,6 +108,7 @@ public class QuiverArrowVertxProton {
         client.connect(host, portNumber, res -> {
                 if (res.succeeded()) {
                     ProtonConnection connection = res.result();
+                    connection.setContainer(id);
 
                     if (sender) {
                         send(connection, path, messages, bytes, completionLatch);

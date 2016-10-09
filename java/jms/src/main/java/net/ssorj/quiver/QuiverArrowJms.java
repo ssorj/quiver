@@ -38,42 +38,39 @@ public class QuiverArrowJms {
     }
     
     public static void doMain(String[] args) throws Exception {
-        String outputDir = args[0];
-        String mode = args[1];
+        String connectionMode = args[0];
+        String channelMode = args[1];
         String operation = args[2];
-        String path = args[5];
-        int messages = Integer.parseInt(args[6]);
-        int bytes = Integer.parseInt(args[7]);
+        String path = args[6];
+        int messages = Integer.parseInt(args[7]);
+        int bytes = Integer.parseInt(args[8]);
 
-        if (!mode.equals("client")) {
+        if (!connectionMode.equals("client")) {
             throw new RuntimeException("This impl supports client mode only");
         }
 
-        String cfPrefix = System.getProperty("arrow.jms.cf.prefix");
-        String cfName = System.getProperty("arrow.jms.cf.name");
-        String cfUrl = System.getProperty("arrow.jms.cf.url");
+        if (!channelMode.equals("active")) {
+            throw new RuntimeException("This impl supports active mode only");
+        }
 
-        assert cfPrefix != null;
-        assert cfName != null;
-        assert cfUrl != null;
+        String url = System.getProperty("arrow.jms.url");
+        assert url != null;
         
         Hashtable<Object, Object> env = new Hashtable<Object, Object>();
-        env.put(cfPrefix + "." + cfName, cfUrl);
+        env.put("connectionFactory.ConnectionFactory", url);
         env.put("queue.queueLookup", path);
 
         Context context = new InitialContext(env);;
-        ConnectionFactory factory = (ConnectionFactory) context.lookup(cfName);
+        ConnectionFactory factory = (ConnectionFactory) context.lookup("ConnectionFactory");
         Destination queue = (Destination) context.lookup("queueLookup");
 
-        Client client = new Client(outputDir, factory, queue, operation,
-                                   messages, bytes);
+        Client client = new Client(factory, queue, operation, messages, bytes);
         
         client.run();
     }
 }
 
 class Client {
-    protected final String outputDir;
     protected final ConnectionFactory factory;
     protected final Destination queue;
     protected final String operation;
@@ -83,9 +80,8 @@ class Client {
     protected int sent;
     protected int received;
     
-    Client(String outputDir, ConnectionFactory factory, Destination queue,
+    Client(ConnectionFactory factory, Destination queue,
            String operation, int messages, int bytes) {
-        this.outputDir = outputDir;
         this.factory = factory;
         this.queue = queue;
         this.operation = operation;

@@ -23,6 +23,7 @@ from __future__ import unicode_literals
 from __future__ import with_statement
 
 import argparse as _argparse
+import binascii as _binascii
 import numpy as _numpy
 import os as _os
 import resource as _resource
@@ -34,6 +35,7 @@ import tempfile as _tempfile
 import threading as _threading
 import time as _time
 import traceback as _traceback
+import uuid as _uuid
 
 _impls_by_name = {
     "activemq-jms": "activemq-jms",
@@ -92,6 +94,9 @@ single connection.
 of message servers and APIs.
 """
 
+# XXX Document server and passive mode
+# By default arrow operates in client, active mode ...
+
 _quiver_arrow_epilog = """
 operations:
   send                  Send messages
@@ -123,8 +128,12 @@ def _add_common_arguments(parser):
     parser.add_argument("--impl", metavar="NAME",
                         help="Use NAME implementation",
                         default="qpid-proton-python")
+    parser.add_argument("--id", metavar="ID",
+                        help="Use ID as the client or server identity")
     parser.add_argument("--server", action="store_true",
                         help="Operate in server mode")
+    parser.add_argument("--passive", action="store_true",
+                        help="Operate in passive mode")
     parser.add_argument("--bytes", metavar="COUNT",
                         help="Send message bodies containing COUNT bytes",
                         default="100")
@@ -136,6 +145,8 @@ def _add_common_arguments(parser):
                         default=10, type=int)
     parser.add_argument("--output", metavar="DIRECTORY",
                         help="Save output files to DIRECTORY")
+    parser.add_argument("--init-only", action="store_true",
+                        help="Initialize and immediately exit")
     parser.add_argument("--quiet", action="store_true",
                         help="Print nothing to the console")
     parser.add_argument("--verbose", action="store_true",
@@ -152,22 +163,27 @@ class QuiverCommand(object):
             (description=_quiver_description,
              epilog=_quiver_epilog,
              formatter_class=_Formatter)
-        _add_common_arguments(self.parser)
 
-        self.args = None
+        _add_common_arguments(self.parser)
         
-    def parse_args(self):
+    def init(self):
         self.args = self.parser.parse_args()
+        self.init_only = self.args.init_only
 
     def run(self):
         sender_count = 1 # max(args.pairs, args.senders)
         receiver_count = 1 # max(args.pairs, args.receivers)
+
+        args = _sys.argv[2:]
+
+        if "--output" not in args:
+            args += "--output", _tempfile.mkdtemp(prefix="quiver-")
         
         sender_args = ["quiver-arrow", "send", self.args.address]
-        sender_args += _sys.argv[2:]
+        sender_args += args
 
         receiver_args = ["quiver-arrow", "receive", self.args.address]
-        receiver_args += _sys.argv[2:]
+        receiver_args += args
 
         senders = list()
         receivers = list()
@@ -192,20 +208,6 @@ class QuiverArrowCommand(object):
     def __init__(self, home_dir):
         self.home_dir = home_dir
 
-        self.impl = None
-        self.mode = None
-        self.operation = None
-        self.address = None
-        self.messages = None
-        self.bytes_ = None
-        self.credit = None
-        self.output_dir = None
-        self.timeout = 10
-        self.quiet = False
-        self.verbose = False
-
-        self.impl_file = None
-        self.transfers_file = None
         self.start_time = None
         self.end_time = None
 
@@ -219,100 +221,113 @@ class QuiverArrowCommand(object):
             (description=_quiver_arrow_description,
              epilog=_quiver_arrow_epilog,
              formatter_class=_Formatter)
+
         self.parser.add_argument("operation", metavar="OPERATION",
                                  choices=["send", "receive"],
                                  help="Either 'send' or 'receive'")
+        
         _add_common_arguments(self.parser)
         
         self.periodic_status_thread = _PeriodicStatusThread(self)
 
-    def parse_args(self):
+    def init(self):
         args = self.parser.parse_args()
-        
-        try:
-            impl = _impls_by_name[args.impl]
-        except KeyError:
-            parser.error("Implementation '{}' is unknown".format(args.impl))
-
-        mode = "server" if args.server else "client"
 
         messages = _parse_int_with_unit(self.parser, args.messages)
         bytes_ = _parse_int_with_unit(self.parser, args.bytes)
         credit = _parse_int_with_unit(self.parser, args.credit)
         
-        self.impl = impl
-        self.mode = mode
+        try:
+            self.impl = _impls_by_name[args.impl]
+        except KeyError:
+            self.parser.error("Implementation '{}' is unknown".format(args.impl))
+
+        self.connection_mode = "client"
+        self.channel_mode = "active"
         self.operation = args.operation
+        self.id_ = args.id
         self.address = args.address
         self.messages = messages
         self.bytes_ = bytes_
         self.credit = credit
+
         self.output_dir = args.output
+        self.init_only = args.init_only
         self.timeout = args.timeout
         self.quiet = args.quiet
         self.verbose = args.verbose
-    
-    def init(self):
-        impl_name = "arrow-{}".format(self.impl)
+        
+        if args.server:
+            self.connection_mode = "server"
+            self.channel_mode = "passive"
 
+        if args.passive:
+            self.channel_mode = "passive"
+        
         if self.output_dir is None:
             self.output_dir = _tempfile.mkdtemp(prefix="quiver-")
             
-        self.impl_file = _os.path.join(self.home_dir, "exec", impl_name)
-
-        if self.operation == "send":
-            self.transfers_file = _os.path.join(self.output_dir, "sent.csv")
-        elif self.operation == "receive":
-            self.transfers_file = _os.path.join(self.output_dir, "received.csv")
-        else:
-            raise Exception()
-        
         if not _os.path.exists(self.output_dir):
             _os.makedirs(self.output_dir)
 
-        self.periodic_status_thread.init()
-            
-    def check(self):
+        impl_name = "arrow-{}".format(self.impl)
+        self.impl_file = _os.path.join(self.home_dir, "exec", impl_name)
+
+        if self.operation == "send":
+            self.output_file = _os.path.join(self.output_dir, "sender.csv")
+        elif self.operation == "receive":
+            self.output_file = _os.path.join(self.output_dir, "receiver.csv")
+        else:
+            raise Exception()
+        
+        if self.id_ is None:
+            self.id_ = "quiver-{}".format(_unique_id(4))
+
+        if self.address.startswith("//"):
+            domain, self.path = self.address[2:].split("/", 1)
+        else:
+            domain, self.path = "localhost", self.address
+
+        if ":" in domain:
+            self.host, self.port = domain.split(":", 1)
+        else:
+            self.host, self.port = domain, "-"
+
         if not _os.path.exists(self.impl_file):
             msg = "No impl at '{}'".format(self.impl_file)
             raise QuiverError(msg)
-
+        
         if not _os.path.isdir(self.output_dir):
             msg = "Invalid output dir at '{}'".format(self.output_dir)
             raise QuiverError(msg)
 
+        self.periodic_status_thread.init()
+            
     def run(self):
         self.periodic_status_thread.start()
-        
-        if self.address.startswith("//"):
-            domain, path = self.address[2:].split("/", 1)
-        else:
-            domain, path = "localhost", self.address
-
-        if ":" in domain:
-            host, port = domain.split(":", 1)
-        else:
-            host, port = domain, "-"
 
         args = [
             self.impl_file,
-            self.output_dir,
-            self.mode,
+            self.connection_mode,
+            self.channel_mode,
             self.operation,
-            host,
-            port,
-            path,
+            self.id_,
+            self.host,
+            self.port,
+            self.path,
             str(self.messages),
             str(self.bytes_),
             str(self.credit),
         ]
 
+        assert None not in args, args
+        
         self.vprint("Calling '{}'", " ".join(args))
 
         if not self.quiet:
             self.print_config()
 
-        with open(self.transfers_file, "w") as fout:
+        with open(self.output_file, "w") as fout:
             self.proc = _subprocess.Popen(args, stdout=fout)
 
             self.vprint("Process {} ({}) started", self.proc.pid,
@@ -337,7 +352,7 @@ class QuiverArrowCommand(object):
                 raise QuiverError(msg)
                     
         if self.operation == "receive":
-            if _os.path.getsize(self.transfers_file) == 0:
+            if _os.path.getsize(self.output_file) == 0:
                 raise QuiverError("No transfers")
         
             if not self.quiet:
@@ -354,10 +369,12 @@ class QuiverArrowCommand(object):
 
     def print_config(self):
         _print_bracket()
-        _print_field("Output dir", self.output_dir)
+        _print_field("Output", self.output_file)
         _print_field("Implementation", self.impl)
-        _print_field("Mode", self.mode)
+        _print_field("Connection mode", self.connection_mode)
+        _print_field("Channel mode", self.channel_mode)
         _print_field("Operation", self.operation)
+        _print_field("ID", self.id_)
         _print_field("Address", self.address)
         _print_field("Messages", "{:,d}".format(self.messages))
         _print_field("Bytes", "{:,d}".format(self.bytes_))
@@ -368,7 +385,7 @@ class QuiverArrowCommand(object):
     def print_results(self):
         latencies = list()
 
-        with open(self.transfers_file, "r") as f:
+        with open(self.output_file, "r") as f:
             for line in f:
                 message_id, send_time, receive_time = line.split(",", 2)
 
@@ -398,7 +415,7 @@ class QuiverArrowCommand(object):
         _print_bracket()
 
     def compress_output(self):
-        args = "xz", "--compress", "-0", "--threads", "0", self.transfers_file
+        args = "xz", "--compress", "-0", "--threads", "0", self.output_file
         _subprocess.check_call(args)
 
 def _parse_int_with_unit(parser, value):
@@ -464,7 +481,7 @@ class _PeriodicStatusThread(_threading.Thread):
 
         self.timeout_checkpoint = snap.timestamp, self.messages
 
-        with open(self.command.transfers_file, "r") as fin:
+        with open(self.command.output_file, "r") as fin:
             while not self.command.ended.wait(1):
                 transfers = self.collect_transfers(fin, self.parse_func)
 
@@ -609,6 +626,15 @@ class _StatusSnapshot(object):
         
 def eprint(*args, **kwargs):
     print(*args, file=_sys.stderr, **kwargs)
+
+def _unique_id(length=16):
+    assert length >= 1
+    assert length <= 16
+
+    uuid_bytes = _uuid.uuid4().bytes
+    uuid_bytes = uuid_bytes[:length]
+
+    return _binascii.hexlify(uuid_bytes).decode("utf-8")
 
 _user_hz = _os.sysconf(_os.sysconf_names["SC_CLK_TCK"])
 _page_size = _resource.getpagesize()

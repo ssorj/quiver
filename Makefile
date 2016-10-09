@@ -73,8 +73,8 @@ install: build
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
 devel: install
-	quiver-arrow --help > /dev/null
-	quiver --help > /dev/null
+	quiver-arrow send //localhost:12345/a/b/c --init-only
+	quiver q0 --init-only
 
 .PHONY: test
 test: devel

@@ -30,12 +30,16 @@ import time
 from qpid_messaging import *
 
 home_dir = os.path.normpath("@quiver_home@")
+sys.path.insert(0, os.path.join(home_dir, "python"))
+
+from quiver import *
+
 link_options = "{link: {durable: False, reliability: at-least-once}}"
 
 class Client(object):
     def __init__(self):
-        self.output_dir = None
         self.operation = None
+        self.id_ = None
         self.host = None
         self.port = None
         self.path = None
@@ -47,9 +51,12 @@ class Client(object):
         self.received = 0
 
     def run(self):
-        conn = Connection("{}:{}".format(self.host, self.port),
+        domain = "{}:{}".format(self.host, self.port)
+        conn = Connection(domain,
                           protocol=b"amqp1.0",
+                          container_id=self.id_,
                           sasl_mechanisms=b"ANONYMOUS")
+
         conn.open()
 
         try:
@@ -115,19 +122,23 @@ class Client(object):
             self.received +=1
 
 def main():
-    if sys.argv[2] != "client":
-        raise Exception("This impl supports client mode only")
+    if sys.argv[1] != "client":
+        eprint("This impl supports client mode only")
+        sys.exit(1)
+
+    if sys.argv[2] != "active":
+        eprint("This impl supports active mode only")
+        sys.exit(1)
 
     client = Client()
-
-    client.output_dir = sys.argv[1]
     client.operation = sys.argv[3]
-    client.host = sys.argv[4]
-    client.port = sys.argv[5]
-    client.path = sys.argv[6]
-    client.messages = int(sys.argv[7])
-    client.bytes_ = int(sys.argv[8])
-    client.credit = int(sys.argv[9])
+    client.id_ = sys.argv[4]
+    client.host = sys.argv[5]
+    client.port = sys.argv[6]
+    client.path = sys.argv[7]
+    client.messages = int(sys.argv[8])
+    client.bytes_ = int(sys.argv[9])
+    client.credit = int(sys.argv[10])
 
     if client.port == "-":
         client.port = "5672"

@@ -25,15 +25,14 @@
 #include <qpid/messaging/Sender.h>
 #include <qpid/messaging/Session.h>
 
-#include <iostream>
 #include <chrono>
+#include <iostream>
+#include <sstream>
 
 using namespace qpid::messaging;
 using namespace qpid::types;
 using namespace std::chrono;
 
-static const std::string CONNECTION_OPTIONS =
-    "{protocol: amqp1.0, sasl_mechanisms: ANONYMOUS}";
 static const std::string LINK_OPTIONS =
     "{link: {durable: False, reliability: at-least-once}}";
 
@@ -42,9 +41,13 @@ long now() {
         (system_clock::now().time_since_epoch()).count();
 }
 
+void eprint(std::string message) {
+    std::cerr << "quiver: error: " << message << std::endl;
+}
+
 struct Client {
-    std::string output_dir;
     std::string operation;
+    std::string id;
     std::string host;
     std::string port;
     std::string path;
@@ -61,7 +64,20 @@ struct Client {
 };
 
 void Client::run() {
-    Connection conn(host + ":" + port, CONNECTION_OPTIONS);
+    std::string domain = host + ":" + port;
+    std::ostringstream oss;
+    oss << "{"
+        << "protocol: amqp1.0,"
+        << "container_id: " << id << ","
+        << "sasl_mechanisms: ANONYMOUS"
+        << "}";
+    std::string options = oss.str();
+    
+    Connection conn(domain, options);
+
+    // XXX This didn't have any effect
+    //conn.setOption("container_id", id);
+    
     conn.open();
 
     try {
@@ -100,8 +116,6 @@ void Client::sendMessages(Session& session) {
         
         sent++;
     }
-
-    // XXX flush?
 }
 
 void Client::receiveMessages(Session& session) {
@@ -126,29 +140,32 @@ void Client::receiveMessages(Session& session) {
         
         received++;
     }
-
-    // XXX flush?
 }
 
 int main(int argc, char** argv) {
-    std::string mode = argv[2];
+    std::string connection_mode = argv[1];
+    std::string channel_mode = argv[2];
     
-    if (mode != "client") {
-        std::cerr << "quiver: error: This impl supports client mode only"
-                  << std::endl;
+    if (connection_mode != "client") {
+        eprint("This impl supports client mode only");
+        return 1;
+    }
+
+    if (channel_mode != "active") {
+        eprint("This impl supports active mode only");
         return 1;
     }
     
     Client client;
 
-    client.output_dir = argv[1];
     client.operation = argv[3];
-    client.host = argv[4];
-    client.port = argv[5];
-    client.path = argv[6];
-    client.messages = std::atoi(argv[7]);
-    client.bytes = std::atoi(argv[8]);
-    client.credit = std::atoi(argv[9]);
+    client.id = argv[4];
+    client.host = argv[5];
+    client.port = argv[6];
+    client.path = argv[7];
+    client.messages = std::atoi(argv[8]);
+    client.bytes = std::atoi(argv[9]);
+    client.credit = std::atoi(argv[10]);
 
     if (client.port == "-") {
         client.port = "5672";

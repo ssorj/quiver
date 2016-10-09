@@ -34,10 +34,11 @@ from quiver import *
 
 def main():
     command = QuiverArrowCommand(home_dir)
-    
-    command.parse_args()
     command.init()
-    command.check()
+
+    if command.init_only:
+        return
+    
     command.run()
 
 if __name__ == "__main__":

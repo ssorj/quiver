@@ -32,12 +32,16 @@ from proton.handlers import MessagingHandler
 from proton.reactor import Container
 
 home_dir = os.path.normpath("@quiver_home@")
+sys.path.insert(0, os.path.join(home_dir, "python"))
 
-class BaseHandler(MessagingHandler):
+from quiver import *
+
+class Handler(MessagingHandler):
     def __init__(self, **kwargs):
-        super(BaseHandler, self).__init__(**kwargs)
+        super(Handler, self).__init__(**kwargs)
 
-        self.output_dir = None
+        self.connection_mode = None
+        self.channel_mode = None
         self.operation = None
         self.host = None
         self.port = None
@@ -45,22 +49,38 @@ class BaseHandler(MessagingHandler):
         self.messages = None
         self.bytes_ = None
 
+        self.listener = None
         self.body = None
 
         self.sent = 0
         self.received = 0
         self.accepted = 0
 
-    def init(self):
+    def on_start(self, event):
+        domain = "{}:{}".format(self.host, self.port)
+
+        if self.connection_mode == "client":
+            event.container.connect(domain, allowed_mechs=b"ANONYMOUS")
+        elif self.connection_mode == "server":
+            self.listener = event.container.listen(domain)
+        else:
+            raise Exception()
+        
         self.body = b"x" * self.bytes_
         
-    def stop(self):
-        raise NotImplementedError()
-
+    def on_connection_opened(self, event):
+        if self.channel_mode == "active":
+            if self.operation == "send":
+                event.container.create_sender(event.connection, self.path)
+            elif self.operation == "receive":
+                event.container.create_receiver(event.connection, self.path)
+            else:
+                raise Exception()
+            
     def on_sendable(self, event):
         while event.sender.credit > 0 and self.sent < self.messages:
             id = self.sent + 1
-            stime = long(round(time.time() * 1000))
+            stime = long(round(time.time()) * 1000)
             
             message = Message(self.body)
             message.id = id
@@ -77,7 +97,10 @@ class BaseHandler(MessagingHandler):
         self.accepted += 1
                 
         if self.accepted == self.messages:
-            self.stop()
+            event.connection.close()
+
+            if self.connection_mode == "server":
+                self.listener.close()
 
     def on_message(self, event):
         if self.received == self.messages:
@@ -92,79 +115,30 @@ class BaseHandler(MessagingHandler):
         self.received += 1
 
         if self.received == self.messages:
-            sys.stdout.flush()
-            self.stop()
+            event.connection.close()
 
-class Client(BaseHandler):
-    def __init__(self, **kwargs):
-        super(Client, self).__init__(**kwargs)
-
-        self.connection = None
-
-    def on_start(self, event):
-        super(Client, self).on_start(event)
-        
-        self.connection = event.container.connect \
-            ("{}:{}".format(self.host, self.port), allowed_mechs=b"ANONYMOUS")
-
-        if self.operation == "send":
-            event.container.create_sender(self.connection, self.path)
-        elif self.operation == "receive":
-            event.container.create_receiver(self.connection, self.path)
-        else:
-            raise Exception()
-            
-    def stop(self):
-        self.connection.close()
-
-class Server(BaseHandler):
-    def __init__(self, **kwargs):
-        super(Server, self).__init__(**kwargs)
-        
-        self.acceptor = None
-
-    def on_start(self, event):
-        super(Server, self).on_start(event)
-
-        self.acceptor = event.container.listen \
-            ("{}:{}".format(self.host, self.port))
-
-    def on_connection_opened(self, event):
-        if self.operation == "send":
-            event.container.create_sender(event.connection, self.path)
-        elif self.operation == "receive":
-            pass
-        else:
-            raise Exception()
-
-    def stop(self):
-        self.acceptor.close()
+            if self.connection_mode == "server":
+                self.listener.close()
 
 def main():
-    mode = sys.argv[2]
-    credit = int(sys.argv[9])
+    credit = int(sys.argv[10])
 
-    if mode == "client":
-        handler = Client(prefetch=credit)
-    elif mode == "server":
-        handler = Server(prefetch=credit)
-    else:
-        raise Exception()
-
-    handler.output_dir = sys.argv[1]
+    handler = Handler(prefetch=credit)
+    handler.connection_mode = sys.argv[1]
+    handler.channel_mode = sys.argv[2]
     handler.operation = sys.argv[3]
-    handler.host = sys.argv[4]
-    handler.port = sys.argv[5]
-    handler.path = sys.argv[6]
-    handler.messages = int(sys.argv[7])
-    handler.bytes_ = int(sys.argv[8])
+    handler.host = sys.argv[5]
+    handler.port = sys.argv[6]
+    handler.path = sys.argv[7]
+    handler.messages = int(sys.argv[8])
+    handler.bytes_ = int(sys.argv[9])
 
     if handler.port == "-":
         handler.port = "5672"
     
-    handler.init()
-    
     container = Container(handler)
+    container.container_id = sys.argv[4]
+
     container.run()
     
 if __name__ == "__main__":

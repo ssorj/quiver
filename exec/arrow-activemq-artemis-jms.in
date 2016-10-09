@@ -30,24 +30,24 @@ import sys
 home_dir = os.path.normpath("@quiver_home@")
 
 def main():
-    host = sys.argv[4]
-    port = sys.argv[5]
-    credit = sys.argv[9]
+    id_ = sys.argv[4]
+    host = sys.argv[5]
+    port = sys.argv[6]
+    credit = sys.argv[10]
     
     if port == "-":
         port = "61616"
 
     jar_file = os.path.join(home_dir, "java", "quiver-jms.jar")
-    url = "tcp://{}:{}?jms.prefetchPolicy.all={}".format(host, port, credit)
+    url = "tcp://{}:{}?jms.clientID={}&jms.prefetchPolicy.all={}".format \
+        (host, port, id_, credit)
     
     args = [
         "java",
-        "-classpath", jar_file,
+        "-Darrow.jms.url={}".format(url),
         "-Djava.naming.factory.initial=org.apache.activemq.artemis.jndi.ActiveMQInitialContextFactory",
-        "-Darrow.jms.cf.prefix=connectionFactory",
-        "-Darrow.jms.cf.name=ConnectionFactory",
-        "-Darrow.jms.cf.url={}".format(url),
         "-Dorg.slf4j.simpleLogger.defaultLogLevel=warn",
+        "-classpath", jar_file,
         "net.ssorj.quiver.QuiverArrowJms",
     ]
 
