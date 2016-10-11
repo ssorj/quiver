@@ -47,6 +47,7 @@ impls_by_name = {
     "qpid-proton-python": "qpid-proton-python",
     "rhea": "rhea",
     "vertx-proton": "vertx-proton",
+    "qpid-proton-cpp": "qpid-proton-cpp",
 }
 
 description = "Send or receive messages"
