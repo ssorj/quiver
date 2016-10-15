@@ -31,14 +31,13 @@
 
 using namespace qpid::messaging;
 using namespace qpid::types;
-using namespace std::chrono;
 
 static const std::string LINK_OPTIONS =
     "{link: {durable: False, reliability: at-least-once}}";
 
 long now() {
-    return duration_cast<milliseconds>
-        (system_clock::now().time_since_epoch()).count();
+    return std::chrono::duration_cast<std::chrono::milliseconds>
+        (std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 void eprint(std::string message) {
@@ -111,10 +110,9 @@ void Client::sendMessages(Session& session) {
         message.setProperty("SendTime", Variant(stime));
 
         sender.send(message);
+        sent++;
             
         std::cout << id << "," << stime << "\n";
-        
-        sent++;
     }
 }
 
@@ -130,6 +128,7 @@ void Client::receiveMessages(Session& session) {
         }
 
         receiver.get(message);
+        received++;
         session.acknowledge();
 
         std::string id = message.getMessageId();
@@ -137,8 +136,6 @@ void Client::receiveMessages(Session& session) {
         long rtime = now();
 
         std::cout << id << "," << stime << "," << rtime << "\n";
-        
-        received++;
     }
 }
 
@@ -174,7 +171,7 @@ int main(int argc, char** argv) {
     try {
         client.run();
     } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        eprint(e.what());
         return 1;
     }
 

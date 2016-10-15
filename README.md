@@ -106,15 +106,18 @@ running make targets.  These are the important ones:
     $ make test          # Runs the test suite
 
 To alter the GCC library and header search paths, use the
-`LIBRARY_PATH` and `C_INCLUDE_PATH` or `CPLUS_INCLUDE_PATH`
-environment variables.
+`LIBRARY_PATH`, `C_INCLUDE_PATH`, and`CPLUS_INCLUDE_PATH` environment
+variables.
 
-    $ export LIBRARY_PATH=~/.local/lib
+    $ export LIBRARY_PATH=~/.local/lib64
+    $ export C_INCLUDE_PATH=~/.local/include
     $ export CPLUS_INCLUDE_PATH=~/.local/include
     $ make clean devel
 
 Set `LD_LIBRARY_PATH` or update `ld.so.conf` to match your
 `LIBRARY_PATH` before running the resulting executables.
+
+    $ export LD_LIBRARY_PATH=~/.local/lib64
 
 ## Command-line interface
 

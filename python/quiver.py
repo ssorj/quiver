@@ -41,12 +41,15 @@ _impls_by_name = {
     "activemq-jms": "activemq-jms",
     "activemq-artemis-jms": "activemq-artemis-jms",
     "artemis-jms": "activemq-artemis-jms",
+    "cpp": "qpid-proton-cpp",
+    "java": "vertx-proton",
     "javascript": "rhea",
     "jms": "qpid-jms",
     "python": "qpid-proton-python",
     "qpid-jms": "qpid-jms",
     "qpid-messaging-cpp": "qpid-messaging-cpp",
     "qpid-messaging-python": "qpid-messaging-python",
+    "qpid-proton-cpp": "qpid-proton-cpp",
     "qpid-proton-python": "qpid-proton-python",
     "rhea": "rhea",
     "vertx-proton": "vertx-proton",
@@ -66,9 +69,10 @@ implementations:
   qpid-jms [jms]                  Client mode only
   qpid-messaging-cpp              Client mode only
   qpid-messaging-python           Client mode only
+  qpid-proton-cpp [cpp]
   qpid-proton-python [python]
   rhea [javascript]               Client mode only at the moment
-  vertx-proton                    Client mode only
+  vertx-proton [java]             Client mode only
 """
 
 _quiver_description = """

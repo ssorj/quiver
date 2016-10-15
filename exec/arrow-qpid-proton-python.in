@@ -88,10 +88,9 @@ class Handler(MessagingHandler):
             message.properties["SendTime"] = stime
 
             event.sender.send(message)
+            self.sent += 1
 
             sys.stdout.write("{},{}\n".format(id, stime))
-        
-            self.sent += 1
             
     def on_accepted(self, event):
         self.accepted += 1
@@ -106,13 +105,13 @@ class Handler(MessagingHandler):
         if self.received == self.messages:
             return
 
+        self.received += 1
+        
         message = event.message
         rtime = long(round(time.time() * 1000))
         stime = event.message.properties["SendTime"]
         
         sys.stdout.write("{},{},{}\n".format(message.id, stime, rtime))
-
-        self.received += 1
 
         if self.received == self.messages:
             event.connection.close()
