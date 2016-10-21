@@ -114,7 +114,7 @@ class Client {
     }
 
     private static PrintWriter getOutputWriter() {
-        return new PrintWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
+        return new PrintWriter(System.out);
     }
 
     void sendMessages(Session session) throws JMSException {

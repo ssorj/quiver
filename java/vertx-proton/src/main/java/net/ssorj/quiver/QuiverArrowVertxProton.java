@@ -131,7 +131,7 @@ public class QuiverArrowVertxProton {
     // TODO: adjust? The writer is [needlessly] synchronizing every
     // write, the buffer may flush more/less often than desired?.
     private static PrintWriter getOutputWriter() {
-        return new PrintWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
+        return new PrintWriter(System.out);
     }
 
     private static void send(ProtonConnection connection, String address,
