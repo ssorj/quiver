@@ -124,33 +124,6 @@ _quiver_arrow_description = _quiver_arrow_description.lstrip()
 _quiver_arrow_epilog = _quiver_arrow_epilog.lstrip()
 _quiver_arrow_epilog = _quiver_arrow_epilog.format(_common_epilog)
 
-def _add_common_arguments(parser):
-    parser.add_argument("address", metavar="ADDRESS",
-                        help="The location of a message queue")
-    parser.add_argument("-m", "--messages", metavar="COUNT",
-                        help="Send or receive COUNT messages",
-                        default="1m")
-    parser.add_argument("--impl", metavar="NAME",
-                        help="Use NAME implementation",
-                        default="qpid-proton-python")
-    parser.add_argument("--body-size", metavar="COUNT",
-                        help="Send message bodies containing COUNT bytes",
-                        default="100")
-    parser.add_argument("--credit", metavar="COUNT",
-                        help="Sustain credit for COUNT incoming transfers",
-                        default="1k")
-    parser.add_argument("--timeout", metavar="SECONDS",
-                        help="Fail after SECONDS without transfers",
-                        default="10")
-    parser.add_argument("--output", metavar="DIRECTORY",
-                        help="Save output files to DIRECTORY")
-    parser.add_argument("--init-only", action="store_true",
-                        help="Initialize and immediately exit")
-    parser.add_argument("--quiet", action="store_true",
-                        help="Print nothing to the console")
-    parser.add_argument("--verbose", action="store_true",
-                        help="Print details to the console")
-
 class QuiverError(Exception):
     pass
 
@@ -159,8 +132,67 @@ class _Command(object):
         self.home_dir = home_dir
 
         self.parser = None
+        self.args = None
+
         self.verbose = False
         self.quiet = False
+
+    def init(self):
+        assert self.parser is not None
+
+        self.add_common_arguments()
+
+        self.args = self.parser.parse_args()
+
+        try:
+            self.impl = _impls_by_name[self.args.impl]
+        except KeyError:
+            m = "Implementation '{}' is unknown".format(self.args.impl)
+            self.parser.error(m)
+
+        self.address = self.args.address
+        self.messages = self.parse_int_with_unit(self.args.messages)
+        self.body_size = self.parse_int_with_unit(self.args.body_size)
+        self.credit_window = self.parse_int_with_unit(self.args.credit)
+        self.timeout = self.parse_int_with_unit(self.args.timeout)
+
+        self.output_dir = self.args.output
+        self.init_only = self.args.init_only
+        self.quiet = self.args.quiet
+        self.verbose = self.args.verbose
+
+        if self.output_dir is None:
+            self.output_dir = _make_temp_dir()
+
+        if not _os.path.exists(self.output_dir):
+            _os.makedirs(self.output_dir)
+
+    def add_common_arguments(self):
+        self.parser.add_argument("address", metavar="ADDRESS",
+                                 help="The location of a message queue")
+        self.parser.add_argument("-m", "--messages", metavar="COUNT",
+                                 help="Send or receive COUNT messages",
+                                 default="1m")
+        self.parser.add_argument("--impl", metavar="NAME",
+                                 help="Use NAME implementation",
+                                 default="qpid-proton-python")
+        self.parser.add_argument("--body-size", metavar="COUNT",
+                                 help="Send message bodies containing COUNT bytes",
+                                 default="100")
+        self.parser.add_argument("--credit", metavar="COUNT",
+                                 help="Sustain credit for COUNT incoming transfers",
+                                 default="1k")
+        self.parser.add_argument("--timeout", metavar="SECONDS",
+                                 help="Fail after SECONDS without transfers",
+                                 default="10")
+        self.parser.add_argument("--output", metavar="DIRECTORY",
+                                 help="Save output files to DIRECTORY")
+        self.parser.add_argument("--init-only", action="store_true",
+                                 help="Initialize and immediately exit")
+        self.parser.add_argument("--quiet", action="store_true",
+                                 help="Print nothing to the console")
+        self.parser.add_argument("--verbose", action="store_true",
+                                 help="Print details to the console")
 
     def parse_int_with_unit(self, value):
         assert self.parser is not None
@@ -184,32 +216,13 @@ class QuiverCommand(_Command):
     def __init__(self, home_dir):
         super(QuiverCommand, self).__init__(home_dir)
 
-        self.parser = _argparse.ArgumentParser \
-            (description=_quiver_description,
-             epilog=_quiver_epilog,
-             formatter_class=_Formatter)
-
-        _add_common_arguments(self.parser)
-
+        self.parser = _argparse.ArgumentParser(description=_quiver_description,
+                                               epilog=_quiver_epilog,
+                                               formatter_class=_Formatter)
         self.start_time = None
         self.end_time = None
 
         self.terminal_snap = _StatusSnapshot(self, None)
-
-    def init(self):
-        args = self.parser.parse_args()
-
-        self.address = args.address
-        self.output_dir = args.output
-        self.messages = self.parse_int_with_unit(args.messages)
-        self.body_size = self.parse_int_with_unit(args.body_size)
-        self.credit_window = self.parse_int_with_unit(args.credit)
-        self.timeout = self.parse_int_with_unit(args.timeout)
-
-        self.init_only = args.init_only
-
-        if self.output_dir is None:
-            self.output_dir = _make_temp_dir()
 
     def run(self):
         args = _sys.argv[2:]
@@ -234,52 +247,53 @@ class QuiverCommand(_Command):
         _time.sleep(0.1) # XXX Instead, wait for receiver readiness
         sender = _subprocess.Popen(sender_args)
 
-        self.print_status_headings()
+        if not self.quiet:
+            self.print_status_headings()
 
-        prev_ssnap, prev_rsnap = None, None
-        ssnap, rsnap = None, None
+            prev_ssnap, prev_rsnap = None, None
+            ssnap, rsnap = None, None
 
-        with open(sender_snaps, "rb") as fs, open(receiver_snaps, "rb") as fr:
-            while receiver.poll() == None:
-                _time.sleep(0.5)
+            with open(sender_snaps, "rb") as fs, open(receiver_snaps, "rb") as fr:
+                while receiver.poll() == None:
+                    _time.sleep(0.5)
 
-                sline = _read_whole_line(fs)
-                rline = _read_whole_line(fr)
+                    sline = _read_whole_line(fs)
+                    rline = _read_whole_line(fr)
 
-                #print("S:", sline)
-                #print("R:", rline)
+                    #print("S:", sline)
+                    #print("R:", rline)
 
-                if sline is not None:
-                    ssnap = _StatusSnapshot(self, prev_ssnap)
-                    ssnap.unmarshal(sline)
+                    if sline is not None:
+                        ssnap = _StatusSnapshot(self, prev_ssnap)
+                        ssnap.unmarshal(sline)
 
-                if sline is None and sender.poll() is not None:
-                    ssnap = self.terminal_snap
+                    if sline is None and sender.poll() is not None:
+                        ssnap = self.terminal_snap
 
-                if rline is not None:
-                    rsnap = _StatusSnapshot(self, prev_rsnap)
-                    rsnap.unmarshal(rline)
+                    if rline is not None:
+                        rsnap = _StatusSnapshot(self, prev_rsnap)
+                        rsnap.unmarshal(rline)
 
-                if ssnap is None or rsnap is None:
-                    continue
+                    if ssnap is None or rsnap is None:
+                        continue
 
-                self.print_status(ssnap, rsnap)
+                    self.print_status(ssnap, rsnap)
 
-                prev_ssnap, prev_rsnap = ssnap, rsnap
-                ssnap, rsnap = None, None
+                    prev_ssnap, prev_rsnap = ssnap, rsnap
+                    ssnap, rsnap = None, None
 
         sender.wait()
         receiver.wait()
 
         self.end_time = now()
 
-        # XXX
-        #self.print_summary()
+        if not self.quiet:
+            self.print_summary()
 
     column_groups = "{:-^53}  {:-^53}  {:-^8}"
     columns = "{:>8}  {:>13}  {:>10}  {:>7}  {:>7}  " \
-              "{:>8}  {:>13}  {:>10}  {:>7}  {:>7}  {:>8}"
-
+              "{:>8}  {:>13}  {:>10}  {:>7}  {:>7}  " \
+              "{:>8}"
     heading_row_1 = column_groups.format(" Sender ", " Receiver ", "")
     heading_row_2 = columns.format \
         ("T [s]", "Count [m]", "Rate [m/s]", "CPU [%]", "RSS [M]",
@@ -326,56 +340,45 @@ class QuiverCommand(_Command):
         print(line)
 
     def print_summary(self):
+        with open(_join(self.output_dir, "sender-summary.json")) as f:
+            sender = _json.load(f)
+
+        with open(_join(self.output_dir, "receiver-summary.json")) as f:
+            receiver = _json.load(f)
+
         print("-" * 80)
-        print()
-
-        print("# Quiver summary of run X #")
-        print()
-
-        print("## Configuration ##")
-        print()
 
         _print_field("Address", self.address)
+        _print_field("Implementation", self.impl)
         _print_field("Output dir", self.output_dir)
+        _print_field("Sender ID", sender["config"]["id"])
+        _print_field("Receiver ID", receiver["config"]["id"])
+
         _print_numeric_field("Messages", self.messages, "messages")
-        _print_numeric_field("Payload size", self.body_size, "bytes")
+        _print_numeric_field("Body size", self.body_size, "bytes")
         _print_numeric_field("Credit window", self.credit_window, "messages")
-        _print_numeric_field("Timeout", self.timeout, "s")
 
-        print()
-        print("## Sender ##")
-        print()
+        duration = (self.end_time - self.start_time) / 1000
 
-        _print_field("ID", "XXX")
-        _print_field("Implementation", "XXX")
-        _print_numeric_field("Message rate", 0, "messages/s")
-        _print_numeric_field("Average latency", 0, "ms")
-        _print_numeric_field("Average CPU", 0, "%")
-        _print_numeric_field("Max RSS", 0, "MB")
+        _print_numeric_field("Duration", duration, "s", "{:,.1f}")
 
-        print()
-        print("## Receiver ##")
-        print()
+        # XXX Sender and receiver CPU, RSS
 
-        _print_field("ID", "XXX")
-        _print_field("Implementation", "XXX")
-        _print_numeric_field("Message rate", 0, "messages/s")
-        _print_numeric_field("Average latency", 0, "ms")
-        _print_numeric_field("Average CPU", 0, "%")
-        _print_numeric_field("Max RSS", 0, "MB")
+        v = sender["results"]["message_rate"]
+        _print_numeric_field("Sender rate", v, "messages/s")
+        v = receiver["results"]["message_rate"]
+        _print_numeric_field("Receiver rate", v, "messages/s")
+        v = receiver["results"]["message_count"] / duration
+        _print_numeric_field("End-to-end rate", v, "messages/s")
+        v = receiver["results"]["latency_average"]
+        _print_numeric_field("Average latency", v, "ms", "{:,.1f}")
+        v = receiver["results"]["latency_quartiles"]
+        v = ", ".join(map(str, v))
+        _print_numeric_field("Latency 25, 50, 75, 100%", v, "ms", None)
+        v = receiver["results"]["latency_nines"][:3]
+        v = ", ".join(map(str, v))
+        _print_numeric_field("Latency 99, 99.9, 99.99%", v, "ms", None)
 
-        print()
-        print("## Overall ##")
-        print()
-
-        _print_numeric_field("Duration", 0, "s")
-        _print_numeric_field("Message count", 0, "messages")
-        _print_numeric_field("Message rate", 0, "messages/s")
-        _print_numeric_field("Average latency", 0, "ms")
-        _print_numeric_field("Latency 25, 50, 75, 100%", 0, "ms")
-        _print_numeric_field("Latency 99, 99.9, 99.99%", 0, "ms")
-
-        print()
         print("-" * 80)
 
 class QuiverArrowCommand(_Command):
@@ -391,17 +394,13 @@ class QuiverArrowCommand(_Command):
 
         self.proc = None
 
-        self.parser = _argparse.ArgumentParser \
-            (description=_quiver_arrow_description,
-             epilog=_quiver_arrow_epilog,
-             formatter_class=_Formatter)
+        self.parser = _argparse.ArgumentParser(description=_quiver_arrow_description,
+                                               epilog=_quiver_arrow_epilog,
+                                               formatter_class=_Formatter)
 
         self.parser.add_argument("operation", metavar="OPERATION",
                                  choices=["send", "receive"],
                                  help="Either 'send' or 'receive'")
-
-        _add_common_arguments(self.parser)
-
         self.parser.add_argument("--id", metavar="ID",
                                  help="Use ID as the client or server identity")
         self.parser.add_argument("--server", action="store_true",
@@ -412,67 +411,19 @@ class QuiverArrowCommand(_Command):
         self.periodic_status_thread = _PeriodicStatusThread(self)
 
     def init(self):
-        args = self.parser.parse_args()
-
-        messages = self.parse_int_with_unit(args.messages)
-        body_size = self.parse_int_with_unit(args.body_size)
-        credit_window = self.parse_int_with_unit(args.credit)
-        timeout = self.parse_int_with_unit(args.timeout)
-
-        try:
-            self.impl = _impls_by_name[args.impl]
-        except KeyError:
-            self.parser.error("Implementation '{}' is unknown".format(args.impl))
+        super(QuiverArrowCommand, self).init()
 
         self.connection_mode = "client"
         self.channel_mode = "active"
-        self.operation = args.operation
-        self.id_ = args.id
-        self.address = args.address
-        self.messages = messages
-        self.body_size = body_size
-        self.credit_window = credit_window
+        self.operation = self.args.operation
+        self.id_ = self.args.id
 
-        self.output_dir = args.output
-        self.init_only = args.init_only
-        self.timeout = timeout
-        self.quiet = args.quiet
-        self.verbose = args.verbose
-
-        self.message_count = None
-        self.message_rate = None
-        self.latency_average = None
-        self.latency_quartiles = None
-        self.latency_nines = None
-
-        if args.server:
+        if self.args.server:
             self.connection_mode = "server"
             self.channel_mode = "passive"
 
-        if args.passive:
+        if self.args.passive:
             self.channel_mode = "passive"
-
-        if self.output_dir is None:
-            self.output_dir = _make_temp_dir()
-
-        if not _os.path.exists(self.output_dir):
-            _os.makedirs(self.output_dir)
-
-        impl_name = "arrow-{}".format(self.impl)
-        self.impl_file = "{}/exec/{}".format(self.home_dir, impl_name)
-
-        if self.operation == "send":
-            self.snapshots_file = _join(self.output_dir, "sender-snapshots.csv")
-            self.summary_file = _join(self.output_dir, "sender-summary.json")
-            self.transfers_file = _join(self.output_dir, "sender-transfers.csv")
-            self.transfers_parse_func = _parse_send
-        elif self.operation == "receive":
-            self.snapshots_file = _join(self.output_dir, "receiver-snapshots.csv")
-            self.summary_file = _join(self.output_dir, "receiver-summary.json")
-            self.transfers_file = _join(self.output_dir, "receiver-transfers.csv")
-            self.transfers_parse_func = _parse_receive
-        else:
-            raise Exception()
 
         if self.id_ is None:
             self.id_ = "quiver-{}".format(_unique_id(4))
@@ -487,13 +438,30 @@ class QuiverArrowCommand(_Command):
         else:
             self.host, self.port = domain, "-"
 
+        self.impl_file = "{}/exec/arrow-{}".format(self.home_dir, self.impl)
+
         if not _os.path.exists(self.impl_file):
             m = "No impl at '{}'".format(self.impl_file)
             raise QuiverError(m)
 
-        if not _os.path.isdir(self.output_dir):
-            m = "Invalid output dir at '{}'".format(self.output_dir)
-            raise QuiverError(m)
+        if self.operation == "send":
+            self.snapshots_file = _join(self.output_dir, "sender-snapshots.csv")
+            self.summary_file = _join(self.output_dir, "sender-summary.json")
+            self.transfers_file = _join(self.output_dir, "sender-transfers.csv")
+            self.transfers_parse_func = _parse_send
+        elif self.operation == "receive":
+            self.snapshots_file = _join(self.output_dir, "receiver-snapshots.csv")
+            self.summary_file = _join(self.output_dir, "receiver-summary.json")
+            self.transfers_file = _join(self.output_dir, "receiver-transfers.csv")
+            self.transfers_parse_func = _parse_receive
+        else:
+            raise Exception()
+
+        self.message_count = None
+        self.message_rate = None
+        self.latency_average = None
+        self.latency_quartiles = None
+        self.latency_nines = None
 
     def run(self):
         self.periodic_status_thread.start()
@@ -545,9 +513,6 @@ class QuiverArrowCommand(_Command):
 
         self.compute_results()
         self.save_summary()
-
-        if self.operation == "receive" and not self.quiet:
-            self.print_results()
 
         _compress_file(self.transfers_file)
 
@@ -611,18 +576,6 @@ class QuiverArrowCommand(_Command):
 
         with open(self.summary_file, "wb") as f:
             _json.dump(props, f, indent=2)
-
-    def print_results(self):
-        duration = (self.end_time - self.start_time) / 1000
-
-        _print_bracket()
-        _print_numeric_field("Duration", duration, "s", "{:,.1f}")
-        _print_numeric_field("Message count", self.message_count, "messages", "{:,d}")
-        _print_numeric_field("Message rate", self.message_rate, "messages/s", "{:,d}")
-        _print_numeric_field("Latency average", self.latency_average, "ms", "{:,.1f}")
-        _print_numeric_field("Latency quartiles", self.latency_quartiles, "ms")
-        _print_numeric_field("Latency nines", self.latency_nines, "ms")
-        _print_bracket()
 
 class _Formatter(_argparse.ArgumentDefaultsHelpFormatter,
                  _argparse.RawDescriptionHelpFormatter):
@@ -827,15 +780,15 @@ def _print_bracket():
 
 def _print_field(name, value):
     name = "{}:".format(name)
-    print("    {:<24} {}".format(name, value))
+    print("{:<28} {}".format(name, value))
 
-def _print_numeric_field(name, value, unit, fmt=None):
+def _print_numeric_field(name, value, unit, fmt="{:,.0f}"):
     name = "{}:".format(name)
 
     if fmt is not None:
         value = fmt.format(value)
 
-    print("{:<24} {:>32} {}".format(name, value, unit))
+    print("{:<28} {:>28} {}".format(name, value, unit))
 
 def _unique_id(length=16):
     assert length >= 1
@@ -864,7 +817,7 @@ def _read_whole_line(file_):
     return line[:-1]
 
 def _read_lines(file_):
-    data = file_.read(16384)
+    data = file_.read(8192)
 
     if data == "":
         return
