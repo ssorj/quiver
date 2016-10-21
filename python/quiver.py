@@ -73,13 +73,12 @@ implementations:
   qpid-messaging-python           Client mode only
   qpid-proton-cpp [cpp]
   qpid-proton-python [python]
-  rhea [javascript]               Client mode only at the moment
+  rhea [javascript]
   vertx-proton [java]             Client mode only
 """
 
 _quiver_description = """
-Start message senders and receivers for a particular messaging
-address.
+Start a sender-receiver pair for a particular messaging address.
 
 'quiver' is one of the Quiver tools for testing the performance of
 message servers and APIs.
@@ -104,8 +103,6 @@ of message servers and APIs.
 # By default arrow operates in client, active mode ...
 
 _quiver_arrow_epilog = """
-server and
-
 operations:
   send                  Send messages
   receive               Receive messages
@@ -136,7 +133,7 @@ def _add_common_arguments(parser):
     parser.add_argument("--impl", metavar="NAME",
                         help="Use NAME implementation",
                         default="qpid-proton-python")
-    parser.add_argument("--bytes", metavar="COUNT",
+    parser.add_argument("--body-size", metavar="COUNT",
                         help="Send message bodies containing COUNT bytes",
                         default="100")
     parser.add_argument("--credit", metavar="COUNT",
@@ -173,8 +170,8 @@ class _Command(object):
             if value.endswith("k"): return int(value[:-1]) * 1000
             return int(value)
         except ValueError:
-            msg = "Failure parsing '{}' as integer with unit".format(value)
-            self.parser.error(msg)
+            m = "Failure parsing '{}' as integer with unit".format(value)
+            self.parser.error(m)
 
     def vprint(self, message, *args, **kwargs):
         if not self.verbose:
@@ -205,8 +202,8 @@ class QuiverCommand(_Command):
         self.address = args.address
         self.output_dir = args.output
         self.messages = self.parse_int_with_unit(args.messages)
-        self.bytes_ = self.parse_int_with_unit(args.bytes)
-        self.credit = self.parse_int_with_unit(args.credit)
+        self.body_size = self.parse_int_with_unit(args.body_size)
+        self.credit_window = self.parse_int_with_unit(args.credit)
         self.timeout = self.parse_int_with_unit(args.timeout)
 
         self.init_only = args.init_only
@@ -231,7 +228,7 @@ class QuiverCommand(_Command):
         _touch(sender_snaps)
         _touch(receiver_snaps)
 
-        self.start_time = _timestamp()
+        self.start_time = now()
 
         receiver = _subprocess.Popen(receiver_args)
         _time.sleep(0.1) # XXX Instead, wait for receiver readiness
@@ -274,7 +271,7 @@ class QuiverCommand(_Command):
         sender.wait()
         receiver.wait()
 
-        self.end_time = _timestamp()
+        self.end_time = now()
 
         # XXX
         #self.print_summary()
@@ -341,8 +338,8 @@ class QuiverCommand(_Command):
         _print_field("Address", self.address)
         _print_field("Output dir", self.output_dir)
         _print_numeric_field("Messages", self.messages, "messages")
-        _print_numeric_field("Payload size", self.bytes_, "bytes")
-        _print_numeric_field("Credit window", self.credit, "messages")
+        _print_numeric_field("Payload size", self.body_size, "bytes")
+        _print_numeric_field("Credit window", self.credit_window, "messages")
         _print_numeric_field("Timeout", self.timeout, "s")
 
         print()
@@ -418,8 +415,8 @@ class QuiverArrowCommand(_Command):
         args = self.parser.parse_args()
 
         messages = self.parse_int_with_unit(args.messages)
-        bytes_ = self.parse_int_with_unit(args.bytes)
-        credit = self.parse_int_with_unit(args.credit)
+        body_size = self.parse_int_with_unit(args.body_size)
+        credit_window = self.parse_int_with_unit(args.credit)
         timeout = self.parse_int_with_unit(args.timeout)
 
         try:
@@ -433,8 +430,8 @@ class QuiverArrowCommand(_Command):
         self.id_ = args.id
         self.address = args.address
         self.messages = messages
-        self.bytes_ = bytes_
-        self.credit = credit
+        self.body_size = body_size
+        self.credit_window = credit_window
 
         self.output_dir = args.output
         self.init_only = args.init_only
@@ -491,12 +488,12 @@ class QuiverArrowCommand(_Command):
             self.host, self.port = domain, "-"
 
         if not _os.path.exists(self.impl_file):
-            msg = "No impl at '{}'".format(self.impl_file)
-            raise QuiverError(msg)
+            m = "No impl at '{}'".format(self.impl_file)
+            raise QuiverError(m)
 
         if not _os.path.isdir(self.output_dir):
-            msg = "Invalid output dir at '{}'".format(self.output_dir)
-            raise QuiverError(msg)
+            m = "Invalid output dir at '{}'".format(self.output_dir)
+            raise QuiverError(m)
 
     def run(self):
         self.periodic_status_thread.start()
@@ -511,8 +508,8 @@ class QuiverArrowCommand(_Command):
             self.port,
             self.path,
             str(self.messages),
-            str(self.bytes_),
-            str(self.credit),
+            str(self.body_size),
+            str(self.credit_window),
         )
 
         assert None not in args, args
@@ -522,7 +519,7 @@ class QuiverArrowCommand(_Command):
         with open(self.transfers_file, "wb") as fout:
             self.proc = _subprocess.Popen(args, stdout=fout)
 
-            self.start_time = _timestamp()
+            self.start_time = now()
             self.started.set()
 
             self.vprint("Process {} ({}) started", self.proc.pid,
@@ -532,16 +529,16 @@ class QuiverArrowCommand(_Command):
                 if self.stop.wait(0.1):
                     _os.killpg(_os.getpgid(self.proc.pid), _signal.SIGTERM)
 
-            self.end_time = _timestamp()
+            self.end_time = now()
             self.ended.set()
 
             if self.proc.returncode == 0:
                 self.vprint("Process {} ({}) exited normally", self.proc.pid,
                             self.operation)
             else:
-                msg = "Process {} ({}) exited with code {}".format \
+                m = "Process {} ({}) exited with code {}".format \
                       (self.proc.pid, self.operation, self.proc.returncode)
-                raise QuiverError(msg)
+                raise QuiverError(m)
 
         if _os.path.getsize(self.transfers_file) == 0:
             raise QuiverError("No transfers")
@@ -599,8 +596,8 @@ class QuiverArrowCommand(_Command):
                 "operation": self.operation,
                 "id": self.id_,
                 "messages": self.messages,
-                "payload_size": self.bytes_, # XXX
-                "credit_window": self.credit, # XXX
+                "body_size": self.body_size,
+                "credit_window": self.credit_window,
                 "timeout": self.timeout,
             },
             "results": {
@@ -666,7 +663,7 @@ class _PeriodicStatusThread(_threading.Thread):
         assert self.command.proc is not None
 
         snap = _StatusSnapshot(self.command, None)
-        snap.timestamp = _timestamp()
+        snap.timestamp = now()
 
         self.timeout_checkpoint = snap
 
@@ -715,7 +712,7 @@ class _StatusSnapshot(object):
         self.rss = 0
 
     def capture(self, transfers_file, pid):
-        self.timestamp = _timestamp()
+        self.timestamp = now()
         self.period = self.timestamp - self.command.start_time
 
         if self.previous is not None:
@@ -809,6 +806,9 @@ def eprint(message, *args, **kwargs):
 
     print(message, file=_sys.stderr, **kwargs)
 
+def now():
+    return long(_time.time() * 1000)
+
 def _parse_send(line):
     message_id, send_time = line.split(b",", 1)
     send_time = int(send_time)
@@ -836,9 +836,6 @@ def _print_numeric_field(name, value, unit, fmt=None):
         value = fmt.format(value)
 
     print("{:<24} {:>32} {}".format(name, value, unit))
-
-def _timestamp():
-    return int(_time.time() * 1000)
 
 def _unique_id(length=16):
     assert length >= 1

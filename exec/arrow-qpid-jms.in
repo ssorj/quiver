@@ -35,7 +35,7 @@ def main():
     id_ = sys.argv[4]
     host = sys.argv[5]
     port = sys.argv[6]
-    credit = sys.argv[10]
+    credit_window = sys.argv[10]
 
     if port == "-":
         port = "5672"
@@ -44,7 +44,7 @@ def main():
 
     params = (
         "jms.clientID={}".format(id_),
-        "jms.prefetchPolicy.all={}".format(credit),
+        "jms.prefetchPolicy.all={}".format(credit_window),
         "amqp.saslMechanisms=ANONYMOUS",
     )
     

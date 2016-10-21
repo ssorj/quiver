@@ -43,7 +43,7 @@ public class QuiverArrowJms {
         String operation = args[2];
         String path = args[6];
         int messages = Integer.parseInt(args[7]);
-        int bytes = Integer.parseInt(args[8]);
+        int bodySize = Integer.parseInt(args[8]);
 
         if (!connectionMode.equals("client")) {
             throw new RuntimeException("This impl supports client mode only");
@@ -64,7 +64,7 @@ public class QuiverArrowJms {
         ConnectionFactory factory = (ConnectionFactory) context.lookup("ConnectionFactory");
         Destination queue = (Destination) context.lookup("queueLookup");
 
-        Client client = new Client(factory, queue, operation, messages, bytes);
+        Client client = new Client(factory, queue, operation, messages, bodySize);
         
         client.run();
     }
@@ -75,18 +75,18 @@ class Client {
     protected final Destination queue;
     protected final String operation;
     protected final int messages;
-    protected final int bytes;
+    protected final int bodySize;
 
     protected int sent;
     protected int received;
     
     Client(ConnectionFactory factory, Destination queue,
-           String operation, int messages, int bytes) {
+           String operation, int messages, int bodySize) {
         this.factory = factory;
         this.queue = queue;
         this.operation = operation;
         this.messages = messages;
-        this.bytes = bytes;
+        this.bodySize = bodySize;
 
         this.sent = 0;
         this.received = 0;
@@ -123,7 +123,7 @@ class Client {
         producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
         producer.setDisableMessageTimestamp(true);
         
-        byte[] body = new byte[this.bytes];
+        byte[] body = new byte[this.bodySize];
         Arrays.fill(body, (byte) 120);
         
         while (this.sent < this.messages) {

@@ -24,8 +24,8 @@ Implementations must process the following positional arguments.
      [6] port              The socket port (or '-')
      [7] path              A named source or target for a message, often a queue
      [8] messages          Number of messages to transfer
-     [9] bytes             Length of generated message body
-    [10] credit            Size of credit window to maintain
+     [9] body_size         Length of generated message body
+    [10] credit_window     Size of credit window to maintain
 
 If an implementation does not support a particular `connection-mode`
 or `channel-mode`, for instance `server`, it should raise an error at
@@ -35,7 +35,7 @@ If the user doesn't supply an explicit `port`, the wrapper will pass a
 hyphen (`-`) for that parameter.  The implementation must determine
 what default port value to use.
 
-Each unit of `credit` represents one message (not one byte).
+Each unit of `credit_window` represents one message (not one byte).
 
 ## Output
 
@@ -90,8 +90,8 @@ They must also set an application property named `SendTime` containing
 a `long` representing the send time in milliseconds.
 
 By convention, message bodies are filled with as many `x`s as
-indicated by the `bytes` parameter.  The `x` should be a single byte,
-not a multi-byte Unicode character.
+indicated by the `payload_size` parameter.  The `x` should be a single
+byte, not a multi-byte Unicode character.
 
 Sent messages must be non-durable and configured for
 at-least-once-delivery (in JMS terms, non-persistent and

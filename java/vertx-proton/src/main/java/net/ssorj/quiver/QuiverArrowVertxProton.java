@@ -72,8 +72,8 @@ public class QuiverArrowVertxProton {
         String port = args[5];
         String path = args[6];
         int messages = Integer.parseInt(args[7]);
-        int bytes = Integer.parseInt(args[8]);
-        int credit = Integer.parseInt(args[9]);
+        int bodySize = Integer.parseInt(args[8]);
+        int creditWindow = Integer.parseInt(args[9]);
 
         if (!CLIENT.equalsIgnoreCase(connectionMode)) {
             throw new RuntimeException("This impl currently supports client mode only");
@@ -111,9 +111,9 @@ public class QuiverArrowVertxProton {
                     connection.setContainer(id);
 
                     if (sender) {
-                        send(connection, path, messages, bytes, completionLatch);
+                        send(connection, path, messages, bodySize, completionLatch);
                     } else {
-                        receive(connection, path, messages, credit, completionLatch);
+                        receive(connection, path, messages, creditWindow, completionLatch);
                     }
                 } else {
                     res.cause().printStackTrace();
@@ -135,11 +135,11 @@ public class QuiverArrowVertxProton {
     }
 
     private static void send(ProtonConnection connection, String address,
-                             int messages, int bytes, CountDownLatch latch) {
+                             int messages, int bodySize, CountDownLatch latch) {
         connection.open();
 
-        byte[] payloadContent = new byte[bytes];
-        Arrays.fill(payloadContent, (byte) 120);
+        byte[] body = new byte[bodySize];
+        Arrays.fill(body, (byte) 120);
         PrintWriter out = getOutputWriter();
         AtomicLong count = new AtomicLong(1);
         ProtonSender sender = connection.createSender(address);
@@ -151,7 +151,7 @@ public class QuiverArrowVertxProton {
                     UnsignedLong id = UnsignedLong.valueOf(count.get());
                     msg.setMessageId(id);
 
-                    msg.setBody(new Data(new Binary(payloadContent)));
+                    msg.setBody(new Data(new Binary(body)));
 
                     Map<String, Object> props = new HashMap<>();
                     msg.setApplicationProperties(new ApplicationProperties(props));
@@ -176,14 +176,14 @@ public class QuiverArrowVertxProton {
     }
 
     private static void receive(ProtonConnection connection, String address,
-                                int messages, int credits, CountDownLatch latch) {
+                                int messages, int creditWindow, CountDownLatch latch) {
         connection.open();
 
         PrintWriter out = getOutputWriter();
         AtomicInteger count = new AtomicInteger(1);
         ProtonReceiver receiver = connection.createReceiver(address);
 
-        receiver.setAutoAccept(false).setPrefetch(0).flow(credits);
+        receiver.setAutoAccept(false).setPrefetch(0).flow(creditWindow);
         receiver.handler((delivery, msg) -> {
                 Object id = msg.getMessageId();
                 long stime = (Long) msg.getApplicationProperties().getValue().get("SendTime");

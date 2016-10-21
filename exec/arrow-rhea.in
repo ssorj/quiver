@@ -32,10 +32,10 @@ var host = process.argv[6];
 var port = process.argv[7];
 var path = process.argv[8];
 var messages = process.argv[9];
-var bytes = process.argv[10];
-var credit = process.argv[11];
+var body_size = process.argv[10];
+var credit_window = process.argv[11];
 
-var body = new Uint8Array(bytes);
+var body = new Uint8Array(body_size);
 body.fill(120);
 
 var sent = 0;
@@ -68,7 +68,7 @@ container.on("connection_open", function(context) {
                     address: path,
                     durable: false
                 },
-                prefetch: credit
+                prefetch: credit_window
             };
             
             context.connection.open_receiver(options);

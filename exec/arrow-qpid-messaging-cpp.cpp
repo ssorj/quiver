@@ -51,8 +51,8 @@ struct Client {
     std::string port;
     std::string path;
     int messages;
-    int bytes;
-    int credit;
+    int body_size;
+    int credit_window;
 
     int sent = 0;
     int received = 0;
@@ -97,9 +97,9 @@ void Client::run() {
 
 void Client::sendMessages(Session& session) {
     Sender sender = session.createSender(path + "; " + LINK_OPTIONS);
-    sender.setCapacity(credit);
+    sender.setCapacity(credit_window);
 
-    std::string body(bytes, 'x');
+    std::string body(body_size, 'x');
     
     while (sent < messages) {
         std::string id = std::to_string(sent + 1);
@@ -118,7 +118,7 @@ void Client::sendMessages(Session& session) {
 
 void Client::receiveMessages(Session& session) {
     Receiver receiver = session.createReceiver(path + "; " + LINK_OPTIONS);
-    receiver.setCapacity(credit);
+    receiver.setCapacity(credit_window);
 
     Message message;
 
@@ -161,8 +161,8 @@ int main(int argc, char** argv) {
     client.port = argv[6];
     client.path = argv[7];
     client.messages = std::atoi(argv[8]);
-    client.bytes = std::atoi(argv[9]);
-    client.credit = std::atoi(argv[10]);
+    client.body_size = std::atoi(argv[9]);
+    client.credit_window = std::atoi(argv[10]);
 
     if (client.port == "-") {
         client.port = "5672";

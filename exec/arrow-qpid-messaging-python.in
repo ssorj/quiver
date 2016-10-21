@@ -25,7 +25,6 @@ from __future__ import with_statement
 
 import os
 import sys
-import time
 
 from qpid_messaging import *
 
@@ -44,8 +43,8 @@ class Client(object):
         self.port = None
         self.path = None
         self.messages = None
-        self.bytes_ = None
-        self.credit = None
+        self.body_size = None
+        self.credit_window = None
 
         self.sent = 0
         self.received = 0
@@ -80,17 +79,17 @@ class Client(object):
         #address = "{}; {}".format(self.path, link_options)
         #sender = session.sender(address)
         sender = session.sender(self.path)
-        sender.capacity = self.credit
+        sender.capacity = self.credit_window
 
-        body = b"x" * self.bytes_
+        body = b"x" * self.body_size
         
         while self.sent < self.messages:
-            id = str(self.sent + 1)
-            stime = long(round(time.time() * 1000))
-            record = "{},{}\n".format(id, stime)
+            id_ = str(self.sent + 1)
+            stime = now()
+            record = "{},{}\n".format(id_, stime)
             
             message = Message(body)
-            message.id = id
+            message.id = id_
             message.properties[b"SendTime"] = stime
             
             sender.send(message)
@@ -104,7 +103,7 @@ class Client(object):
         #address = "{}; {}".format(self.path, link_options)
         #receiver = session.receiver(address)
         receiver = session.receiver(self.path)
-        receiver.capacity = self.credit
+        receiver.capacity = self.credit_window
 
         while self.received < self.messages:
             if receiver.available() == 0:
@@ -114,7 +113,7 @@ class Client(object):
             session.acknowledge()
 
             stime = message.properties["SendTime"]
-            rtime = long(round(time.time() * 1000))
+            rtime = now()
             record = "{},{},{}\n".format(message.id, stime, rtime)
 
             sys.stdout.write(record)
@@ -137,8 +136,8 @@ def main():
     client.port = sys.argv[6]
     client.path = sys.argv[7]
     client.messages = int(sys.argv[8])
-    client.bytes_ = int(sys.argv[9])
-    client.credit = int(sys.argv[10])
+    client.body_size = int(sys.argv[9])
+    client.credit_window = int(sys.argv[10])
 
     if client.port == "-":
         client.port = "5672"

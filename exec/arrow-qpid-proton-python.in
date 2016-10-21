@@ -25,7 +25,6 @@ from __future__ import with_statement
 
 import os
 import sys
-import time
 
 from proton import Message
 from proton.handlers import MessagingHandler
@@ -47,7 +46,7 @@ class Handler(MessagingHandler):
         self.port = None
         self.path = None
         self.messages = None
-        self.bytes_ = None
+        self.body_size = None
 
         self.listener = None
         self.body = None
@@ -66,7 +65,7 @@ class Handler(MessagingHandler):
         else:
             raise Exception()
         
-        self.body = b"x" * self.bytes_
+        self.body = b"x" * self.body_size
         
     def on_connection_opened(self, event):
         if self.channel_mode == "active":
@@ -80,7 +79,7 @@ class Handler(MessagingHandler):
     def on_sendable(self, event):
         while event.sender.credit > 0 and self.sent < self.messages:
             id = self.sent + 1
-            stime = long(round(time.time()) * 1000)
+            stime = now()
             
             message = Message(self.body)
             message.id = id
@@ -108,7 +107,7 @@ class Handler(MessagingHandler):
         self.received += 1
         
         message = event.message
-        rtime = long(round(time.time() * 1000))
+        rtime = now()
         stime = event.message.properties["SendTime"]
         
         sys.stdout.write("{},{},{}\n".format(message.id, stime, rtime))
@@ -120,9 +119,9 @@ class Handler(MessagingHandler):
                 self.listener.close()
 
 def main():
-    credit = int(sys.argv[10])
+    credit_window = int(sys.argv[10])
 
-    handler = Handler(prefetch=credit)
+    handler = Handler(prefetch=credit_window)
     handler.connection_mode = sys.argv[1]
     handler.channel_mode = sys.argv[2]
     handler.operation = sys.argv[3]
@@ -130,7 +129,7 @@ def main():
     handler.port = sys.argv[6]
     handler.path = sys.argv[7]
     handler.messages = int(sys.argv[8])
-    handler.bytes_ = int(sys.argv[9])
+    handler.body_size = int(sys.argv[9])
 
     if handler.port == "-":
         handler.port = "5672"

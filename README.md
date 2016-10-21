@@ -105,6 +105,8 @@ running make targets.  These are the important ones:
     $ make devel         # Builds, installs in the checkout, tests sanity
     $ make test          # Runs the test suite
 
+### Building against locally installed libraries
+
 To alter the GCC library and header search paths, use the
 `LIBRARY_PATH`, `C_INCLUDE_PATH`, and`CPLUS_INCLUDE_PATH` environment
 variables.
@@ -119,19 +121,25 @@ Set `LD_LIBRARY_PATH` or update `ld.so.conf` to match your
 
     $ export LD_LIBRARY_PATH=~/.local/lib64
 
+By default, the `devel.sh` environment targets libraries and headers
+you have installed under `$HOME/.local`, as shown in the examples
+here.
+
 ## Command-line interface
 
 ### `quiver`
 
-This command starts sender-receiver pairs.  By default it creates a
-single pair.  Each sender or receiver is an invocation of the
-`quiver-arrow` command.
+This command starts a sender-receiver pair.  Each sender or receiver
+is an invocation of the `quiver-arrow` command.
 
-    usage: quiver [-h] [-m COUNT] [--impl NAME] [--server] [--bytes COUNT] [--credit COUNT]
-                  [--timeout SECONDS] [--output DIRECTORY] [--quiet] [--verbose]
-                  ADDRESS
+    usage: quiver [-h] [-m COUNT] [--impl NAME] [--body-size COUNT] [--credit COUNT]
+                  [--timeout SECONDS] [--output DIRECTORY] [--init-only] [--quiet]
+                  [--verbose] ADDRESS
 
-    Test the performance of messaging clients and servers
+    Start a sender-receiver pair for a particular messaging address.
+
+    'quiver' is one of the Quiver tools for testing the performance of
+    message servers and APIs.
 
     positional arguments:
       ADDRESS               The location of a message queue
@@ -141,14 +149,14 @@ single pair.  Each sender or receiver is an invocation of the
       -m COUNT, --messages COUNT
                             Send or receive COUNT messages (default: 1m)
       --impl NAME           Use NAME implementation (default: qpid-proton-python)
-      --server              Operate in server mode (default: False)
-      --bytes COUNT         Send message bodies containing COUNT bytes (default: 100)
+      --body-size COUNT     Send message bodies containing COUNT bytes (default: 100)
       --credit COUNT        Sustain credit for COUNT incoming transfers (default: 1k)
       --timeout SECONDS     Fail after SECONDS without transfers (default: 10)
       --output DIRECTORY    Save output files to DIRECTORY (default: None)
+      --init-only           Initialize and immediately exit (default: False)
       --quiet               Print nothing to the console (default: False)
       --verbose             Print details to the console (default: False)
-  
+
     addresses:
       [//DOMAIN/]PATH                 The default domain is 'localhost'
       //example.net/jobs
@@ -162,9 +170,10 @@ single pair.  Each sender or receiver is an invocation of the
       qpid-jms [jms]                  Client mode only
       qpid-messaging-cpp              Client mode only
       qpid-messaging-python           Client mode only
+      qpid-proton-cpp [cpp]
       qpid-proton-python [python]
-      rhea [javascript]               Client mode only at the moment
-      vertx-proton                    Client mode only
+      rhea [javascript]
+      vertx-proton [java]             Client mode only
 
 ### `quiver-arrow`
 
@@ -172,11 +181,16 @@ This command sends or receives AMQP messages as fast as it can.  Each
 invocation creates a single connection.  It terminates when the target
 number of messages are all sent or received.
 
-    usage: quiver-arrow [-h] [-m COUNT] [--impl NAME] [--server] [--bytes COUNT] [--credit COUNT]
-                        [--timeout SECONDS] [--output DIRECTORY] [--quiet] [--verbose]
+    usage: quiver-arrow [-h] [-m COUNT] [--impl NAME] [--body-size COUNT] [--credit COUNT]
+                        [--timeout SECONDS] [--output DIRECTORY] [--init-only] [--quiet]
+                        [--verbose] [--id ID] [--server] [--passive]
                         OPERATION ADDRESS
 
-    Send or receive messages
+    Send or receive a set number of messages as fast as possible using a
+    single connection.
+
+    'quiver-arrow' is one of the Quiver tools for testing the performance
+    of message servers and APIs.
 
     positional arguments:
       OPERATION             Either 'send' or 'receive'
@@ -187,13 +201,16 @@ number of messages are all sent or received.
       -m COUNT, --messages COUNT
                             Send or receive COUNT messages (default: 1m)
       --impl NAME           Use NAME implementation (default: qpid-proton-python)
-      --server              Operate in server mode (default: False)
-      --bytes COUNT         Send message bodies containing COUNT bytes (default: 100)
+      --body-size COUNT     Send message bodies containing COUNT bytes (default: 100)
       --credit COUNT        Sustain credit for COUNT incoming transfers (default: 1k)
       --timeout SECONDS     Fail after SECONDS without transfers (default: 10)
       --output DIRECTORY    Save output files to DIRECTORY (default: None)
+      --init-only           Initialize and immediately exit (default: False)
       --quiet               Print nothing to the console (default: False)
       --verbose             Print details to the console (default: False)
+      --id ID               Use ID as the client or server identity (default: None)
+      --server              Operate in server mode (default: False)
+      --passive             Operate in passive mode (default: False)
 
     operations:
       send                  Send messages

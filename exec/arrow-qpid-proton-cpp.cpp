@@ -51,8 +51,8 @@ struct handler : public proton::messaging_handler {
     std::string port;
     std::string path;
     int messages;
-    int bytes;
-    int credit;
+    int body_size;
+    int credit_window;
 
     proton::listener listener;
     std::string body;
@@ -75,14 +75,14 @@ struct handler : public proton::messaging_handler {
             throw std::exception();
         }            
         
-        body = std::string(bytes, 'x');
+        body = std::string(body_size, 'x');
     }
 
     void on_connection_open(proton::connection& c) override {
         // XXX Need matching local open?
 
         proton::receiver_options opts;
-        opts.credit_window(credit);
+        opts.credit_window(credit_window);
         
         if (channel_mode == "active") {
             if (operation == "send") {
@@ -160,8 +160,8 @@ int main(int argc, char** argv) {
     h.port = argv[6];
     h.path = argv[7];
     h.messages = std::atoi(argv[8]);
-    h.bytes = std::atoi(argv[9]);
-    h.credit = std::atoi(argv[10]);
+    h.body_size = std::atoi(argv[9]);
+    h.credit_window = std::atoi(argv[10]);
 
     if (h.port == "-") {
         h.port = "5672";
