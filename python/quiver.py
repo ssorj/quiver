@@ -34,9 +34,7 @@ import string as _string
 import subprocess as _subprocess
 import sys as _sys
 import tempfile as _tempfile
-import threading as _threading
 import time as _time
-import traceback as _traceback
 import uuid as _uuid
 
 _impls_by_name = {
@@ -222,8 +220,6 @@ class QuiverCommand(_Command):
         self.start_time = None
         self.end_time = None
 
-        self.terminal_snap = _StatusSnapshot(self, None)
-
     def run(self):
         args = _sys.argv[2:]
 
@@ -256,13 +252,12 @@ class QuiverCommand(_Command):
         _touch(sender_snaps)
         _touch(receiver_snaps)
 
-        prev_ssnap, prev_rsnap = None, None
         ssnap, rsnap = None, None
         i = 0
 
         with open(sender_snaps, "rb") as fs, open(receiver_snaps, "rb") as fr:
             while receiver.poll() == None:
-                _time.sleep(0.5)
+                _time.sleep(1)
 
                 sline = _read_whole_line(fs)
                 rline = _read_whole_line(fr)
@@ -270,17 +265,14 @@ class QuiverCommand(_Command):
                 #print("S: {:60} R: {}".format(sline, rline))
 
                 if sline is not None:
-                    ssnap = _StatusSnapshot(self, prev_ssnap)
+                    ssnap = _StatusSnapshot(self, None)
                     ssnap.unmarshal(sline)
 
                 if rline is not None:
-                    rsnap = _StatusSnapshot(self, prev_rsnap)
+                    rsnap = _StatusSnapshot(self, None)
                     rsnap.unmarshal(rline)
 
-                if ssnap is None and sender.poll() is not None:
-                    ssnap = self.terminal_snap
-
-                if ssnap is None or rsnap is None:
+                if rsnap is None:
                     continue
 
                 if i % 20 == 0:
@@ -288,7 +280,6 @@ class QuiverCommand(_Command):
 
                 self.print_status_row(ssnap, rsnap)
 
-                prev_ssnap, prev_rsnap = ssnap, rsnap
                 ssnap, rsnap = None, None
                 i += 1
 
@@ -309,7 +300,7 @@ class QuiverCommand(_Command):
         print(self.heading_row_3)
 
     def print_status_row(self, ssnap, rsnap):
-        if ssnap is self.terminal_snap:
+        if ssnap is None:
             stime, scount, srate, scpu, srss = "-", "-", "-", "-", "-"
         else:
             stime = (ssnap.timestamp - self.start_time) / 1000
@@ -323,18 +314,22 @@ class QuiverCommand(_Command):
             scpu = "{:,.0f}".format(scpu)
             srss = "{:,.1f}".format(srss)
 
-        rtime = (rsnap.timestamp - self.start_time) / 1000
-        rrate = rsnap.period_count / (rsnap.period / 1000)
-        rcpu = (rsnap.period_cpu_time / rsnap.period) * 100
-        rrss = rsnap.rss / (1000 * 1024)
+        if rsnap is None:
+            rtime, rcount, rrate, rcpu, rrss = "-", "-", "-", "-", "-"
+            latency = "-"
+        else:
+            rtime = (rsnap.timestamp - self.start_time) / 1000
+            rrate = rsnap.period_count / (rsnap.period / 1000)
+            rcpu = (rsnap.period_cpu_time / rsnap.period) * 100
+            rrss = rsnap.rss / (1000 * 1024)
 
-        rtime = "{:,.1f}".format(rtime)
-        rcount = "{:,d}".format(rsnap.count)
-        rrate = "{:,.0f}".format(rrate)
-        rcpu = "{:,.0f}".format(rcpu)
-        rrss = "{:,.1f}".format(rrss)
+            rtime = "{:,.1f}".format(rtime)
+            rcount = "{:,d}".format(rsnap.count)
+            rrate = "{:,.0f}".format(rrate)
+            rcpu = "{:,.0f}".format(rcpu)
+            rrss = "{:,.1f}".format(rrss)
 
-        latency = "{:,.0f}".format(rsnap.latency)
+            latency = "{:,.0f}".format(rsnap.latency)
 
         row = self.columns.format(stime, scount, srate, scpu, srss,
                                   rtime, rcount, rrate, rcpu, rrss,
@@ -386,12 +381,7 @@ class QuiverArrowCommand(_Command):
 
         self.start_time = None
         self.end_time = None
-
-        self.started = _threading.Event()
-        self.stop = _threading.Event()
-        self.ended = _threading.Event()
-
-        self.proc = None
+        self.timeout_checkpoint = None
 
         self.parser = _argparse.ArgumentParser(description=_quiver_arrow_description,
                                                epilog=_quiver_arrow_epilog,
@@ -406,8 +396,6 @@ class QuiverArrowCommand(_Command):
                                  help="Operate in server mode")
         self.parser.add_argument("--passive", action="store_true",
                                  help="Operate in passive mode")
-
-        self.periodic_status_thread = _PeriodicStatusThread(self)
 
     def init(self):
         super(QuiverArrowCommand, self).init()
@@ -463,8 +451,6 @@ class QuiverArrowCommand(_Command):
         self.latency_nines = None
 
     def run(self):
-        self.periodic_status_thread.start()
-
         args = (
             self.impl_file,
             self.connection_mode,
@@ -484,27 +470,46 @@ class QuiverArrowCommand(_Command):
         self.vprint("Calling '{}'", " ".join(args))
 
         with open(self.transfers_file, "wb") as fout:
-            self.proc = _subprocess.Popen(args, stdout=fout)
+            proc = _subprocess.Popen(args, stdout=fout)
 
             self.start_time = now()
-            self.started.set()
+            self.vprint("Process {} ({}) started", proc.pid, self.operation)
 
-            self.vprint("Process {} ({}) started", self.proc.pid,
-                        self.operation)
+            snap = _StatusSnapshot(self, None)
+            snap.timestamp = now() # XXX Versus start_time
 
-            while self.proc.poll() == None:
-                if self.stop.wait(0.1):
-                    _os.killpg(_os.getpgid(self.proc.pid), _signal.SIGTERM)
+            self.timeout_checkpoint = snap
+
+            sleep = 2.0
+
+            with open(self.transfers_file, "rb") as fin:
+                with open(self.snapshots_file, "ab") as fout:
+                    while proc.poll() is None:
+                        _time.sleep(sleep)
+
+                        period_start = _time.time()
+
+                        snap.previous = None
+                        snap = _StatusSnapshot(self, snap)
+
+                        snap.capture(fin, proc)
+
+                        fout.write(snap.marshal())
+                        fout.flush()
+
+                        self.check_timeout(snap, proc)
+
+                        period = _time.time() - period_start
+                        sleep = max(1.0, 2.0 - period)
 
             self.end_time = now()
-            self.ended.set()
 
-            if self.proc.returncode == 0:
-                self.vprint("Process {} ({}) exited normally", self.proc.pid,
-                            self.operation)
+            if proc.returncode == 0:
+                m = "Process {} ({}) exited normally"
+                self.vprint(m, proc.pid, self.operation)
             else:
-                m = "Process {} ({}) exited with code {}".format \
-                      (self.proc.pid, self.operation, self.proc.returncode)
+                m = "Process {} ({}) exited with code {}"
+                m = m.format(proc.pid, self.operation, proc.returncode)
                 raise QuiverError(m)
 
         if _os.path.getsize(self.transfers_file) == 0:
@@ -514,6 +519,19 @@ class QuiverArrowCommand(_Command):
         self.save_summary()
 
         _compress_file(self.transfers_file)
+
+    def check_timeout(self, snap, proc):
+        checkpoint = self.timeout_checkpoint
+        since = (snap.timestamp - checkpoint.timestamp) / 1000
+
+        if snap.count == checkpoint.count and since > self.timeout:
+            m = "{} operation timed out"
+            eprint(m, _string.capitalize(self.operation))
+
+            _os.killpg(_os.getpgid(proc.pid), _signal.SIGTERM)
+
+        if snap.count > checkpoint.count:
+            self.timeout_checkpoint = snap
 
     def compute_results(self):
         duration = (self.end_time - self.start_time) / 1000
@@ -580,73 +598,6 @@ class _Formatter(_argparse.ArgumentDefaultsHelpFormatter,
                  _argparse.RawDescriptionHelpFormatter):
     pass
 
-class _ProfiledThread(_threading.Thread):
-    def run(self):
-        import cProfile
-        prof = cProfile.Profile()
-
-        try:
-            return prof.runcall(self.profiled_run)
-        finally:
-            prof.dump_stats("{}.profile".format(self.ident))
-
-class _PeriodicStatusThread(_threading.Thread):
-    def __init__(self, command):
-        _threading.Thread.__init__(self)
-
-        self.command = command
-
-        self.timeout_checkpoint = None
-        self.daemon = True
-
-    def run(self):
-        try:
-            self.do_run()
-        except QuiverError as e:
-            eprint(e)
-            _sys.exit(1)
-        except:
-            _traceback.print_exc()
-            _sys.exit(1)
-
-    def do_run(self):
-        self.command.started.wait()
-
-        assert self.command.proc is not None
-
-        snap = _StatusSnapshot(self.command, None)
-        snap.timestamp = now()
-
-        self.timeout_checkpoint = snap
-
-        with open(self.command.transfers_file, "rb") as fin:
-            with open(self.command.snapshots_file, "ab") as fout:
-                while not self.command.ended.wait(1):
-                    snap.previous = None
-                    snap = _StatusSnapshot(self.command, snap)
-
-                    snap.capture(fin, self.command.proc.pid)
-
-                    fout.write(snap.marshal())
-                    fout.flush()
-
-                    self.check_timeout(snap)
-
-    def check_timeout(self, now):
-        then = self.timeout_checkpoint
-        elapsed = (now.timestamp - then.timestamp) / 1000
-
-        if now.count == then.count and elapsed > self.command.timeout:
-            self.command.stop.set()
-
-            operation = _string.capitalize(self.command.operation)
-            eprint("{} operation timed out", operation)
-
-            return
-
-        if now.count > then.count:
-            self.timeout_checkpoint = now
-
 class _StatusSnapshot(object):
     def __init__(self, command, previous):
         self.command = command
@@ -663,7 +614,7 @@ class _StatusSnapshot(object):
         self.period_cpu_time = 0
         self.rss = 0
 
-    def capture(self, transfers_file, pid):
+    def capture(self, transfers_file, proc):
         self.timestamp = now()
         self.period = self.timestamp - self.command.start_time
 
@@ -671,10 +622,10 @@ class _StatusSnapshot(object):
             self.period = self.timestamp - self.previous.timestamp
 
         self.capture_transfers(transfers_file)
-        self.capture_proc_info(pid)
+        self.capture_proc_info(proc)
 
-    def capture_proc_info(self, pid):
-        proc_file = _join("/", "proc", str(pid), "stat")
+    def capture_proc_info(self, proc):
+        proc_file = _join("/", "proc", str(proc.pid), "stat")
 
         try:
             with open(proc_file, "r") as f:
