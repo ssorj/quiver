@@ -6,9 +6,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -104,7 +104,7 @@ of message servers and APIs.
 # By default arrow operates in client, active mode ...
 
 _quiver_arrow_epilog = """
-server and 
+server and
 
 operations:
   send                  Send messages
@@ -164,10 +164,10 @@ class _Command(object):
         self.parser = None
         self.verbose = False
         self.quiet = False
-        
+
     def parse_int_with_unit(self, value):
         assert self.parser is not None
-        
+
         try:
             if value.endswith("m"): return int(value[:-1]) * 1000 * 1000
             if value.endswith("k"): return int(value[:-1]) * 1000
@@ -179,7 +179,7 @@ class _Command(object):
     def vprint(self, message, *args, **kwargs):
         if not self.verbose:
             return
-        
+
         message = "{}: {}".format(_program, message)
         print(message.format(*args), **kwargs)
 
@@ -198,7 +198,7 @@ class QuiverCommand(_Command):
         self.end_time = None
 
         self.terminal_snap = _StatusSnapshot(self, None)
-        
+
     def init(self):
         args = self.parser.parse_args()
 
@@ -208,7 +208,7 @@ class QuiverCommand(_Command):
         self.bytes_ = self.parse_int_with_unit(args.bytes)
         self.credit = self.parse_int_with_unit(args.credit)
         self.timeout = self.parse_int_with_unit(args.timeout)
-        
+
         self.init_only = args.init_only
 
         if self.output_dir is None:
@@ -219,7 +219,7 @@ class QuiverCommand(_Command):
 
         if "--output" not in args:
             args += "--output", self.output_dir
-        
+
         sender_args = ["quiver-arrow", "send", self.address]
         sender_args += args
         sender_snaps = _join(self.output_dir, "sender-snapshots.csv")
@@ -232,7 +232,7 @@ class QuiverCommand(_Command):
         _touch(receiver_snaps)
 
         self.start_time = _timestamp()
-        
+
         receiver = _subprocess.Popen(receiver_args)
         _time.sleep(0.1) # XXX Instead, wait for receiver readiness
         sender = _subprocess.Popen(sender_args)
@@ -241,11 +241,11 @@ class QuiverCommand(_Command):
 
         prev_ssnap, prev_rsnap = None, None
         ssnap, rsnap = None, None
-            
+
         with open(sender_snaps, "rb") as fs, open(receiver_snaps, "rb") as fr:
             while receiver.poll() == None:
                 _time.sleep(0.5)
-                    
+
                 sline = _read_whole_line(fs)
                 rline = _read_whole_line(fr)
 
@@ -289,7 +289,7 @@ class QuiverCommand(_Command):
          "T [s]", "Count [m]", "Rate [m/s]", "CPU [%]", "RSS [M]",
          "Lat [ms]")
     heading_row_3 = column_groups.format("", "", "")
-        
+
     def print_status_headings(self):
         print(self.heading_row_1)
         print(self.heading_row_2)
@@ -322,12 +322,12 @@ class QuiverCommand(_Command):
         rrss = "{:,.1f}".format(rrss)
 
         latency = "{:,.0f}".format(rsnap.latency)
-        
+
         line = self.columns.format(stime, scount, srate, scpu, srss,
                                    rtime, rcount, rrate, rcpu, rrss,
                                    latency)
         print(line)
-        
+
     def print_summary(self):
         print("-" * 80)
         print()
@@ -355,7 +355,7 @@ class QuiverCommand(_Command):
         _print_numeric_field("Average latency", 0, "ms")
         _print_numeric_field("Average CPU", 0, "%")
         _print_numeric_field("Max RSS", 0, "MB")
-        
+
         print()
         print("## Receiver ##")
         print()
@@ -366,7 +366,7 @@ class QuiverCommand(_Command):
         _print_numeric_field("Average latency", 0, "ms")
         _print_numeric_field("Average CPU", 0, "%")
         _print_numeric_field("Max RSS", 0, "MB")
-        
+
         print()
         print("## Overall ##")
         print()
@@ -380,11 +380,11 @@ class QuiverCommand(_Command):
 
         print()
         print("-" * 80)
-        
+
 class QuiverArrowCommand(_Command):
     def __init__(self, home_dir):
         super(QuiverArrowCommand, self).__init__(home_dir)
-        
+
         self.start_time = None
         self.end_time = None
 
@@ -393,7 +393,7 @@ class QuiverArrowCommand(_Command):
         self.ended = _threading.Event()
 
         self.proc = None
-        
+
         self.parser = _argparse.ArgumentParser \
             (description=_quiver_arrow_description,
              epilog=_quiver_arrow_epilog,
@@ -402,16 +402,16 @@ class QuiverArrowCommand(_Command):
         self.parser.add_argument("operation", metavar="OPERATION",
                                  choices=["send", "receive"],
                                  help="Either 'send' or 'receive'")
-        
+
         _add_common_arguments(self.parser)
-        
+
         self.parser.add_argument("--id", metavar="ID",
                                  help="Use ID as the client or server identity")
         self.parser.add_argument("--server", action="store_true",
                                  help="Operate in server mode")
         self.parser.add_argument("--passive", action="store_true",
                                  help="Operate in passive mode")
-    
+
         self.periodic_status_thread = _PeriodicStatusThread(self)
 
     def init(self):
@@ -421,7 +421,7 @@ class QuiverArrowCommand(_Command):
         bytes_ = self.parse_int_with_unit(args.bytes)
         credit = self.parse_int_with_unit(args.credit)
         timeout = self.parse_int_with_unit(args.timeout)
-        
+
         try:
             self.impl = _impls_by_name[args.impl]
         except KeyError:
@@ -447,17 +447,17 @@ class QuiverArrowCommand(_Command):
         self.latency_average = None
         self.latency_quartiles = None
         self.latency_nines = None
-        
+
         if args.server:
             self.connection_mode = "server"
             self.channel_mode = "passive"
 
         if args.passive:
             self.channel_mode = "passive"
-        
+
         if self.output_dir is None:
             self.output_dir = _make_temp_dir()
-            
+
         if not _os.path.exists(self.output_dir):
             _os.makedirs(self.output_dir)
 
@@ -476,7 +476,7 @@ class QuiverArrowCommand(_Command):
             self.transfers_parse_func = _parse_receive
         else:
             raise Exception()
-        
+
         if self.id_ is None:
             self.id_ = "quiver-{}".format(_unique_id(4))
 
@@ -493,11 +493,11 @@ class QuiverArrowCommand(_Command):
         if not _os.path.exists(self.impl_file):
             msg = "No impl at '{}'".format(self.impl_file)
             raise QuiverError(msg)
-        
+
         if not _os.path.isdir(self.output_dir):
             msg = "Invalid output dir at '{}'".format(self.output_dir)
             raise QuiverError(msg)
-            
+
     def run(self):
         self.periodic_status_thread.start()
 
@@ -516,7 +516,7 @@ class QuiverArrowCommand(_Command):
         )
 
         assert None not in args, args
-        
+
         self.vprint("Calling '{}'", " ".join(args))
 
         with open(self.transfers_file, "wb") as fout:
@@ -557,7 +557,7 @@ class QuiverArrowCommand(_Command):
     def compute_results(self):
         duration = (self.end_time - self.start_time) / 1000
         transfers = list()
-        
+
         with open(self.transfers_file, "rb") as f:
             for line in f:
                 try:
@@ -565,12 +565,12 @@ class QuiverArrowCommand(_Command):
                 except Exception as e:
                     eprint("Failed to parse line '{}': {}", line, str(e))
                     continue
-                    
+
                 transfers.append(transfer)
 
         self.message_count = len(transfers)
         self.message_rate = int(round(self.message_count / duration))
-        
+
         if self.operation == "receive":
             latencies = list()
 
@@ -583,11 +583,11 @@ class QuiverArrowCommand(_Command):
             q = 25, 50, 75, 100, 99, 99.9, 99.99, 99.999
             percentiles = _numpy.percentile(latencies, q, interpolation="higher")
             percentiles = map(int, percentiles)
-        
+
             self.latency_average = _numpy.mean(latencies)
             self.latency_quartiles = percentiles[:4]
             self.latency_nines = percentiles[4:]
-        
+
     def save_summary(self):
         props = {
             "config": {
@@ -614,10 +614,10 @@ class QuiverArrowCommand(_Command):
 
         with open(self.summary_file, "wb") as f:
             _json.dump(props, f, indent=2)
-        
+
     def print_results(self):
         duration = (self.end_time - self.start_time) / 1000
-        
+
         _print_bracket()
         _print_numeric_field("Duration", duration, "s", "{:,.1f}")
         _print_numeric_field("Message count", self.message_count, "messages", "{:,d}")
@@ -659,7 +659,7 @@ class _PeriodicStatusThread(_threading.Thread):
         except:
             _traceback.print_exc()
             _sys.exit(1)
-        
+
     def do_run(self):
         self.command.started.wait()
 
@@ -680,7 +680,7 @@ class _PeriodicStatusThread(_threading.Thread):
 
                     fout.write(snap.marshal())
                     fout.flush()
-                    
+
                     self.check_timeout(snap)
 
     def check_timeout(self, now):
@@ -697,12 +697,12 @@ class _PeriodicStatusThread(_threading.Thread):
 
         if now.count > then.count:
             self.timeout_checkpoint = now
-        
+
 class _StatusSnapshot(object):
     def __init__(self, command, previous):
         self.command = command
         self.previous = previous
-        
+
         self.timestamp = 0
         self.period = 0
 
@@ -713,17 +713,17 @@ class _StatusSnapshot(object):
         self.cpu_time = 0
         self.period_cpu_time = 0
         self.rss = 0
-        
+
     def capture(self, transfers_file, pid):
         self.timestamp = _timestamp()
         self.period = self.timestamp - self.command.start_time
-        
+
         if self.previous is not None:
             self.period = self.timestamp - self.previous.timestamp
-            
+
         self.capture_transfers(transfers_file)
         self.capture_proc_info(pid)
-        
+
     def capture_proc_info(self, pid):
         proc_file = _join("/", "proc", str(pid), "stat")
 
@@ -737,12 +737,12 @@ class _StatusSnapshot(object):
 
         self.cpu_time = int(sum(map(int, fields[13:17])) / _ticks_per_ms)
         self.period_cpu_time = self.cpu_time
-        
+
         if self.previous is not None:
             self.period_cpu_time = self.cpu_time - self.previous.cpu_time
-        
+
         self.rss = int(fields[23]) * _page_size
-        
+
     def capture_transfers(self, transfers_file):
         transfers = list()
 
@@ -758,7 +758,7 @@ class _StatusSnapshot(object):
                 except Exception as e:
                     eprint("Failed to parse line '{}': {}", line, str(e))
                     continue
-                
+
                 transfers.append(record)
 
         self.period_count = len(transfers)
@@ -782,7 +782,7 @@ class _StatusSnapshot(object):
                   self.cpu_time,
                   self.period_cpu_time,
                   self.rss)
-        
+
         fields = map(str, fields)
         line = b"{}\n".format(b",".join(fields))
 
@@ -799,11 +799,11 @@ class _StatusSnapshot(object):
          self.cpu_time,
          self.period_cpu_time,
          self.rss) = fields
-        
+
 def eprint(message, *args, **kwargs):
     if isinstance(message, Exception):
         message = str(message)
-    
+
     message = "{}: {}".format(_program, message)
     message = message.format(*args)
 
@@ -828,15 +828,15 @@ def _print_bracket():
 def _print_field(name, value):
     name = "{}:".format(name)
     print("    {:<24} {}".format(name, value))
-    
+
 def _print_numeric_field(name, value, unit, fmt=None):
     name = "{}:".format(name)
-    
+
     if fmt is not None:
         value = fmt.format(value)
-    
+
     print("{:<24} {:>32} {}".format(name, value, unit))
-    
+
 def _timestamp():
     return int(_time.time() * 1000)
 
@@ -863,7 +863,7 @@ def _read_whole_line(file_):
     if line == "" or line[-1] != b"\n":
         file_.seek(fpos)
         return
-    
+
     return line[:-1]
 
 def _read_lines(file_):
@@ -871,15 +871,15 @@ def _read_lines(file_):
 
     if data == "":
         return
-    
+
     lines = data.split(b"\n")
     last_line = lines[-1]
 
     if last_line != "":
         file_.seek(file_.tell() - len(last_line))
 
-    return lines[:-1]    
-            
+    return lines[:-1]
+
 def _compress_file(path):
     args = "xz", "--compress", "-0", "--threads", "0", path
     _subprocess.check_call(args)
