@@ -242,7 +242,7 @@ class QuiverCommand(_Command):
         prev_ssnap, prev_rsnap = None, None
         ssnap, rsnap = None, None
             
-        with open(sender_snaps) as fs, open(receiver_snaps) as fr:
+        with open(sender_snaps, "rb") as fs, open(receiver_snaps, "rb") as fr:
             while receiver.poll() == None:
                 _time.sleep(0.5)
                     
@@ -441,6 +441,12 @@ class QuiverArrowCommand(_Command):
         self.timeout = timeout
         self.quiet = args.quiet
         self.verbose = args.verbose
+
+        self.message_count = None
+        self.message_rate = None
+        self.latency_average = None
+        self.latency_quartiles = None
+        self.latency_nines = None
         
         if args.server:
             self.connection_mode = "server"
@@ -513,10 +519,7 @@ class QuiverArrowCommand(_Command):
         
         self.vprint("Calling '{}'", " ".join(args))
 
-        if self.verbose:
-            self.print_config()
-
-        with open(self.transfers_file, "w") as fout:
+        with open(self.transfers_file, "wb") as fout:
             self.proc = _subprocess.Popen(args, stdout=fout)
 
             self.start_time = _timestamp()
@@ -543,63 +546,47 @@ class QuiverArrowCommand(_Command):
         if _os.path.getsize(self.transfers_file) == 0:
             raise QuiverError("No transfers")
 
-        if self.operation == "send":
-            self.compute_sender_results()
-        elif self.operation == "receive":
-            self.compute_receiver_results()
-            
-            if not self.quiet:
-                self.print_results()
-        else:
-            raise Exception()
-
+        self.compute_results()
         self.save_summary()
+
+        if self.operation == "receive" and not self.quiet:
+            self.print_results()
 
         _compress_file(self.transfers_file)
 
-    def compute_sender_results(self):
-        count = 0
-
-        # XXX Not doing anything with this
-        with open(self.transfers_file, "r") as f:
-            for line in f:
-                message_id, send_time = _parse_send(line)
-                count += 1
-
+    def compute_results(self):
         duration = (self.end_time - self.start_time) / 1000
-
-        self.message_count = count
-        self.message_rate = int(round(self.message_count / duration))
-        self.latency_average = None
-        self.latency_quartiles = None
-        self.latency_nines = None
+        transfers = list()
         
-    def compute_receiver_results(self):
-        latencies = list()
-
-        with open(self.transfers_file, "r") as f:
+        with open(self.transfers_file, "rb") as f:
             for line in f:
-                message_id, send_time, receive_time = _parse_receive(line)
+                try:
+                    transfer = self.transfers_parse_func(line)
+                except Exception as e:
+                    eprint("Failed to parse line '{}': {}", line, str(e))
+                    continue
+                    
+                transfers.append(transfer)
 
-                send_time = long(send_time)
-                receive_time = long(receive_time)
+        self.message_count = len(transfers)
+        self.message_rate = int(round(self.message_count / duration))
+        
+        if self.operation == "receive":
+            latencies = list()
+
+            for id_, send_time, receive_time in transfers:
                 latency = receive_time - send_time
-
                 latencies.append(latency)
 
-        latencies = _numpy.array(latencies, _numpy.int32)
-        duration = (self.end_time - self.start_time) / 1000
+            latencies = _numpy.array(latencies, _numpy.int32)
 
-        self.message_count = len(latencies)
-        self.message_rate = int(round(self.message_count / duration))
-
-        q = (25, 50, 75, 100, 99, 99.9, 99.99, 99.999)
-        percentiles = _numpy.percentile(latencies, q, interpolation="higher")
-        percentiles = map(int, percentiles)
+            q = 25, 50, 75, 100, 99, 99.9, 99.99, 99.999
+            percentiles = _numpy.percentile(latencies, q, interpolation="higher")
+            percentiles = map(int, percentiles)
         
-        self.latency_average = _numpy.mean(latencies)
-        self.latency_quartiles = percentiles[:4]
-        self.latency_nines = percentiles[4:]
+            self.latency_average = _numpy.mean(latencies)
+            self.latency_quartiles = percentiles[:4]
+            self.latency_nines = percentiles[4:]
         
     def save_summary(self):
         props = {
@@ -625,44 +612,34 @@ class QuiverArrowCommand(_Command):
             },
         }
 
-        with open(self.summary_file, "w") as f:
+        with open(self.summary_file, "wb") as f:
             _json.dump(props, f, indent=2)
         
     def print_results(self):
-        latencies = list()
-
-        with open(self.transfers_file, "r") as f:
-            for line in f:
-                message_id, send_time, receive_time = line.split(",", 2)
-
-                send_time = long(send_time)
-                receive_time = long(receive_time)
-                latency = receive_time - send_time
-
-                latencies.append(latency)
-
         duration = (self.end_time - self.start_time) / 1000
-        count = len(latencies)
-        rate = int(round(count / duration))
-        latency = _numpy.mean(latencies)
-
-        q = (25, 50, 75, 100, 99, 99.9, 99.99)
-        percentiles = _numpy.percentile(latencies, q)
-        quartiles = "{:,.0f} | {:,.0f} | {:,.0f} | {:,.0f}".format(*percentiles[:4])
-        nines = "{:,.0f} | {:,.0f} | {:,.0f}".format(*percentiles[4:])
         
         _print_bracket()
         _print_numeric_field("Duration", duration, "s", "{:,.1f}")
-        _print_numeric_field("Message count", count, "messages", "{:,d}")
-        _print_numeric_field("Message rate", rate, "messages/s", "{:,d}")
-        _print_numeric_field("Latency average", latency, "ms", "{:,.1f}")
-        _print_numeric_field("Latency quartiles", quartiles, "ms")
-        _print_numeric_field("Latency nines", nines, "ms")
+        _print_numeric_field("Message count", self.message_count, "messages", "{:,d}")
+        _print_numeric_field("Message rate", self.message_rate, "messages/s", "{:,d}")
+        _print_numeric_field("Latency average", self.latency_average, "ms", "{:,.1f}")
+        _print_numeric_field("Latency quartiles", self.latency_quartiles, "ms")
+        _print_numeric_field("Latency nines", self.latency_nines, "ms")
         _print_bracket()
 
 class _Formatter(_argparse.ArgumentDefaultsHelpFormatter,
                  _argparse.RawDescriptionHelpFormatter):
     pass
+
+class _ProfiledThread(_threading.Thread):
+    def run(self):
+        import cProfile
+        prof = cProfile.Profile()
+
+        try:
+            return prof.runcall(self.profiled_run)
+        finally:
+            prof.dump_stats("{}.profile".format(self.ident))
 
 class _PeriodicStatusThread(_threading.Thread):
     def __init__(self, command):
@@ -693,11 +670,9 @@ class _PeriodicStatusThread(_threading.Thread):
 
         self.timeout_checkpoint = snap
 
-        with open(self.command.transfers_file, "r") as fin:
-            with open(self.command.snapshots_file, "a") as fout:
+        with open(self.command.transfers_file, "rb") as fin:
+            with open(self.command.snapshots_file, "ab") as fout:
                 while not self.command.ended.wait(1):
-                    start = _time.time()
-                    
                     snap.previous = None
                     snap = _StatusSnapshot(self.command, snap)
 
@@ -772,26 +747,27 @@ class _StatusSnapshot(object):
         transfers = list()
 
         while True:
-            line = _read_whole_line(transfers_file)
+            lines = _read_lines(transfers_file)
 
-            if line is None:
+            if lines is None:
                 break
 
-            try:
-                record = self.command.transfers_parse_func(line)
-            except Exception as e:
-                eprint("Failed to parse line '{}': {}", line, str(e))
-                continue
-            
-            transfers.append(record)
-        
+            for line in lines:
+                try:
+                    record = self.command.transfers_parse_func(line)
+                except Exception as e:
+                    eprint("Failed to parse line '{}': {}", line, str(e))
+                    continue
+                
+                transfers.append(record)
+
         self.period_count = len(transfers)
         self.count = self.previous.count + self.period_count
 
-        if self.count > 0 and self.command.operation == "receive":
+        if self.period_count > 0 and self.command.operation == "receive":
             latencies = list()
 
-            for id, send_time, receive_time in transfers:
+            for id_, send_time, receive_time in transfers:
                 latency = receive_time - send_time
                 latencies.append(latency)
 
@@ -808,12 +784,12 @@ class _StatusSnapshot(object):
                   self.rss)
         
         fields = map(str, fields)
-        line = "{}\n".format(",".join(fields))
+        line = b"{}\n".format(b",".join(fields))
 
         return line
 
     def unmarshal(self, line):
-        fields = map(int, line.split(","))
+        fields = map(int, line.split(b","))
 
         (self.timestamp,
          self.period,
@@ -834,15 +810,15 @@ def eprint(message, *args, **kwargs):
     print(message, file=_sys.stderr, **kwargs)
 
 def _parse_send(line):
-    message_id, send_time = line.split(",", 1)
-    send_time = long(send_time)
+    message_id, send_time = line.split(b",", 1)
+    send_time = int(send_time)
 
     return message_id, send_time
 
 def _parse_receive(line):
-    message_id, send_time, receive_time = line.split(",", 2)
-    send_time = long(send_time)
-    receive_time = long(receive_time)
+    message_id, send_time, receive_time = line.split(b",", 2)
+    send_time = int(send_time)
+    receive_time = int(receive_time)
 
     return message_id, send_time, receive_time
 
@@ -859,7 +835,7 @@ def _print_numeric_field(name, value, unit, fmt=None):
     if fmt is not None:
         value = fmt.format(value)
     
-    print("    {:<24} {:>32} {}".format(name, value, unit))
+    print("{:<24} {:>32} {}".format(name, value, unit))
     
 def _timestamp():
     return int(_time.time() * 1000)
@@ -877,18 +853,32 @@ def _make_temp_dir():
     return _tempfile.mkdtemp(prefix="quiver-")
 
 def _touch(path):
-    with open(path, "a") as f:
-        f.write("")
+    with open(path, "ab") as f:
+        f.write(b"")
 
-def _read_whole_line(file):
-    fpos = file.tell()
-    line = file.readline()
+def _read_whole_line(file_):
+    fpos = file_.tell()
+    line = file_.readline()
 
-    if line == "" or line[-1] != "\n":
-        file.seek(fpos)
+    if line == "" or line[-1] != b"\n":
+        file_.seek(fpos)
         return
     
     return line[:-1]
+
+def _read_lines(file_):
+    data = file_.read(16384)
+
+    if data == "":
+        return
+    
+    lines = data.split(b"\n")
+    last_line = lines[-1]
+
+    if last_line != "":
+        file_.seek(file_.tell() - len(last_line))
+
+    return lines[:-1]    
             
 def _compress_file(path):
     args = "xz", "--compress", "-0", "--threads", "0", path
