@@ -230,59 +230,16 @@ class QuiverCommand(_Command):
         if "--output" not in args:
             args += "--output", self.output_dir
 
-        sender_args = ["quiver-arrow", "send", self.address]
-        sender_args += args
-        sender_snaps = _join(self.output_dir, "sender-snapshots.csv")
-
-        receiver_args = ["quiver-arrow", "receive", self.address]
-        receiver_args += args
-        receiver_snaps = _join(self.output_dir, "receiver-snapshots.csv")
-
-        _touch(sender_snaps)
-        _touch(receiver_snaps)
+        sender_args = ["quiver-arrow", "send", self.address] + args
+        receiver_args = ["quiver-arrow", "receive", self.address] + args
 
         self.start_time = now()
 
-        sender = _subprocess.Popen(sender_args)
         receiver = _subprocess.Popen(receiver_args)
+        sender = _subprocess.Popen(sender_args)
 
         if not self.quiet:
-            prev_ssnap, prev_rsnap = None, None
-            ssnap, rsnap = None, None
-            i = 0
-
-            with open(sender_snaps, "rb") as fs, open(receiver_snaps, "rb") as fr:
-                while receiver.poll() == None:
-                    _time.sleep(0.5)
-
-                    sline = _read_whole_line(fs)
-                    rline = _read_whole_line(fr)
-
-                    #print("S:", sline)
-                    #print("R:", rline)
-
-                    if sline is not None:
-                        ssnap = _StatusSnapshot(self, prev_ssnap)
-                        ssnap.unmarshal(sline)
-
-                    if rline is not None:
-                        rsnap = _StatusSnapshot(self, prev_rsnap)
-                        rsnap.unmarshal(rline)
-
-                    if ssnap is None and sender.poll() is not None:
-                        ssnap = self.terminal_snap
-
-                    if ssnap is None or rsnap is None:
-                        continue
-
-                    if i % 20 == 0:
-                        self.print_status_headings()
-
-                    self.print_status(ssnap, rsnap)
-
-                    prev_ssnap, prev_rsnap = ssnap, rsnap
-                    ssnap, rsnap = None, None
-                    i += 1
+            self.print_status(sender, receiver)
 
         sender.wait()
         receiver.wait()
@@ -291,6 +248,49 @@ class QuiverCommand(_Command):
 
         if not self.quiet:
             self.print_summary()
+
+    def print_status(self, sender, receiver):
+        sender_snaps = _join(self.output_dir, "sender-snapshots.csv")
+        receiver_snaps = _join(self.output_dir, "receiver-snapshots.csv")
+
+        _touch(sender_snaps)
+        _touch(receiver_snaps)
+
+        prev_ssnap, prev_rsnap = None, None
+        ssnap, rsnap = None, None
+        i = 0
+
+        with open(sender_snaps, "rb") as fs, open(receiver_snaps, "rb") as fr:
+            while receiver.poll() == None:
+                _time.sleep(0.5)
+
+                sline = _read_whole_line(fs)
+                rline = _read_whole_line(fr)
+
+                #print("S: {:60} R: {}".format(sline, rline))
+
+                if sline is not None:
+                    ssnap = _StatusSnapshot(self, prev_ssnap)
+                    ssnap.unmarshal(sline)
+
+                if rline is not None:
+                    rsnap = _StatusSnapshot(self, prev_rsnap)
+                    rsnap.unmarshal(rline)
+
+                if ssnap is None and sender.poll() is not None:
+                    ssnap = self.terminal_snap
+
+                if ssnap is None or rsnap is None:
+                    continue
+
+                if i % 20 == 0:
+                    self.print_status_headings()
+
+                self.print_status_row(ssnap, rsnap)
+
+                prev_ssnap, prev_rsnap = ssnap, rsnap
+                ssnap, rsnap = None, None
+                i += 1
 
     column_groups = "{:-^53}  {:-^53}  {:-^8}"
     columns = "{:>8}  {:>13}  {:>10}  {:>7}  {:>7}  " \
@@ -308,7 +308,7 @@ class QuiverCommand(_Command):
         print(self.heading_row_2)
         print(self.heading_row_3)
 
-    def print_status(self, ssnap, rsnap):
+    def print_status_row(self, ssnap, rsnap):
         if ssnap is self.terminal_snap:
             stime, scount, srate, scpu, srss = "-", "-", "-", "-", "-"
         else:
@@ -336,10 +336,10 @@ class QuiverCommand(_Command):
 
         latency = "{:,.0f}".format(rsnap.latency)
 
-        line = self.columns.format(stime, scount, srate, scpu, srss,
-                                   rtime, rcount, rrate, rcpu, rrss,
-                                   latency)
-        print(line)
+        row = self.columns.format(stime, scount, srate, scpu, srss,
+                                  rtime, rcount, rrate, rcpu, rrss,
+                                  latency)
+        print(row)
 
     def print_summary(self):
         with open(_join(self.output_dir, "sender-summary.json")) as f:
@@ -349,7 +349,9 @@ class QuiverCommand(_Command):
             receiver = _json.load(f)
 
         print("-" * 80)
-        print("# {} {} {}".format(self.impl, self.address, self.output_dir))
+
+        v = ", ".join((self.output_dir, self.impl, self.address))
+        print("Subject: {}".format(v))
 
         _print_numeric_field("Messages", self.messages, "messages")
         _print_numeric_field("Body size", self.body_size, "bytes")
