@@ -243,15 +243,13 @@ class QuiverCommand(_Command):
 
         self.start_time = now()
 
-        receiver = _subprocess.Popen(receiver_args)
-        _time.sleep(0.1) # XXX Instead, wait for receiver readiness
         sender = _subprocess.Popen(sender_args)
+        receiver = _subprocess.Popen(receiver_args)
 
         if not self.quiet:
-            self.print_status_headings()
-
             prev_ssnap, prev_rsnap = None, None
             ssnap, rsnap = None, None
+            i = 0
 
             with open(sender_snaps, "rb") as fs, open(receiver_snaps, "rb") as fr:
                 while receiver.poll() == None:
@@ -277,10 +275,14 @@ class QuiverCommand(_Command):
                     if ssnap is None or rsnap is None:
                         continue
 
+                    if i % 20 == 0:
+                        self.print_status_headings()
+
                     self.print_status(ssnap, rsnap)
 
                     prev_ssnap, prev_rsnap = ssnap, rsnap
                     ssnap, rsnap = None, None
+                    i += 1
 
         sender.wait()
         receiver.wait()
