@@ -162,7 +162,7 @@ class _Command(object):
         self.verbose = self.args.verbose
 
         if self.output_dir is None:
-            self.output_dir = _make_temp_dir()
+            self.output_dir = _tempfile.mkdtemp(prefix="quiver-")
 
         if not _os.path.exists(self.output_dir):
             _os.makedirs(self.output_dir)
@@ -267,12 +267,12 @@ class QuiverCommand(_Command):
                         ssnap = _StatusSnapshot(self, prev_ssnap)
                         ssnap.unmarshal(sline)
 
-                    if sline is None and sender.poll() is not None:
-                        ssnap = self.terminal_snap
-
                     if rline is not None:
                         rsnap = _StatusSnapshot(self, prev_rsnap)
                         rsnap.unmarshal(rline)
+
+                    if ssnap is None and sender.poll() is not None:
+                        ssnap = self.terminal_snap
 
                     if ssnap is None or rsnap is None:
                         continue
@@ -347,12 +347,7 @@ class QuiverCommand(_Command):
             receiver = _json.load(f)
 
         print("-" * 80)
-
-        _print_field("Address", self.address)
-        _print_field("Implementation", self.impl)
-        _print_field("Output dir", self.output_dir)
-        _print_field("Sender ID", sender["config"]["id"])
-        _print_field("Receiver ID", receiver["config"]["id"])
+        print("# {} {} {}".format(self.impl, self.address, self.output_dir))
 
         _print_numeric_field("Messages", self.messages, "messages")
         _print_numeric_field("Body size", self.body_size, "bytes")
@@ -775,13 +770,6 @@ def _parse_receive(line):
 
     return message_id, send_time, receive_time
 
-def _print_bracket():
-    print("-" * 80)
-
-def _print_field(name, value):
-    name = "{}:".format(name)
-    print("{:<28} {}".format(name, value))
-
 def _print_numeric_field(name, value, unit, fmt="{:,.0f}"):
     name = "{}:".format(name)
 
@@ -798,9 +786,6 @@ def _unique_id(length=16):
     uuid_bytes = uuid_bytes[:length]
 
     return _binascii.hexlify(uuid_bytes).decode("utf-8")
-
-def _make_temp_dir():
-    return _tempfile.mkdtemp(prefix="quiver-")
 
 def _touch(path):
     with open(path, "ab") as f:
