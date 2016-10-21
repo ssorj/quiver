@@ -218,7 +218,6 @@ class QuiverCommand(_Command):
                                                epilog=_quiver_epilog,
                                                formatter_class=_Formatter)
         self.start_time = None
-        self.end_time = None
 
     def run(self):
         args = _sys.argv[2:]
@@ -240,7 +239,8 @@ class QuiverCommand(_Command):
         sender.wait()
         receiver.wait()
 
-        self.end_time = now()
+        if sender.returncode != 0 or receiver.returncode != 0:
+            _sys.exit(1)
 
         if not self.quiet:
             self.print_summary()
@@ -345,14 +345,16 @@ class QuiverCommand(_Command):
 
         print("-" * 80)
 
-        v = ", ".join((self.output_dir, self.impl, self.address))
+        v = " ".join((self.impl, self.address, self.output_dir))
         print("Subject: {}".format(v))
 
         _print_numeric_field("Messages", self.messages, "messages")
         _print_numeric_field("Body size", self.body_size, "bytes")
         _print_numeric_field("Credit window", self.credit_window, "messages")
 
-        duration = (self.end_time - self.start_time) / 1000
+        start_time = sender["results"]["first_send_time"]
+        end_time = receiver["results"]["last_receive_time"]
+        duration = (end_time - start_time) / 1000
 
         _print_numeric_field("Duration", duration, "s", "{:,.1f}")
 
@@ -380,7 +382,6 @@ class QuiverArrowCommand(_Command):
         super(QuiverArrowCommand, self).__init__(home_dir)
 
         self.start_time = None
-        self.end_time = None
         self.timeout_checkpoint = None
 
         self.parser = _argparse.ArgumentParser(description=_quiver_arrow_description,
@@ -444,6 +445,10 @@ class QuiverArrowCommand(_Command):
         else:
             raise Exception()
 
+        self.first_send_time = None
+        self.last_send_time = None
+        self.first_receive_time = None
+        self.last_receive_time = None
         self.message_count = None
         self.message_rate = None
         self.latency_average = None
@@ -476,7 +481,7 @@ class QuiverArrowCommand(_Command):
             self.vprint("Process {} ({}) started", proc.pid, self.operation)
 
             snap = _StatusSnapshot(self, None)
-            snap.timestamp = now() # XXX Versus start_time
+            snap.timestamp = self.start_time
 
             self.timeout_checkpoint = snap
 
@@ -501,8 +506,6 @@ class QuiverArrowCommand(_Command):
 
                         period = _time.time() - period_start
                         sleep = max(1.0, 2.0 - period)
-
-            self.end_time = now()
 
             if proc.returncode == 0:
                 m = "Process {} ({}) exited normally"
@@ -534,7 +537,6 @@ class QuiverArrowCommand(_Command):
             self.timeout_checkpoint = snap
 
     def compute_results(self):
-        duration = (self.end_time - self.start_time) / 1000
         transfers = list()
 
         with open(self.transfers_file, "rb") as f:
@@ -548,24 +550,43 @@ class QuiverArrowCommand(_Command):
                 transfers.append(transfer)
 
         self.message_count = len(transfers)
+
+        if self.message_count == 0:
+            return
+
+        if self.operation == "send":
+            self.first_send_time = transfers[0][1]
+            self.last_send_time = transfers[-1][1]
+
+            duration = (self.last_send_time - self.first_send_time) / 1000
+        elif self.operation == "receive":
+            self.first_receive_time = transfers[0][2]
+            self.last_receive_time = transfers[-1][2]
+
+            duration = (self.last_receive_time - self.first_receive_time) / 1000
+
+            self.compute_latencies(transfers)
+        else:
+            raise Exception()
+
         self.message_rate = int(round(self.message_count / duration))
 
-        if self.operation == "receive":
-            latencies = list()
+    def compute_latencies(self, transfers):
+        latencies = list()
 
-            for id_, send_time, receive_time in transfers:
-                latency = receive_time - send_time
-                latencies.append(latency)
+        for id_, send_time, receive_time in transfers:
+            latency = receive_time - send_time
+            latencies.append(latency)
 
-            latencies = _numpy.array(latencies, _numpy.int32)
+        latencies = _numpy.array(latencies, _numpy.int32)
 
-            q = 25, 50, 75, 100, 99, 99.9, 99.99, 99.999
-            percentiles = _numpy.percentile(latencies, q, interpolation="higher")
-            percentiles = map(int, percentiles)
+        q = 25, 50, 75, 100, 99, 99.9, 99.99, 99.999
+        percentiles = _numpy.percentile(latencies, q, interpolation="higher")
+        percentiles = map(int, percentiles)
 
-            self.latency_average = _numpy.mean(latencies)
-            self.latency_quartiles = percentiles[:4]
-            self.latency_nines = percentiles[4:]
+        self.latency_average = _numpy.mean(latencies)
+        self.latency_quartiles = percentiles[:4]
+        self.latency_nines = percentiles[4:]
 
     def save_summary(self):
         props = {
@@ -583,6 +604,10 @@ class QuiverArrowCommand(_Command):
                 "timeout": self.timeout,
             },
             "results": {
+                "first_send_time": self.first_send_time,
+                "last_send_time": self.last_send_time,
+                "first_receive_time": self.first_receive_time,
+                "last_receive_time": self.last_receive_time,
                 "message_count": self.message_count,
                 "message_rate": self.message_rate,
                 "latency_average": self.latency_average,
