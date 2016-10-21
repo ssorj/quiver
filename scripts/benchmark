@@ -38,6 +38,7 @@ amqp_clients = (
     "qpid-jms",
     "qpid-messaging-cpp",
     "qpid-messaging-python",
+    "qpid-proton-cpp",
     "qpid-proton-python",
     "rhea",
     "vertx-proton",
@@ -70,7 +71,10 @@ def run_test(server, client, output_dir, args):
     output_file = join(output_dir, "{}-{}.txt".format(server, client))
     command = "scripts/test-{} --impl {} {} 2>&1 | tee {}"
 
-    call(command, server, client, args, output_file)
+    try:
+        call(command, server, client, args, output_file)
+    except CalledProcessError as e:
+        warn(e)
 
 def main():
     if "--impl" in ARGS:

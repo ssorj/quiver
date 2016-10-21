@@ -7,9 +7,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -32,17 +32,25 @@ from plano import *
 def main():
     port = random_port()
 
-    command = "qpidd --port {} --auth no --default-queue-limit 0 --no-data-dir"
+    command = "qpidd --port {} --auth no --default-queue-limit 0 --no-data-dir > /dev/null"
     server = start_process(command, port)
 
-    command = "qpid-config -b localhost:{} add queue q0" 
+    command = "qpid-config -b localhost:{} add queue q0 > /dev/null"
     call(command, port)
-    
+
     command = "quiver //localhost:{}/q0 {}"
     args = " ".join(ARGS[1:])
-    call(command, port, args)
+    exit_code = 0
+
+    try:
+        call(command, port, args)
+    except CalledProcessError as e:
+        error(e)
+        exit_code = e.returncode
 
     stop_process(server)
+
+    exit(exit_code)
 
 try:
     main()

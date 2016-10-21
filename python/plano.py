@@ -29,6 +29,7 @@ import os as _os
 import random as _random
 import re as _re
 import shutil as _shutil
+import signal as _signal
 import subprocess as _subprocess
 import sys as _sys
 import tarfile as _tarfile
@@ -37,6 +38,8 @@ import time as _time
 import traceback as _traceback
 import types as _types
 import uuid as _uuid
+
+from subprocess import CalledProcessError
 
 # See documentation at http://www.ssorj.net/projects/plano.html
 
@@ -477,8 +480,11 @@ def stop_process(proc):
     if proc.poll() is not None:
         if proc.returncode == 0:
             notice("Process {} already exited normally", proc.pid)
+        elif proc.returncode == -(_signal.SIGTERM):
+            notice("Process {} was already terminated", proc.pid)
         else:
-            error("Process {} exited with code {}", proc.pid, proc.returncode)
+            m = "Process {} already exited with code {}"
+            error(m, proc.pid, proc.returncode)
             
         return
 
@@ -495,6 +501,8 @@ def wait_for_process(proc):
 
     if proc.returncode == 0:
         notice("Process {} exited normally", proc.pid)
+    elif proc.returncode == -(_signal.SIGTERM):
+        notice("Process {} exited after termination", proc.pid)
     else:
         error("Process {} exited with code {}", proc.pid, proc.returncode)
 
