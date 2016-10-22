@@ -569,7 +569,8 @@ class QuiverArrowCommand(_Command):
         else:
             raise Exception()
 
-        self.message_rate = int(round(self.message_count / duration))
+        if duration > 0:
+            self.message_rate = int(round(self.message_count / duration))
 
     def compute_latencies(self, transfers):
         latencies = list()
@@ -753,7 +754,9 @@ def _parse_receive(line):
 def _print_numeric_field(name, value, unit, fmt="{:,.0f}"):
     name = "{}:".format(name)
 
-    if fmt is not None:
+    if value is None:
+        value = "-"
+    elif fmt is not None:
         value = fmt.format(value)
 
     print("{:<28} {:>28} {}".format(name, value, unit))
