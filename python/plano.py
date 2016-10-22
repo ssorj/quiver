@@ -70,8 +70,8 @@ def exit(arg=None, *args):
     if isinstance(arg, _types.StringTypes):
         error(arg, args)
         _sys.exit(1)
-    elif isinstance(arg, _types.IntegerType):
-        error("Exiting with code {}", (arg,))
+    elif isinstance(arg, _types.IntType):
+        error("Exiting with code {}", arg)
         _sys.exit(arg)
     else:
         raise Exception()
