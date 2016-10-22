@@ -24,8 +24,8 @@ Implementations must process the following positional arguments.
      [6] port              The socket port (or '-')
      [7] path              A named source or target for a message, often a queue
      [8] messages          Number of messages to transfer
-     [9] body_size         Length of generated message body
-    [10] credit_window     Size of credit window to maintain
+     [9] body-size         Length of generated message body
+    [10] credit-window     Size of credit window to maintain
 
 If an implementation does not support a particular `connection-mode`
 or `channel-mode`, for instance `server`, it should raise an error at

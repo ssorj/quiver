@@ -111,19 +111,18 @@ To alter the GCC library and header search paths, use the
 `LIBRARY_PATH`, `C_INCLUDE_PATH`, and`CPLUS_INCLUDE_PATH` environment
 variables.
 
-    $ export LIBRARY_PATH=~/.local/lib64
-    $ export C_INCLUDE_PATH=~/.local/include
-    $ export CPLUS_INCLUDE_PATH=~/.local/include
+    $ export LIBRARY_PATH=$HOME/.local/lib64
+    $ export C_INCLUDE_PATH=$HOME/.local/include
+    $ export CPLUS_INCLUDE_PATH=$HOME/.local/include
     $ make clean devel
 
 Set `LD_LIBRARY_PATH` or update `ld.so.conf` to match your
 `LIBRARY_PATH` before running the resulting executables.
 
-    $ export LD_LIBRARY_PATH=~/.local/lib64
+    $ export LD_LIBRARY_PATH=$HOME/.local/lib64
 
 By default, the `devel.sh` environment targets libraries and headers
-you have installed under `$HOME/.local`, as shown in the examples
-here.
+installed under `$HOME/.local`, as shown in the examples above.
 
 ## Command-line interface
 
