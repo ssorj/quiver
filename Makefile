@@ -6,9 +6,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -23,7 +23,7 @@ DESTDIR := ""
 PREFIX := ${HOME}/.local
 QUIVER_HOME = ${PREFIX}/lib/quiver
 
-TARGETS = \
+TARGETS := \
 	build/bin/quiver \
 	build/bin/quiver-arrow \
 	build/bin/quiver-smoke-test \
@@ -32,12 +32,18 @@ TARGETS = \
 	build/exec/arrow-qpid-jms \
 	build/exec/arrow-qpid-messaging-cpp \
 	build/exec/arrow-qpid-messaging-python \
-	build/exec/arrow-qpid-proton-cpp \
 	build/exec/arrow-qpid-proton-python \
 	build/exec/arrow-vertx-proton \
 	build/exec/arrow-rhea \
 	build/java/quiver-jms.jar \
 	build/java/quiver-vertx-proton.jar
+
+CCFLAGS := -Os -std=c++11 -lstdc++ -lqpid-proton -lqpidmessaging -lqpidtypes
+
+ifdef QPID_PROTON_CPP_ENABLED
+	TARGETS += build/exec/arrow-qpid-proton-cpp
+	CCFLAGS += -lqpid-proton-cpp
+endif
 
 .PHONY: default
 default: devel
@@ -90,7 +96,7 @@ build/exec/%: exec/%.in
 
 build/exec/%: exec/%.cpp
 	@mkdir -p build/exec
-	gcc -Os -std=c++11 -lqpid-proton -lqpid-proton-cpp -lqpidmessaging -lqpidtypes -lstdc++ $< -o $@
+	gcc ${CCFLAGS} $< -o $@
 
 build/java/quiver-jms.jar: $(shell find java/jms/src -type f) java/jms/pom.xml
 	@mkdir -p build/java
@@ -103,9 +109,9 @@ build/java/quiver-vertx-proton.jar: $(shell find java/vertx-proton/src -type f) 
 	cp java/vertx-proton/target/quiver-vertx-proton-*-jar-with-dependencies.jar $@
 
 # build/java/quiver-%.jar: $(shell find java/%/src -type f) java/%/pom.xml
-# 	@mkdir -p build/java
-# 	cd java/$* && mvn clean package
-# 	cp java/$*/target/quiver-$*-*-jar-with-dependencies.jar $@
+#	@mkdir -p build/java
+#	cd java/$* && mvn clean package
+#	cp java/$*/target/quiver-$*-*-jar-with-dependencies.jar $@
 
 .PHONY: update-rhea
 update-rhea:
