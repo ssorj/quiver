@@ -271,8 +271,8 @@ class QuiverCommand(_Command):
             while receiver.poll() == None:
                 _time.sleep(1)
 
-                sline = _read_whole_line(fs)
-                rline = _read_whole_line(fr)
+                sline = _read_line(fs)
+                rline = _read_line(fr)
 
                 #print("S: {:60} R: {}".format(sline, rline))
 
@@ -357,7 +357,7 @@ class QuiverCommand(_Command):
 
         print("-" * 80)
 
-        v = " ".join((self.impl, self.address, self.output_dir))
+        v = "{} {} ({})".format(self.impl, self.address, self.output_dir)
         print("Subject: {}".format(v))
 
         _print_numeric_field("Messages", self.messages, "messages")
@@ -412,6 +412,8 @@ class QuiverArrowCommand(_Command):
 
     def init(self):
         super(QuiverArrowCommand, self).init()
+
+        _os.setsid()
 
         self.connection_mode = "client"
         self.channel_mode = "active"
@@ -491,17 +493,17 @@ class QuiverArrowCommand(_Command):
 
         assert None not in args, args
 
-        self.vprint("Calling '{}'", " ".join(args))
-
         with open(self.transfers_file, "wb") as fout:
+            self.vprint("Calling '{}'", " ".join(args))
+
             proc = _subprocess.Popen(args, stdout=fout)
 
-            self.start_time = now()
             self.vprint("Process {} ({}) started", proc.pid, self.operation)
 
             snap = _StatusSnapshot(self, None)
-            snap.timestamp = self.start_time
+            snap.timestamp = now()
 
+            self.start_time = snap.timestamp
             self.timeout_checkpoint = snap
 
             sleep = 2.0
@@ -515,7 +517,6 @@ class QuiverArrowCommand(_Command):
 
                         snap.previous = None
                         snap = _StatusSnapshot(self, snap)
-
                         snap.capture(fin, proc)
 
                         fout.write(snap.marshal())
@@ -547,10 +548,13 @@ class QuiverArrowCommand(_Command):
         since = (snap.timestamp - checkpoint.timestamp) / 1000
 
         if snap.count == checkpoint.count and since > self.timeout:
-            m = "{} operation timed out"
-            eprint(m, _string.capitalize(self.operation))
+            m = "Process {} ({}) timed out"
+            m = m.format(proc.pid, self.operation)
+            eprint(m)
 
             _os.killpg(_os.getpgid(proc.pid), _signal.SIGTERM)
+
+            raise QuiverException(m)
 
         if snap.count > checkpoint.count:
             self.timeout_checkpoint = snap
@@ -691,20 +695,14 @@ class _StatusSnapshot(object):
     def capture_transfers(self, transfers_file):
         transfers = list()
 
-        while True:
-            lines = _read_lines(transfers_file)
+        for line in _read_lines(transfers_file):
+            try:
+                record = self.command.transfers_parse_func(line)
+            except Exception as e:
+                eprint("Failed to parse line '{}': {}", line, str(e))
+                continue
 
-            if lines is None:
-                break
-
-            for line in lines:
-                try:
-                    record = self.command.transfers_parse_func(line)
-                except Exception as e:
-                    eprint("Failed to parse line '{}': {}", line, str(e))
-                    continue
-
-                transfers.append(record)
+            transfers.append(record)
 
         self.period_count = len(transfers)
         self.count = self.previous.count + self.period_count
@@ -793,7 +791,7 @@ def _touch(path):
     with open(path, "ab") as f:
         f.write(b"")
 
-def _read_whole_line(file_):
+def _read_line(file_):
     fpos = file_.tell()
     line = file_.readline()
 
@@ -804,18 +802,15 @@ def _read_whole_line(file_):
     return line[:-1]
 
 def _read_lines(file_):
-    data = file_.read(8192)
+    while True:
+        fpos = file_.tell()
+        line = file_.readline()
 
-    if data == "":
-        return
+        if line == "" or line[-1] != b"\n":
+            file_.seek(fpos)
+            break
 
-    lines = data.split(b"\n")
-    last_line = lines[-1]
-
-    if last_line != "":
-        file_.seek(file_.tell() - len(last_line))
-
-    return lines[:-1]
+        yield line[:-1]
 
 def _compress_file(path):
     args = "xz", "--compress", "-0", "--threads", "0", path
