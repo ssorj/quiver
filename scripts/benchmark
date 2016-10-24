@@ -69,7 +69,7 @@ def run_test(server, client, output_dir, args):
         return
 
     output_file = join(output_dir, "{}-{}.txt".format(server, client))
-    command = "scripts/test-{} --impl {} {} 2>&1 | tee {}"
+    command = "scripts/test-{} --impl {} {}"
 
     try:
         call(command, server, client, args, output_file)

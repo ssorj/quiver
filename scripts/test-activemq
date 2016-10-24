@@ -47,7 +47,7 @@ def main():
         error(e)
         exit_code = e.returncode
 
-    call("{} stop > /dev/null", server_command)
+    call("{} stop > /dev/null || :", server_command)
 
     exit(exit_code)
 
