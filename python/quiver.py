@@ -37,6 +37,11 @@ import tempfile as _tempfile
 import time as _time
 import uuid as _uuid
 
+try:
+    from urllib.parse import urlparse as _urlparse
+except ImportError:
+    from urlparse import urlparse as _urlparse
+
 _impls_by_name = {
     "activemq-jms": "activemq-jms",
     "activemq-artemis-jms": "activemq-artemis-jms",
@@ -97,15 +102,21 @@ single connection.
 of message servers and APIs.
 """
 
-# XXX Document server and passive mode
-# By default arrow operates in client, active mode ...
-
 _quiver_arrow_epilog = """
 operations:
   send                  Send messages
   receive               Receive messages
 
 {}
+server and passive modes:
+  By default quiver-arrow operates in client and active modes, meaning
+  that it creates an outbound connection to a server and actively
+  initiates creation of the protocol entities (sessions and links)
+  required for communication.  The --server option allows you to
+  instead listen for and accept incoming connections.  The --passive
+  option allows you to receive and confirm incoming requests for new
+  protocol entities.
+
 example usage:
   $ qdrouterd &                   # Start a message server
   $ quiver-arrow receive q0 &     # Start receiving
@@ -207,8 +218,9 @@ class _Command(object):
         if not self.verbose:
             return
 
-        message = "{}: {}".format(_program, message)
-        print(message.format(*args), **kwargs)
+        m = "{}: {}".format(_program, message)
+        m = m.format(*args)
+        print(m, **kwargs)
 
 class QuiverCommand(_Command):
     def __init__(self, home_dir):
@@ -416,15 +428,22 @@ class QuiverArrowCommand(_Command):
         if self.id_ is None:
             self.id_ = "quiver-{}".format(_unique_id(4))
 
-        if self.address.startswith("//"):
-            domain, self.path = self.address[2:].split("/", 1)
-        else:
-            domain, self.path = "localhost", self.address
+        url = _urlparse(self.address)
 
-        if ":" in domain:
-            self.host, self.port = domain.split(":", 1)
-        else:
-            self.host, self.port = domain, "-"
+        if url.path is None:
+            raise QuiverError("The address URL has no path")
+
+        self.host = url.hostname
+        self.port = url.port
+        self.path = url.path[1:]
+
+        if self.host is None:
+            self.host = "localhost"
+
+        if self.port is None:
+            self.port = "-"
+
+        self.port = str(self.port)
 
         self.impl_file = "{}/exec/arrow-{}".format(self.home_dir, self.impl)
 
