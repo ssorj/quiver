@@ -121,8 +121,8 @@ Set `LD_LIBRARY_PATH` or update `ld.so.conf` to match your
 
     $ export LD_LIBRARY_PATH=$HOME/.local/lib64
 
-By default, the `devel.sh` environment targets libraries and headers
-installed under `$HOME/.local`, as shown in the examples above.
+Source `misc/local-libs-env.sh` in your shell to set these variables
+for libraries under `$HOME/.local` and `/usr/local`.
 
 ## Command-line interface
 
