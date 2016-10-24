@@ -112,10 +112,10 @@ server and passive modes:
   By default quiver-arrow operates in client and active modes, meaning
   that it creates an outbound connection to a server and actively
   initiates creation of the protocol entities (sessions and links)
-  required for communication.  The --server option allows you to
-  instead listen for and accept incoming connections.  The --passive
-  option allows you to receive and confirm incoming requests for new
-  protocol entities.
+  required for communication.  The --server option tells quiver-arrow
+  to instead listen for and accept incoming connections.  The
+  --passive option tells it to receive and confirm incoming requests
+  for new protocol entities but not to create them itself.
 
 example usage:
   $ qdrouterd &                   # Start a message server
