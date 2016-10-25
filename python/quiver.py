@@ -605,7 +605,7 @@ class QuiverArrowCommand(_Command):
         latencies = _numpy.array(latencies, _numpy.int32)
 
         q = 25, 50, 75, 100, 99, 99.9, 99.99, 99.999
-        percentiles = _numpy.percentile(latencies, q, interpolation="higher")
+        percentiles = _numpy.percentile(latencies, q)
         percentiles = map(int, percentiles)
 
         self.latency_average = _numpy.mean(latencies)
