@@ -8,9 +8,9 @@
 // to you under the Apache License, Version 2.0 (the
 // "License"); you may not use this file except in compliance
 // with the License.  You may obtain a copy of the License at
-// 
+//
 //   http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
 // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -51,30 +51,32 @@ function eprint(message) {
 }
 
 container.on("connection_open", function(context) {
-    if (channel_mode == "active") {
-        if (operation == "send") {
-            // XXX How do I set delivery mode?
-            var options = {
-                target: {
-                    address: path,
-                    durable: false
-                }
-            };
-            
-            context.connection.open_sender(options);
-        } else if (operation == "receive") {
-            var options = {
-                source: {
-                    address: path,
-                    durable: false
-                },
-                prefetch: credit_window
-            };
-            
-            context.connection.open_receiver(options);
-        } else {
-            throw new Error();
-        }
+    if (channel_mode == "passive") {
+        return;
+    }
+
+    if (operation == "send") {
+        // XXX How do I set delivery mode?
+        var options = {
+            target: {
+                address: path,
+                durable: false
+            }
+        };
+
+        context.connection.open_sender(options);
+    } else if (operation == "receive") {
+        var options = {
+            source: {
+                address: path,
+                durable: false
+            },
+            prefetch: credit_window
+        };
+
+        context.connection.open_receiver(options);
+    } else {
+        throw new Error();
     }
 });
 
@@ -82,14 +84,14 @@ container.on("sendable", function(context) {
     while (context.sender.sendable() && sent < messages) {
         var id = sent + 1;
         var stime = new Date().getTime();
-        
+
         var message = {
             id: id,
             SendTime: stime,
             content_type: "application/octet-stream",
             body: body,
         };
-        
+
         context.sender.send(message);
 
         process.stdout.write(message.id + "," + stime + "\n");
@@ -114,12 +116,11 @@ container.on("message", function(context) {
     if (received == messages) {
         return;
     }
-    
+
     var message = context.message;
     var rtime = new Date().getTime();
     var stime = message.SendTime;
 
-    // XXX buffered IO?
     process.stdout.write(message.id + "," + stime + "," + rtime + "\n");
 
     received++;
