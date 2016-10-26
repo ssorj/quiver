@@ -347,7 +347,7 @@ class QuiverCommand(_Command):
 
         print("-" * 80)
 
-        v = "{} {} ({})".format(self.impl, self.address, self.output_dir)
+        v = "{} {} ({})".format(self.args.impl, self.address, self.output_dir)
         print("Subject: {}".format(v))
 
         _print_numeric_field("Messages", self.messages, "messages")
