@@ -43,6 +43,12 @@ from subprocess import CalledProcessError
 
 # See documentation at http://www.ssorj.net/projects/plano.html
 
+_message_output = _sys.stderr
+
+def set_message_output(writeable):
+    global _message_output
+    _message_output = writeable
+
 def fail(message, *args):
     error(message, *args)
 
@@ -52,16 +58,16 @@ def fail(message, *args):
     raise Exception(message)
 
 def error(message, *args):
-    _print_message("Error", message, args, _sys.stderr)
+    _print_message("Error", message, args)
 
 def warn(message, *args):
-    _print_message("Warn", message, args, _sys.stderr)
+    _print_message("Warn", message, args)
 
 def notice(message, *args):
-    _print_message(None, message, args, _sys.stderr)
+    _print_message(None, message, args)
 
 def debug(message, *args):
-    _print_message("Debug", message, args, _sys.stderr)
+    _print_message("Debug", message, args)
 
 def exit(arg=None, *args):
     if arg in (0, None):
@@ -76,11 +82,12 @@ def exit(arg=None, *args):
     else:
         raise Exception()
 
-def _print_message(category, message, args, file):
+def _print_message(category, message, args):
     message = _format_message(category, message, args)
 
-    print(message, file=file)
-    file.flush()
+    print(message, file=_message_output)
+
+    _message_output.flush()
 
 def _format_message(category, message, args):
     if isinstance(message, BaseException):
