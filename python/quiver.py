@@ -420,7 +420,6 @@ class QuiverArrowCommand(_Command):
 
         if self.args.server:
             self.connection_mode = "server"
-            self.channel_mode = "passive"
 
         if self.args.passive:
             self.channel_mode = "passive"
