@@ -141,10 +141,6 @@ class _Command(object):
         self.home_dir = home_dir
 
         self.parser = None
-        self.args = None
-
-        self.verbose = False
-        self.quiet = False
 
     def init(self):
         assert self.parser is not None
@@ -152,12 +148,6 @@ class _Command(object):
         self.add_common_arguments()
 
         self.args = self.parser.parse_args()
-
-        try:
-            self.impl = _impls_by_name[self.args.impl]
-        except KeyError:
-            m = "Implementation '{}' is unknown".format(self.args.impl)
-            self.parser.error(m)
 
         self.address = self.args.address
         self.messages = self.parse_int_with_unit(self.args.messages)
@@ -414,6 +404,14 @@ class QuiverArrowCommand(_Command):
         super(QuiverArrowCommand, self).init()
 
         _os.setsid()
+
+        try:
+            self.impl = _impls_by_name[self.args.impl]
+        except KeyError:
+            self.impl = self.args.impl
+
+            m = "Warning: Implementation '{}' is unknown".format(self.args.impl)
+            eprint(m)
 
         self.connection_mode = "client"
         self.channel_mode = "active"
