@@ -26,6 +26,8 @@ QUIVER_HOME = ${PREFIX}/lib/quiver
 TARGETS := \
 	build/bin/quiver \
 	build/bin/quiver-arrow \
+	build/bin/quiver-client-test \
+	build/bin/quiver-server-test \
 	build/bin/quiver-smoke-test \
 	build/exec/arrow-activemq-jms \
 	build/exec/arrow-activemq-artemis-jms \
@@ -89,7 +91,7 @@ devel: install
 
 .PHONY: test
 test: devel
-	quiver-smoke-test 10
+	quiver-smoke-test
 
 build/bin/%: bin/%.in
 	@mkdir -p build/bin

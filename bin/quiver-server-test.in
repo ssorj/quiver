@@ -1,0 +1,78 @@
+#!/usr/bin/python
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
+
+import argparse
+import os
+import sys
+import traceback
+
+home = os.path.normpath("@quiver_home@")
+sys.path.insert(0, os.path.join(home, "python"))
+
+from plano import *
+
+def main():
+    set_message_output(sys.stdout)
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("sender", metavar="SENDER-IMPL")
+    parser.add_argument("receiver", metavar="RECEIVER-IMPL")
+    parser.add_argument("-m", "--messages", metavar="COUNT", default="1k")
+    parser.add_argument("--active-receiver", action="store_true")
+    
+    args = parser.parse_args()
+
+    sender_mode = ""
+    receiver_mode = "--passive"
+    
+    if args.active_receiver:
+        sender_mode = "--passive"
+        receiver_mode = ""
+    
+    sender_command = "quiver-arrow send //127.0.0.1:{}/q0 --impl {} --messages {} --verbose {}"
+    receiver_command = "quiver-arrow --server receive //127.0.0.1:{}/q0 --impl {} --messages {} --verbose {}"
+    
+    port = random_port()
+    exit_code = 0
+
+    receiver = start_process(receiver_command, port, args.receiver, args.messages, receiver_mode)
+
+    sleep(0.1)
+
+    sender = start_process(sender_command, port, args.sender, args.messages, sender_mode)
+
+    sender_exit_code = wait_for_process(sender)
+    receiver_exit_code = wait_for_process(receiver)
+
+    if (sender_exit_code, receiver_exit_code) != (0, 0):
+        exit_code = 1
+
+    exit(exit_code)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
