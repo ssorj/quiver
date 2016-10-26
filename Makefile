@@ -103,12 +103,12 @@ build/exec/%: exec/%.cpp
 	@mkdir -p build/exec
 	gcc ${CCFLAGS} $< -o $@
 
-build/java/vertx-proton.jar: $(shell find java/vertx-proton/src -type f) java/vertx-proton/pom.xml
+build/java/vertx-proton.jar: java/vertx-proton/pom.xml $(shell find java/vertx-proton/src -type f)
 	@mkdir -p build/java
 	cd java/vertx-proton && mvn clean package
 	cp java/vertx-proton/target/vertx-proton-1-jar-with-dependencies.jar $@
 
-build/java/%.jar: java/%/pom.xml $(shell find java/jms/src -type f) 
+build/java/%.jar: java/%/pom.xml java/jms/pom.xml $(shell find java/jms/src -type f)
 	@mkdir -p build/java
 	cd java/jms && mvn install
 	cd java/$* && mvn clean package
