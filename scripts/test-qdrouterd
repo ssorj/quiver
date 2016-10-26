@@ -56,10 +56,9 @@ def main():
     except CalledProcessError as e:
         error(e)
         exit_code = e.returncode
-
-    stop_process(server)
-
-    exit(exit_code)
+    finally:
+        stop_process(server)
+        exit(exit_code)
 
 try:
     main()

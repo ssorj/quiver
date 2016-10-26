@@ -46,10 +46,9 @@ def main():
     except CalledProcessError as e:
         error(e)
         exit_code = e.returncode
-
-    call("{} stop > /dev/null || :", server_command)
-
-    exit(exit_code)
+    finally:
+        call("{} stop > /dev/null || :", server_command)
+        exit(exit_code)
 
 try:
     main()

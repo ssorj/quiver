@@ -23,10 +23,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
-import subprocess
-import sys
-import time
-
 from plano import *
 
 def main():
@@ -48,10 +44,9 @@ def main():
     except CalledProcessError as e:
         error(e)
         exit_code = e.returncode
-
-    stop_process(server)
-
-    exit(exit_code)
+    finally:
+        stop_process(server)
+        exit(exit_code)
 
 try:
     main()
