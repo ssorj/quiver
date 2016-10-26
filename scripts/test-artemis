@@ -57,7 +57,7 @@ def main():
         error(e)
         exit_code = e.returncode
     finally:
-        stop_process(server)
+        call("{} stop > /dev/null", server_command)
         exit(exit_code)
 
 try:

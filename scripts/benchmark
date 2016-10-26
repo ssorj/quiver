@@ -74,7 +74,7 @@ def run_test(server, client, output_dir, args):
     try:
         call(command, server, client, args, output_file)
     except CalledProcessError as e:
-        warn(e)
+        error(e)
 
 def main():
     if "--impl" in ARGS:
