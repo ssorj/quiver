@@ -96,14 +96,16 @@ def _format_message(category, message, args):
         if message == "":
             message = message.__class__.__name__
 
-    if category:
-        message = "{0}: {1}".format(category, message)
-
     if args:
         message = message.format(*args)
 
-    script = split(_sys.argv[0])[1]
-    message = "{0}: {1}".format(script, message)
+    message = message.capitalize()
+
+    if category:
+        message = "{0}: {1}".format(category, message)
+
+    program = program_name()
+    message = "{0}: {1}".format(program, message)
 
     return message
 
@@ -440,7 +442,7 @@ class working_dir(object):
 # XXX Move toward _start_process instead
 def _init_call(command, args, kwargs):
     assert command is not None
-    
+
     if isinstance(command, _types.StringTypes):
         if args:
             command = command.format(*args)
@@ -475,24 +477,36 @@ def call_for_output(command, *args, **kwargs):
 
 def start_process(command, *args, **kwargs):
     command, kwargs = _init_call(command, args, kwargs)
-    proc = _subprocess.Popen(command, **kwargs)
+    proc = _Process(command, **kwargs)
 
-    notice("Started process {}", proc.pid)
-    
+    notice("{} started", proc)
+
     return proc
 
+class _Process(_subprocess.Popen):
+    def __init__(self, command, *args, **kwargs):
+        super(_Process, self).__init__(command, *args, **kwargs)
+
+        try:
+            self.name = kwargs["name"]
+        except KeyError:
+            self.name = file_name(command.split(" ")[0])
+
+    def __repr__(self):
+        return "process {} ({})".format(self.pid, self.name)
+
 def stop_process(proc):
-    notice("Stopping process {}", proc.pid)
+    notice("Stopping {}", proc)
 
     if proc.poll() is not None:
         if proc.returncode == 0:
-            notice("Process {} already exited normally", proc.pid)
+            notice("{} already exited normally", proc)
         elif proc.returncode == -(_signal.SIGTERM):
-            notice("Process {} was already terminated", proc.pid)
+            notice("{} was already terminated", proc)
         else:
-            m = "Process {} already exited with code {}"
-            error(m, proc.pid, proc.returncode)
-            
+            m = "{} already exited with code {}"
+            error(m, proc, proc.returncode)
+
         return
 
     # XXX Consider killpg here instead
@@ -502,16 +516,16 @@ def stop_process(proc):
     return wait_for_process(proc)
 
 def wait_for_process(proc):
-    notice("Waiting for process {} to exit", proc.pid)
+    notice("Waiting for {} to exit", proc)
 
     proc.wait()
 
     if proc.returncode == 0:
-        notice("Process {} exited normally", proc.pid)
+        notice("{} exited normally", proc)
     elif proc.returncode == -(_signal.SIGTERM):
-        notice("Process {} exited after termination", proc.pid)
+        notice("{} exited after termination", proc)
     else:
-        error("Process {} exited with code {}", proc.pid, proc.returncode)
+        error("{} exited with code {}", proc, proc.returncode)
 
     return proc.returncode
 
@@ -521,7 +535,7 @@ def wait_for_process(proc):
 #             _shutil.copyfileobj(fin, fout)
 #
 #     _os.remove(self.transfers_file)
-        
+
 def make_archive(input_dir, output_dir, archive_stem):
     temp_dir = make_temp_dir()
     temp_input_dir = join(temp_dir, archive_stem)
