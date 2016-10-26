@@ -35,8 +35,10 @@ TARGETS := \
 	build/exec/arrow-qpid-proton-python \
 	build/exec/arrow-vertx-proton \
 	build/exec/arrow-rhea \
-	build/java/quiver-jms.jar \
-	build/java/quiver-vertx-proton.jar
+	build/java/activemq-artemis-jms.jar \
+	build/java/activemq-jms.jar \
+	build/java/qpid-jms.jar \
+	build/java/vertx-proton.jar
 
 CCFLAGS := -Os -std=c++11 -lstdc++ -lqpid-proton -lqpidmessaging -lqpidtypes
 
@@ -60,7 +62,10 @@ help:
 clean:
 	rm -rf build
 	rm -rf install
+	rm -rf java/activemq-jms/target
+	rm -rf java/activemq-artemis-jms/target
 	rm -rf java/jms/target
+	rm -rf java/qpid-jms/target
 	rm -rf java/vertx-proton/target
 
 .PHONY: build
@@ -98,20 +103,16 @@ build/exec/%: exec/%.cpp
 	@mkdir -p build/exec
 	gcc ${CCFLAGS} $< -o $@
 
-build/java/quiver-jms.jar: $(shell find java/jms/src -type f) java/jms/pom.xml
-	@mkdir -p build/java
-	cd java/jms && mvn clean package
-	cp java/jms/target/quiver-jms-*-jar-with-dependencies.jar $@
-
-build/java/quiver-vertx-proton.jar: $(shell find java/vertx-proton/src -type f) java/vertx-proton/pom.xml
+build/java/vertx-proton.jar: $(shell find java/vertx-proton/src -type f) java/vertx-proton/pom.xml
 	@mkdir -p build/java
 	cd java/vertx-proton && mvn clean package
-	cp java/vertx-proton/target/quiver-vertx-proton-*-jar-with-dependencies.jar $@
+	cp java/vertx-proton/target/vertx-proton-1-jar-with-dependencies.jar $@
 
-# build/java/quiver-%.jar: $(shell find java/%/src -type f) java/%/pom.xml
-#	@mkdir -p build/java
-#	cd java/$* && mvn clean package
-#	cp java/$*/target/quiver-$*-*-jar-with-dependencies.jar $@
+build/java/%.jar: java/%/pom.xml $(shell find java/jms/src -type f) 
+	@mkdir -p build/java
+	cd java/jms && mvn install
+	cd java/$* && mvn clean package
+	cp java/$*/target/$*-1-jar-with-dependencies.jar $@
 
 .PHONY: update-rhea
 update-rhea:

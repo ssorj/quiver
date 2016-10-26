@@ -19,44 +19,28 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>net.ssorj.quiver</groupId>
-  <artifactId>vertx-proton</artifactId>
-  <version>1</version>
+  <parent>
+    <groupId>net.ssorj.quiver</groupId>
+    <artifactId>jms</artifactId>
+    <version>1</version>
+    <relativePath>../jms/pom.xml</relativePath>
+  </parent>
 
-  <properties>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
-  </properties>
+  <groupId>net.ssorj.quiver</groupId>
+  <artifactId>qpid-jms</artifactId>
+  <version>1</version>
 
   <dependencies>
     <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-proton</artifactId>
-      <version>3.3.0</version>
+      <groupId>net.ssorj.quiver</groupId>
+      <artifactId>jms</artifactId>
+      <version>1</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-jms-client</artifactId>
+      <version>0.11.1</version>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.6</version>
-        <configuration>
-          <descriptorRefs>
-            <descriptorRef>jar-with-dependencies</descriptorRef>
-          </descriptorRefs>
-        </configuration>
-        <executions>
-          <execution>
-            <id>make-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 </project>
