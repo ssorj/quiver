@@ -12,6 +12,15 @@ number of messages.  Each implementation invocation uses a single
 connection to a single queue, meaning that a sending and a receiving
 implementation together constitute a pair of communicating endpoints.
 
+## Files
+
+Implementations live under `exec/` in the source tree, with a name
+starting with `arrow-`.  Any build or install logic should be placed
+in the project `Makefile`.
+
+New implementation names should be added to the `_impls_by_name` map
+in `python/quiver.py` so they are available to the user.
+
 ## Input
 
 Implementations must process the following positional arguments.
@@ -54,9 +63,8 @@ Time values are unix epoch milliseconds.
     10,1472344673324,1472344673345
 
 To avoid any performance impact, take care that writes to standard
-output are buffered.
-
-<!-- XXX Flushing buffers -->
+output are buffered.  Make sure any buffered writes are flushed before
+the implementation exits.
 
 ## Exit code
 
@@ -71,6 +79,10 @@ conversion yourself.
 Implementations must create one connection only.  They must connect
 using the SASL mechanism `ANONYMOUS`.
 
+When `connection-mode` is `client`, the implementation must establish
+an outgoing connection.  When it is `server`, the imlementation must
+listen for an incoming connection.
+
 <!-- XXX reconnect -->
 
 ## Queues, links, and sessions
@@ -82,6 +94,11 @@ receiving link.
 If the implementation API offers sessions (that is, a sequential
 context for links), then the implementation must create only one
 session.
+
+When `channel-mode` is `active`, the implementation must initiate
+creation of the sessions and links.  When it is `passive`, the
+implementation must instead wait for initiation from the peer and then
+confirm their creation.
 
 ## Messages
 

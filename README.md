@@ -4,17 +4,28 @@ Tools for testing the performance of messaging clients and servers.
 
     [Start an AMQP server with a queue called 'q0']
     $ quiver q0
-    *        6,115         6,022 messages/s         112.0 ms avg latency
-    *       12,976         6,650 messages/s         303.3 ms avg latency
+    ---------------------- Sender -----------------------  --------------------- Receiver ----------------------  --------
+       T [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]     T [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Lat [ms]
+    -----------------------------------------------------  -----------------------------------------------------  --------
+         2.1         18,168       9,084       98     33.8       2.1         15,144       7,568      100     27.9       203
+         4.1         36,395       9,104       96     33.8       4.1         31,046       7,943      100     27.9       460
+         6.1         54,827       9,207       97     33.8       6.1         46,466       7,702      100     27.9       731
     [...]
-    *      992,299         6,681 messages/s      24,297.5 ms avg latency
-    *      999,204         6,802 messages/s      24,435.7 ms avg latency
+           -              -           -        -        -     124.2        974,277       7,541      100     27.9    17,075
+           -              -           -        -        -     126.2        989,959       7,833      100     27.9    17,520
+           -              -           -        -        -     128.2      1,000,000       5,015       60      0.0    17,695
     --------------------------------------------------------------------------------
-    Duration:                                               162.9 s
-    Message count:                                      1,000,000 messages
-    Message rate:                                           6,140 messages/s
-    Latency average:                                     13,998.2 ms
-    Latency by quartile:         6,844 | 14,337 | 20,966 | 25,335 ms
+    Subject: qpid-proton-python //localhost:5672/q0 (/tmp/quiver-9rWyTd)
+    Messages:                                       1,000,000 messages
+    Body size:                                            100 bytes
+    Credit window:                                      1,000 messages
+    Duration:                                           127.3 s
+    Sender rate:                                        9,133 messages/s
+    Receiver rate:                                      7,859 messages/s
+    End-to-end rate:                                    7,857 messages/s
+    Average latency:                                  9,056.9 ms
+    Latency 25, 50, 75, 100%:        4375, 9187, 13578, 17777 ms
+    Latency 99, 99.9, 99.99%:             17623, 17750, 17770 ms
     --------------------------------------------------------------------------------
 
 ## Overview
@@ -29,9 +40,8 @@ mode and captures its output.  It has options for defining the
 execution parameters, selecting the implementation, and reporting
 statistics.
 
-The `quiver` command makes it easy to launch `quiver-arrow` instances.
-In the future, it will collate the results from the individual
-`quiver-arrow` runs and produce a consolidated report.
+The `quiver` command launches a pair of `quiver-arrow` instances, one
+sender and one receiver.
 
 ## Installation
 
@@ -76,7 +86,8 @@ script from the project directory.
     $ cd quiver/
     $ source devel.sh
 
-The `devel` make target creates a local installation in your checkout.
+The `devel` make target creates a local installation in your checkout
+and runs a sanity test.
 
     $ make devel
 
@@ -197,6 +208,9 @@ number of messages are all sent or received.
 
     optional arguments:
       -h, --help            show this help message and exit
+      --id ID               Use ID as the client or server identity (default: None)
+      --server              Operate in server mode (default: False)
+      --passive             Operate in passive mode (default: False)
       -m COUNT, --messages COUNT
                             Send or receive COUNT messages (default: 1m)
       --impl NAME           Use NAME implementation (default: qpid-proton-python)
@@ -207,13 +221,19 @@ number of messages are all sent or received.
       --init-only           Initialize and immediately exit (default: False)
       --quiet               Print nothing to the console (default: False)
       --verbose             Print details to the console (default: False)
-      --id ID               Use ID as the client or server identity (default: None)
-      --server              Operate in server mode (default: False)
-      --passive             Operate in passive mode (default: False)
 
     operations:
       send                  Send messages
       receive               Receive messages
+
+    server and passive modes:
+      By default quiver-arrow operates in client and active modes, meaning
+      that it creates an outbound connection to a server and actively
+      initiates creation of the protocol entities (sessions and links)
+      required for communication.  The --server option tells quiver-arrow
+      to instead listen for and accept incoming connections.  The
+      --passive option tells it to receive and confirm incoming requests
+      for new protocol entities but not to create them itself.
 
 ## Examples
 
