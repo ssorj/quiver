@@ -19,7 +19,7 @@
 
 export PATH := ${PWD}/install/bin:${PATH}
 
-VERSION := 1.0.0-SNAPSHOT
+VERSION := $(shell cat VERSION.txt)
 
 DESTDIR := ""
 PREFIX := ${HOME}/.local
@@ -105,7 +105,7 @@ build/exec/%: exec/%.in
 
 build/exec/%: exec/%.cpp
 	@mkdir -p build/exec
-	gcc ${CCFLAGS} $< -o $@
+	g++ $< -o $@ ${CCFLAGS}
 
 build/java/quiver-vertx-proton.jar: java/quiver-vertx-proton/pom.xml $(shell find java/quiver-vertx-proton/src -type f)
 	@mkdir -p build/java
