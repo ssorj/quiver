@@ -19,6 +19,8 @@
 
 export PATH := ${PWD}/install/bin:${PATH}
 
+VERSION := 1.0.0-SNAPSHOT
+
 DESTDIR := ""
 PREFIX := ${HOME}/.local
 QUIVER_HOME = ${PREFIX}/lib/quiver
@@ -32,15 +34,15 @@ TARGETS := \
 	build/exec/arrow-activemq-jms \
 	build/exec/arrow-activemq-artemis-jms \
 	build/exec/arrow-qpid-jms \
-	build/exec/arrow-qpid-messaging-cpp \
-	build/exec/arrow-qpid-messaging-python \
-	build/exec/arrow-qpid-proton-python \
 	build/exec/arrow-vertx-proton \
 	build/exec/arrow-rhea \
-	build/java/activemq-artemis-jms.jar \
-	build/java/activemq-jms.jar \
-	build/java/qpid-jms.jar \
-	build/java/vertx-proton.jar
+	build/exec/arrow-qpid-messaging-python \
+	build/exec/arrow-qpid-proton-python \
+	build/exec/arrow-qpid-messaging-cpp \
+	build/java/quiver-activemq-artemis-jms.jar \
+	build/java/quiver-activemq-jms.jar \
+	build/java/quiver-qpid-jms.jar \
+	build/java/quiver-vertx-proton.jar
 
 CCFLAGS := -Os -std=c++11 -lstdc++ -lqpid-proton -lqpidmessaging -lqpidtypes
 
@@ -64,11 +66,11 @@ help:
 clean:
 	rm -rf build
 	rm -rf install
-	rm -rf java/activemq-jms/target
-	rm -rf java/activemq-artemis-jms/target
-	rm -rf java/jms/target
-	rm -rf java/qpid-jms/target
-	rm -rf java/vertx-proton/target
+	rm -rf java/quiver-activemq-jms/target
+	rm -rf java/quiver-activemq-artemis-jms/target
+	rm -rf java/quiver-jms-driver/target
+	rm -rf java/quiver-qpid-jms/target
+	rm -rf java/quiver-vertx-proton/target
 
 .PHONY: build
 build: ${TARGETS}
@@ -105,16 +107,16 @@ build/exec/%: exec/%.cpp
 	@mkdir -p build/exec
 	gcc ${CCFLAGS} $< -o $@
 
-build/java/vertx-proton.jar: java/vertx-proton/pom.xml $(shell find java/vertx-proton/src -type f)
+build/java/quiver-vertx-proton.jar: java/quiver-vertx-proton/pom.xml $(shell find java/quiver-vertx-proton -type f)
 	@mkdir -p build/java
-	cd java/vertx-proton && mvn clean package
-	cp java/vertx-proton/target/vertx-proton-1-jar-with-dependencies.jar $@
+	cd java/quiver-vertx-proton && mvn clean package
+	cp java/quiver-vertx-proton/target/quiver-vertx-proton-${VERSION}-jar-with-dependencies.jar $@
 
-build/java/%.jar: java/%/pom.xml java/jms/pom.xml $(shell find java/jms/src -type f)
+build/java/%.jar: java/pom.xml $(shell find java/quiver-jms-driver -type f)
 	@mkdir -p build/java
-	cd java/jms && mvn install
-	cd java/$* && mvn clean package
-	cp java/$*/target/$*-1-jar-with-dependencies.jar $@
+	cd java/quiver-jms-driver && mvn install
+	cd java/ && mvn clean package
+	cp java/$*/target/$*-${VERSION}-jar-with-dependencies.jar $@
 
 .PHONY: update-rhea
 update-rhea:

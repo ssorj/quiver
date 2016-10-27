@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,13 +15,10 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
-
 package net.ssorj.quiver;
 
 import java.io.*;
-import java.lang.*;
 import java.util.*;
 import javax.jms.*;
 import javax.naming.*;
@@ -36,7 +32,7 @@ public class QuiverArrowJms {
             System.exit(1);
         }
     }
-    
+
     public static void doMain(String[] args) throws Exception {
         String connectionMode = args[0];
         String channelMode = args[1];
@@ -55,7 +51,7 @@ public class QuiverArrowJms {
 
         String url = System.getProperty("arrow.jms.url");
         assert url != null;
-        
+
         Hashtable<Object, Object> env = new Hashtable<Object, Object>();
         env.put("connectionFactory.ConnectionFactory", url);
         env.put("queue.queueLookup", path);
@@ -65,7 +61,7 @@ public class QuiverArrowJms {
         Destination queue = (Destination) context.lookup("queueLookup");
 
         Client client = new Client(factory, queue, operation, messages, bodySize);
-        
+
         client.run();
     }
 }
@@ -79,7 +75,7 @@ class Client {
 
     protected int sent;
     protected int received;
-    
+
     Client(ConnectionFactory factory, Destination queue,
            String operation, int messages, int bodySize) {
         this.factory = factory;
@@ -122,17 +118,17 @@ class Client {
         MessageProducer producer = session.createProducer(this.queue);
         producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
         producer.setDisableMessageTimestamp(true);
-        
+
         byte[] body = new byte[this.bodySize];
         Arrays.fill(body, (byte) 120);
-        
+
         while (this.sent < this.messages) {
             BytesMessage message = session.createBytesMessage();
             long stime = System.currentTimeMillis();
 
             message.writeBytes(body);
             message.setLongProperty("SendTime", stime);
-            
+
             producer.send(message);
 
             out.printf("%s,%d\n", message.getJMSMessageID(), stime);
@@ -159,7 +155,7 @@ class Client {
             long rtime = System.currentTimeMillis();
 
             out.printf("%s,%d,%d\n", id, stime, rtime);
-            
+
             this.received += 1;
         }
 

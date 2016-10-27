@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.join(home_dir, "python"))
 from quiver import *
 
 def main():
-    jar_file = os.path.join(home_dir, "java", "vertx-proton.jar")
+    jar_file = os.path.join(home_dir, "java", "quiver-vertx-proton.jar")
 
     args = [
         "/usr/bin/env",
