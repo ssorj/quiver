@@ -43,8 +43,8 @@
 
     <!-- Client Dependencies for Quiver -->
     <activemq-version>5.14.1</activemq-version>
-    <artenis-version>1.4.0</artenis-version>
-    <qpid-jms-version>0.20.0-SNAPSHOT</qpid-jms-version>
+    <artemis-version>1.4.0</artemis-version>
+    <qpid-jms-version>0.11.1</qpid-jms-version>
     <vertx-proton-version>3.3.0</vertx-proton-version>
     <geronimo.jms.2.spec.version>1.0-alpha-2</geronimo.jms.2.spec.version>
 
@@ -94,7 +94,7 @@
       <dependency>
         <groupId>org.apache.activemq</groupId>
         <artifactId>artemis-jms-client</artifactId>
-        <version>${artenis-version}</version>
+        <version>${artemis-version}</version>
       </dependency>
       <dependency>
         <groupId>io.vertx</groupId>

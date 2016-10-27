@@ -107,12 +107,12 @@ build/exec/%: exec/%.cpp
 	@mkdir -p build/exec
 	gcc ${CCFLAGS} $< -o $@
 
-build/java/quiver-vertx-proton.jar: java/quiver-vertx-proton/pom.xml $(shell find java/quiver-vertx-proton -type f)
+build/java/quiver-vertx-proton.jar: java/quiver-vertx-proton/pom.xml $(shell find java/quiver-vertx-proton/src -type f)
 	@mkdir -p build/java
 	cd java/quiver-vertx-proton && mvn clean package
 	cp java/quiver-vertx-proton/target/quiver-vertx-proton-${VERSION}-jar-with-dependencies.jar $@
 
-build/java/%.jar: java/pom.xml $(shell find java/quiver-jms-driver -type f)
+build/java/%.jar: java/pom.xml java/quiver-jms-driver/pom.xml $(shell find java/quiver-jms-driver/src -type f)
 	@mkdir -p build/java
 	cd java/quiver-jms-driver && mvn install
 	cd java/ && mvn clean package
