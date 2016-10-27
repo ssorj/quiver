@@ -40,7 +40,7 @@ def main():
     if port == "-":
         port = "5672"
     
-    jar_file = os.path.join(home_dir, "java", "qpid-jms.jar")
+    jar_file = os.path.join(home_dir, "java", "quiver-qpid-jms.jar")
 
     params = (
         "jms.clientID={}".format(id_),

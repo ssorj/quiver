@@ -40,7 +40,7 @@ def main():
     if port == "-":
         port = "61616"
 
-    jar_file = os.path.join(home_dir, "java", "activemq-artemis-jms.jar")
+    jar_file = os.path.join(home_dir, "java", "quiver-activemq-artemis-jms.jar")
 
     params = (
         "jms.clientID={}".format(id_),
