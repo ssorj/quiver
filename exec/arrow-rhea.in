@@ -139,7 +139,7 @@ if (port == "-") {
 }
 
 if (connection_mode == "client") {
-    container.connect({user: "anonymous", host: host, port: port});
+    container.connect({username: "anonymous", host: host, port: port});
 } else if (connection_mode == "server") {
     listener = container.listen({host: host, port: port});
 } else {
