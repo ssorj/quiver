@@ -35,8 +35,13 @@ var messages = process.argv[9];
 var body_size = process.argv[10];
 var credit_window = process.argv[11];
 
-var body = new Uint8Array(body_size);
-body.fill(120);
+var a = new Array(body_size);
+
+for (var i = 0; i < a.length; i++) {
+    a[i] = 120;
+}
+
+var body = new Uint8Array(a);
 
 var sent = 0;
 var received = 0;
