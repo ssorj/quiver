@@ -30,37 +30,42 @@ Tools for testing the performance of messaging clients and servers.
 
 ## Overview
 
-Quiver arrow implementations are native clients (and sometimes also
-servers) in various languages and APIs that send or receive messages
-and write raw information about the transfers to standard output.
-They are deliberately simple.
+Quiver implementations are native clients (and sometimes also servers)
+in various languages and APIs that either send or receive messages and
+write raw information about the transfers to standard output.  They
+are deliberately simple.
 
-The `quiver-arrow` command runs an implementation in send or receive
-mode and captures its output.  It has options for defining the
+The `quiver-arrow` command runs a single implementation in send or
+receive mode and captures its output.  It has options for defining the
 execution parameters, selecting the implementation, and reporting
 statistics.
 
 The `quiver` command launches a pair of `quiver-arrow` instances, one
-sender and one receiver.
+sender and one receiver, and produces a summary of the end-to-end
+transmission of messages.
 
 ## Installation
 
 ### Dependencies
 
-    NAME                     FEDORA PACKAGES
-    ------------------------ --------------------------------------------
-    Java 8                   java-1.8.0-openjdk, java-1.8.0-openjdk-devel
-    Maven                    maven
-    GNU Make                 make
-    Node.js                  nodejs
-    NumPy                    numpy
-    Python 2.7               python
-    Qpid Messaging Python    python-qpid-messaging
-    Qpid Proton Python       python-qpid-proton
-    Qpid Messaging C++       qpid-cpp-client, qpid-cpp-client-devel
-    Qpid Proton C            qpid-proton-c, qpid-proton-c-devel
-    XZ                       xc
-    GCC C++ compiler         gcc-c++
+| Name                  | Debian package        | Fedora package
+| --------------------- | --------------------- | ---
+| GCC C++               | build-essential       | gcc-c++
+| GNU Make              | make                  | make
+| Java 8 JDK            | openjdk-8-jdk         | java-1.8.0-openjdk-devel
+| Maven                 | maven                 | maven
+| Node.js               | nodejs*               | nodejs
+| NumPy                 | python-numpy          | numpy
+| Python 2.7            | python                | python
+| Qpid Messaging C++    | libqpidmessaging2-dev | qpid-cpp-client-devel
+| Qpid Messaging Python | python-qpid-messaging | python-qpid-messaging
+| Qpid Proton C         | libqpid-proton8-dev   | qpid-proton-c-devel
+| Qpid Proton C++       | -                     | qpid-proton-cpp-devel
+| Qpid Proton Python    | python-qpid-proton    | python-qpid-proton
+| XZ                    | xz-utils              | xz
+
+\* On Debian you will also need to symlink `/usr/bin/nodejs` to
+`/usr/bin/node`.
 
 ### Installing from source
 
