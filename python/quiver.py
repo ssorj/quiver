@@ -30,7 +30,6 @@ import numpy as _numpy
 import os as _os
 import resource as _resource
 import signal as _signal
-import string as _string
 import subprocess as _subprocess
 import sys as _sys
 import tempfile as _tempfile
@@ -564,7 +563,7 @@ class QuiverArrowCommand(_Command):
                 try:
                     transfer = self.transfers_parse_func(line)
                 except Exception as e:
-                    eprint("Failed to parse line '{}': {}", line, str(e))
+                    eprint("Failed to parse line '{}': {}", line, e)
                     continue
 
                 transfers.append(transfer)
@@ -696,7 +695,7 @@ class _StatusSnapshot(object):
             try:
                 record = self.command.transfers_parse_func(line)
             except Exception as e:
-                eprint("Failed to parse line '{}': {}", line, str(e))
+                eprint("Failed to parse line '{}': {}", line, e)
                 continue
 
             transfers.append(record)
