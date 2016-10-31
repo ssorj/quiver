@@ -7,9 +7,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -73,21 +73,19 @@ struct handler : public proton::messaging_handler {
             listener = c.listen(domain, opts);
         } else {
             throw std::exception();
-        }            
-        
+        }
+
         body = std::string(body_size, 'x');
     }
 
     void on_connection_open(proton::connection& c) override {
-        // XXX Need matching local open?
-
-        proton::receiver_options opts;
-        opts.credit_window(credit_window);
-        
         if (channel_mode == "active") {
             if (operation == "send") {
                 c.open_sender(path);
             } else if (operation == "receive") {
+                proton::receiver_options opts;
+                opts.credit_window(credit_window);
+
                 c.open_receiver(path, opts);
             } else {
                 throw std::exception();
@@ -97,35 +95,37 @@ struct handler : public proton::messaging_handler {
 
     void on_sendable(proton::sender& s) override {
         assert (operation == "send");
-        
+
         while (s.credit() && sent < messages) {
             int id = sent + 1;
             long stime = now();
-    
+
             proton::message m(body);
             m.id(id);
             m.properties().put("SendTime", stime);
 
             s.send(m);
             sent++;
-            
+
             std::cout << id << "," << stime << "\n";
         }
     }
 
     void on_tracker_accept(proton::tracker& t) override {
-        assert (operation == "send");
-        
         accepted++;
 
         if (accepted == messages) {
             t.connection().close();
+
+            if (connection_mode == "server") {
+                listener.stop();
+            }
         }
     }
 
     void on_message(proton::delivery& d, proton::message& m) override {
         assert (operation == "receive");
-        
+
         if (received == messages) {
             return;
         }
@@ -137,12 +137,11 @@ struct handler : public proton::messaging_handler {
         long rtime = now();
 
         std::cout << id << "," << stime << "," << rtime << "\n";
-        
+
         if (received == messages) {
             d.connection().close();
 
             if (connection_mode == "server") {
-                // XXX This should be close()
                 listener.stop();
             }
         }

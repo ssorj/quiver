@@ -7,9 +7,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -64,9 +64,9 @@ class Handler(MessagingHandler):
             self.listener = event.container.listen(domain)
         else:
             raise Exception()
-        
+
         self.body = b"x" * self.body_size
-        
+
     def on_connection_opened(self, event):
         if self.channel_mode == "active":
             if self.operation == "send":
@@ -75,12 +75,14 @@ class Handler(MessagingHandler):
                 event.container.create_receiver(event.connection, self.path)
             else:
                 raise Exception()
-            
+
     def on_sendable(self, event):
+        assert self.operation == "send"
+
         while event.sender.credit > 0 and self.sent < self.messages:
             id = self.sent + 1
             stime = now()
-            
+
             message = Message(self.body)
             message.id = id
             message.properties = dict() # XXX Obnoxious
@@ -90,10 +92,10 @@ class Handler(MessagingHandler):
             self.sent += 1
 
             sys.stdout.write("{},{}\n".format(id, stime))
-            
+
     def on_accepted(self, event):
         self.accepted += 1
-                
+
         if self.accepted == self.messages:
             event.connection.close()
 
@@ -101,15 +103,17 @@ class Handler(MessagingHandler):
                 self.listener.close()
 
     def on_message(self, event):
+        assert self.operation == "receive"
+
         if self.received == self.messages:
             return
 
         self.received += 1
-        
+
         message = event.message
         rtime = now()
         stime = event.message.properties["SendTime"]
-        
+
         sys.stdout.write("{},{},{}\n".format(message.id, stime, rtime))
 
         if self.received == self.messages:
@@ -133,12 +137,12 @@ def main():
 
     if handler.port == "-":
         handler.port = "5672"
-    
+
     container = Container(handler)
     container.container_id = sys.argv[4]
 
     container.run()
-    
+
 if __name__ == "__main__":
     try:
         main()
