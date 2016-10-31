@@ -66,11 +66,7 @@ help:
 clean:
 	rm -rf build
 	rm -rf install
-	rm -rf java/quiver-activemq-jms/target
-	rm -rf java/quiver-activemq-artemis-jms/target
-	rm -rf java/quiver-jms-driver/target
-	rm -rf java/quiver-qpid-jms/target
-	rm -rf java/quiver-vertx-proton/target
+	rm -rf $(find java -maxdepth 2 -type d -name target)
 
 .PHONY: build
 build: ${TARGETS}
@@ -115,7 +111,7 @@ build/java/quiver-vertx-proton.jar: java/quiver-vertx-proton/pom.xml $(shell fin
 build/java/%.jar: java/pom.xml java/quiver-jms-driver/pom.xml $(shell find java/quiver-jms-driver/src -type f)
 	@mkdir -p build/java
 	cd java/quiver-jms-driver && mvn install
-	cd java/ && mvn clean package
+	cd java && mvn clean package
 	cp java/$*/target/$*-${VERSION}-jar-with-dependencies.jar $@
 
 .PHONY: update-rhea
