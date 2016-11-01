@@ -55,7 +55,7 @@ struct handler : public proton::messaging_handler {
     int credit_window;
 
     proton::listener listener;
-    std::string body;
+    proton::binary body;
 
     int sent = 0;
     int received = 0;
@@ -103,7 +103,6 @@ struct handler : public proton::messaging_handler {
             proton::message m(body);
             m.id(id);
             m.properties().put("SendTime", stime);
-            m.message_annotations().put("x-opt-jms-msg-type", 3);
 
             s.send(m);
             sent++;
