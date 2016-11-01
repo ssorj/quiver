@@ -117,7 +117,7 @@ def _print_message(category, message, args):
     _message_output.flush()
 
 def _format_message(category, message, args):
-    if isinstance(message, BaseException):
+    if not isinstance(message, _types.StringTypes):
         message = str(message)
 
         if message == "":
