@@ -40,27 +40,34 @@ def main():
     parser.add_argument("sender", metavar="SENDER-IMPL")
     parser.add_argument("receiver", metavar="RECEIVER-IMPL")
     parser.add_argument("-m", "--messages", metavar="COUNT", default="1k")
-    parser.add_argument("--passive-receiver", action="store_true")
+    parser.add_argument("--peer-to-peer", action="store_true")
+    parser.add_argument("--sender-options", metavar="OPTIONS", default="")
+    parser.add_argument("--receiver-options", metavar="OPTIONS", default="")
     
     args = parser.parse_args()
 
     receiver_mode = ""
     
-    if args.passive_receiver:
-        receiver_mode = "--passive"
+    if args.peer_to_peer:
+        receiver_mode = "--server --passive"
     
     server_command = "{}/exec/amqp-test-broker --host 127.0.0.1 --port {}"
-    sender_command = "quiver-arrow send //127.0.0.1:{}/q0 --impl {} --messages {} --verbose"
-    receiver_command = "quiver-arrow receive //127.0.0.1:{}/q0 --impl {} --messages {} --verbose {}"
+    sender_command = "quiver-arrow send //127.0.0.1:{}/q0 --impl {} --messages {} --verbose {}"
+    receiver_command = "quiver-arrow receive //127.0.0.1:{}/q0 --impl {} --messages {} --verbose {} {}"
     
     port = random_port()
     exit_code = 0
-
-    server = start_process(server_command, home, port)
+    server = None
+    
+    if not args.peer_to_peer:
+        server = start_process(server_command, home, port)
 
     try:
-        sender = start_process(sender_command, port, args.sender, args.messages)
-        receiver = start_process(receiver_command, port, args.receiver, args.messages, receiver_mode)
+        sender = start_process(sender_command, port, args.sender,
+                               args.messages, args.sender_options)
+        receiver = start_process(receiver_command, port, args.receiver,
+                                 args.messages, args.receiver_options,
+                                 receiver_mode)
 
         sender_exit_code = wait_for_process(sender)
         receiver_exit_code = wait_for_process(receiver)
@@ -73,7 +80,9 @@ def main():
         traceback.print_exc()
         exit_code = 1
     finally:
-        stop_process(server)
+        if server is not None:
+            stop_process(server)
+            
         exit(exit_code)
 
 if __name__ == "__main__":

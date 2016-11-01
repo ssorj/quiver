@@ -35,7 +35,7 @@ function test_server_mode {
 
     echo -n "Testing server mode, sender ${sender_impl}, receiver ${receiver_impl} ... "
 
-    quiver-server-test $sender_impl $receiver_impl > /dev/null
+    quiver-impl-test --peer-to-peer $sender_impl $receiver_impl > /dev/null
     
     if (( $? == 0 )); then 
         echo PASSED
@@ -51,7 +51,7 @@ function test_client_mode {
 
     echo -n "Testing client mode, sender ${sender_impl}, receiver ${receiver_impl} ... "
 
-    quiver-client-test $sender_impl $receiver_impl > /dev/null
+    quiver-impl-test $sender_impl $receiver_impl > /dev/null
 
     if (( $? == 0 )); then 
         echo PASSED
