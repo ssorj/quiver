@@ -469,6 +469,9 @@ class working_dir(object):
     def __exit__(self, type, value, traceback):
         change_dir(self.prev_dir)
 
+def _new_pg():
+    _os.setpgid(0, 0)
+
 # XXX Move toward _start_process instead
 def _init_call(command, args, kwargs):
     assert command is not None
@@ -486,8 +489,8 @@ def _init_call(command, args, kwargs):
     else:
         raise Exception()
 
-    #if "preexec_fn" not in kwargs:
-    #    kwargs["preexec_fn"] = _os.setsid
+    if "preexec_fn" not in kwargs:
+        kwargs["preexec_fn"] = _new_pg
 
     # XXX close_fds in kwargs as well?
 
@@ -539,9 +542,7 @@ def stop_process(proc):
 
         return
 
-    # XXX Consider killpg here instead
-    # _os.killpg(_os.getpgid(proc.pid), _signal.SIGTERM)
-    proc.terminate()
+    _os.killpg(proc.pid, _signal.SIGTERM)
 
     return wait_for_process(proc)
 
