@@ -29,7 +29,6 @@ TARGETS := \
 	build/bin/quiver \
 	build/bin/quiver-arrow \
 	build/bin/quiver-impl-test \
-	build/bin/quiver-smoke-test \
 	build/bin/quiver-test \
 	build/exec/arrow-activemq-jms \
 	build/exec/arrow-activemq-artemis-jms \
@@ -89,7 +88,7 @@ devel: install
 
 .PHONY: test
 test: devel
-	quiver-smoke-test
+	quiver-test
 
 build/bin/%: bin/%.in
 	@mkdir -p build/bin

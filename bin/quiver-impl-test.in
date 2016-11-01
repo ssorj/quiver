@@ -63,11 +63,12 @@ def main():
         server = start_process(server_command, home, port)
 
     try:
-        sender = start_process(sender_command, port, args.sender,
-                               args.messages, args.sender_options)
         receiver = start_process(receiver_command, port, args.receiver,
                                  args.messages, args.receiver_options,
                                  receiver_mode)
+        sleep(0.2) # XXX
+        sender = start_process(sender_command, port, args.sender,
+                               args.messages, args.sender_options)
 
         sender_exit_code = wait_for_process(sender)
         receiver_exit_code = wait_for_process(receiver)

@@ -65,8 +65,9 @@ def test_impls(sender_impl, receiver_impl, failures, peer_to_peer=False):
 
     if peer_to_peer:
         options = "--peer-to-peer"
-
-    summary = "{}, {} ".format(sender_impl, receiver_impl)
+        summary = "{} -> {} ".format(sender_impl, receiver_impl)
+    else:
+        summary = "{} -> broker -> {} ".format(sender_impl, receiver_impl)
 
     print("{:.<73} ".format(summary), end="")
 
@@ -93,7 +94,7 @@ def main():
 
     failures = list()
 
-    print("# Testing client-server send and receive")
+    print("# Testing brokered send and receive")
 
     for sender_impl in amqp_sender_impls:
         for receiver_impl in amqp_client_server_receiver_impls:
