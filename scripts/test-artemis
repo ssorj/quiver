@@ -40,7 +40,7 @@ def main():
         if impl in ("activemq-artemis-jms", "activemq-jms"):
             queue_type = "jms-queue"
 
-    server = start_process("{} run > /dev/null", server_command)
+    server = start_process("{} run", server_command)
 
     sleep(5)
 
@@ -57,8 +57,13 @@ def main():
         error(e)
         exit_code = e.returncode
     finally:
-        call("{} stop > /dev/null", server_command)
+        try:
+            call("{} stop", server_command)
+        except CalledProcessError:
+            pass
+
         sleep(5)
+
         exit(exit_code)
 
 try:

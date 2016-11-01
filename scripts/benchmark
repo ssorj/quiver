@@ -68,22 +68,23 @@ def run_test(server, client, output_dir, args):
     if server == "artemis" and not is_dir(join(home_dir(), "artemis")):
         return
 
-    print("#")
-    print("# Testing client '{}' with server '{}'".format(client, server))
-    print("#")
-    flush()
+    notice("Testing server '{}' with client '{}'", server, client)
 
-    output_file = join(output_dir, "{}-{}.txt".format(server, client))
-    command = "scripts/test-{} --impl {} {}"
+    data_dir = join(output_dir, "{}--{}--data".format(server, client))
+    output_file = join(output_dir, "{}--{}--output.txt".format(server, client))
+    command = "scripts/test-{} --impl {} {} --output {} &> {}"
 
     try:
-        call(command, server, client, args, output_file)
+        call(command, server, client, args, data_dir, output_file)
     except CalledProcessError as e:
         error(e)
 
 def main():
     if "--impl" in ARGS:
         exit("The --impl argument is not allowed here")
+
+    if "--output" in ARGS:
+        exit("The --output argument is not allowed here")
 
     script = file_name(ARGS[0])
     timestamp = time.strftime('%Y-%m-%d', time.localtime())
