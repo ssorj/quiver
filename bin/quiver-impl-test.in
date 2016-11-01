@@ -51,7 +51,7 @@ def main():
     if args.peer_to_peer:
         receiver_mode = "--server --passive"
     
-    server_command = "{}/exec/amqp-test-broker 127.0.0.1:{}"
+    server_command = "{}/exec/amqp-test-broker 127.0.0.1:{} --verbose"
     sender_command = "quiver-arrow send //127.0.0.1:{}/q0 --impl {} --messages {} --verbose {}"
     receiver_command = "quiver-arrow receive //127.0.0.1:{}/q0 --impl {} --messages {} --verbose {} {}"
     
