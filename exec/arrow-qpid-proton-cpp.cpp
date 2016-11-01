@@ -103,8 +103,7 @@ struct handler : public proton::messaging_handler {
             proton::message m(body);
             m.id(id);
             m.properties().put("SendTime", stime);
-            //m.content_type("application/octet-stream");
-            //m.message_annotations().put("x-opt-jms-msg-type", 3);
+            m.message_annotations().put("x-opt-jms-msg-type", 3);
 
             s.send(m);
             sent++;
