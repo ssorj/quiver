@@ -86,6 +86,8 @@ class BrokerHandler(MessagingHandler):
         self.domain = domain
         self.queues = dict()
 
+        self.verbose = False
+
     def on_start(self, event):
         self.acceptor = event.container.listen(self.domain)
 
@@ -168,10 +170,14 @@ def main():
 
     parser.add_argument("domain", metavar="DOMAIN", default="localhost:5672",
                         help="Listen at DOMAIN (default localhost:5672)")
+    parser.add_argument("--verbose", action="store_true")
 
     args = parser.parse_args()
 
-    container = Container(BrokerHandler(args.domain))
+    handler = BrokerHandler(args.domain)
+    handler.verbose = args.verbose
+
+    container = Container(handler)
     container.container_id = "amqp-test-broker"
 
     container.run()
