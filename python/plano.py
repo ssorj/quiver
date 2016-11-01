@@ -43,11 +43,30 @@ from subprocess import CalledProcessError
 
 # See documentation at http://www.ssorj.net/projects/plano.html
 
+_message_levels = (
+    "debug",
+    "notice",
+    "warn",
+    "error",
+)
+
+_debug = _message_levels.index("debug")
+_notice = _message_levels.index("notice")
+_warn = _message_levels.index("warn")
+_error = _message_levels.index("error")
+
 _message_output = _sys.stderr
+_message_threshold = _notice
 
 def set_message_output(writeable):
     global _message_output
     _message_output = writeable
+
+def set_message_threshold(level):
+    assert level in _message_levels
+
+    global _message_threshold
+    _message_threshold = _message_levels.index(level)
 
 def fail(message, *args):
     error(message, *args)
@@ -61,12 +80,17 @@ def error(message, *args):
     _print_message("Error", message, args)
 
 def warn(message, *args):
-    _print_message("Warn", message, args)
+    if _message_threshold <= _warn:
+        _print_message("Warn", message, args)
 
 def notice(message, *args):
-    _print_message(None, message, args)
+    if _message_threshold <= _notice:
+        _print_message(None, message, args)
 
 def debug(message, *args):
+    if _message_threshold <= _debug:
+        return
+
     _print_message("Debug", message, args)
 
 def exit(arg=None, *args):
@@ -83,6 +107,9 @@ def exit(arg=None, *args):
         raise Exception()
 
 def _print_message(category, message, args):
+    if _message_output is None:
+        return
+
     message = _format_message(category, message, args)
 
     print(message, file=_message_output)
@@ -272,7 +299,10 @@ def prepend_temp(key, string):
     file = _get_temp_file(key)
     return prepend(file, string)
 
-def make_temp(key):
+def make_temp(key=None):
+    if key is None:
+        key = unique_id(4)
+
     return append_temp(key, "")
 
 def open_temp(key, mode="r"):
