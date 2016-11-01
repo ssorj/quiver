@@ -42,6 +42,8 @@ class Queue(object):
         self.messages = collections.deque()
         self.consumers = list()
 
+        notice("Creating {}", self)
+
     def __repr__(self):
         return "queue '{}'".format(self.address)
 
@@ -49,14 +51,14 @@ class Queue(object):
         assert link.is_sender
         assert link not in self.consumers
 
-        notice("Adding consumer to {}", self)
+        notice("Adding consumer for '{}' to {}", link.connection.remote_container, self)
 
         self.consumers.append(link)
 
     def remove_consumer(self, link):
         assert link.is_sender
 
-        notice("Removing consumer from {}", self)
+        notice("Removing consumer for '{}' from {}", link.connection.remote_container, self)
 
         try:
             self.consumers.remove(link)
@@ -87,7 +89,7 @@ class BrokerHandler(MessagingHandler):
     def on_start(self, event):
         self.acceptor = event.container.listen(self.domain)
 
-        notice("Listening on {}", self.domain)
+        notice("Listening on '{}'", self.domain)
 
     def get_queue(self, address):
         try:
@@ -120,12 +122,23 @@ class BrokerHandler(MessagingHandler):
 
     def on_link_closing(self, event):
         if event.link.is_sender:
-            self.remove_consumer(event.link)
+            queue = self.queues[link.source.address]
+            queue.remove_consumer(link)
+
+    def on_connection_opening(self, event):
+        notice("Opening connection from '{}'", event.connection.remote_container)
+
+        # XXX I think this should happen automatically
+        event.connection.container = event.container.container_id
 
     def on_connection_closing(self, event):
+        notice("Closing connection from '{}'", event.connection.remote_container)
+
         self.remove_consumers(event.connection)
 
     def on_disconnected(self, event):
+        notice("Disconnected from {}", event.connection.remote_container)
+
         self.remove_consumers(event.connection)
 
     def remove_consumers(self, connection):
@@ -133,10 +146,8 @@ class BrokerHandler(MessagingHandler):
 
         while link is not None:
             if link.is_sender:
-                queue = self.queues.get(link.source.address)
-
-                if queue is not None:
-                    queue.remove_consumer(link)
+                queue = self.queues[link.source.address]
+                queue.remove_consumer(link)
 
             link = link.next(Endpoint.REMOTE_ACTIVE)
 
@@ -155,15 +166,12 @@ def main():
     description = "A simple AMQP message broker for testing"
     parser = ArgumentParser(description=description)
 
-    parser.add_argument("--host", metavar="HOST", default="localhost",
-                        help="Listen at HOST (default localhost)")
-    parser.add_argument("--port", metavar="PORT", default="5672",
-                        help="Listen at PORT (default 5672)")
+    parser.add_argument("domain", metavar="DOMAIN", default="localhost:5672",
+                        help="Listen at DOMAIN (default localhost:5672)")
 
     args = parser.parse_args()
-    interface = "{}:{}".format(args.host, args.port)
 
-    container = Container(BrokerHandler(interface))
+    container = Container(BrokerHandler(args.domain))
     container.container_id = "amqp-test-broker"
 
     container.run()
