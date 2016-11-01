@@ -43,7 +43,7 @@ amqp_sender_impls = (
     "vertx-proton",
 )
 
-amqp_client_server_receiver_impls = (
+amqp_client_receiver_impls = (
     "qpid-jms",
     "qpid-messaging-cpp",
     "qpid-messaging-python",
@@ -53,7 +53,7 @@ amqp_client_server_receiver_impls = (
     "vertx-proton",
 )
 
-amqp_peer_to_peer_receiver_impls = (
+amqp_server_receiver_impls = (
     "qpid-proton-cpp",
     "qpid-proton-python",
     "rhea",
@@ -97,13 +97,13 @@ def main():
     print("# Testing brokered send and receive")
 
     for sender_impl in amqp_sender_impls:
-        for receiver_impl in amqp_client_server_receiver_impls:
+        for receiver_impl in amqp_client_receiver_impls:
             test_impls(sender_impl, receiver_impl, failures)
 
     print("# Testing peer-to-peer send and receive")
 
     for sender_impl in amqp_sender_impls:
-        for receiver_impl in amqp_peer_to_peer_receiver_impls:
+        for receiver_impl in amqp_server_receiver_impls:
             test_impls(sender_impl, receiver_impl, failures, peer_to_peer=True)
 
     print("# Test failures: {}".format(len(failures)))
