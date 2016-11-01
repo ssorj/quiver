@@ -58,6 +58,7 @@ def main():
         exit_code = e.returncode
     finally:
         call("{} stop > /dev/null", server_command)
+        sleep(5)
         exit(exit_code)
 
 try:

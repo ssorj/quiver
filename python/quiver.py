@@ -178,8 +178,8 @@ class _Command(object):
                                  help="Send message bodies containing COUNT bytes",
                                  default="100")
         self.parser.add_argument("--credit", metavar="COUNT",
-                                 help="Sustain credit for COUNT incoming transfers",
-                                 default="1k")
+                                 help="Sustain credit for COUNT incoming messages",
+                                 default="100")
         self.parser.add_argument("--timeout", metavar="SECONDS",
                                  help="Fail after SECONDS without transfers",
                                  default="10")
@@ -402,8 +402,6 @@ class QuiverArrowCommand(_Command):
     def init(self):
         super(QuiverArrowCommand, self).init()
 
-        _os.setsid()
-
         try:
             self.impl = _impls_by_name[self.args.impl]
         except KeyError:
@@ -492,36 +490,14 @@ class QuiverArrowCommand(_Command):
         with open(self.transfers_file, "wb") as fout:
             self.vprint("Calling '{}'", " ".join(args))
 
-            proc = _subprocess.Popen(args, stdout=fout)
+            proc = _subprocess.Popen(args, stdout=fout, preexec_fn=_new_pg)
 
-            self.vprint("Process {} ({}) started", proc.pid, self.operation)
-
-            snap = _StatusSnapshot(self, None)
-            snap.timestamp = now()
-
-            self.start_time = snap.timestamp
-            self.timeout_checkpoint = snap
-
-            sleep = 2.0
-
-            with open(self.transfers_file, "rb") as fin:
-                with open(self.snapshots_file, "ab") as fout:
-                    while proc.poll() is None:
-                        _time.sleep(sleep)
-
-                        period_start = _time.time()
-
-                        snap.previous = None
-                        snap = _StatusSnapshot(self, snap)
-                        snap.capture(fin, proc)
-
-                        fout.write(snap.marshal())
-                        fout.flush()
-
-                        self.check_timeout(snap, proc)
-
-                        period = _time.time() - period_start
-                        sleep = max(1.0, 2.0 - period)
+            try:
+                self.vprint("Process {} ({}) started", proc.pid, self.operation)
+                self.monitor_subprocess(proc)
+            except:
+                _os.killpg(proc.pid, _signal.SIGTERM)
+                raise
 
             if proc.returncode == 0:
                 m = "Process {} ({}) exited normally"
@@ -539,18 +515,41 @@ class QuiverArrowCommand(_Command):
 
         _compress_file(self.transfers_file)
 
-    def check_timeout(self, snap, proc):
+    def monitor_subprocess(self, proc):
+        snap = _StatusSnapshot(self, None)
+        snap.timestamp = now()
+
+        self.start_time = snap.timestamp
+        self.timeout_checkpoint = snap
+
+        sleep = 2.0
+
+        with open(self.transfers_file, "rb") as fin:
+            with open(self.snapshots_file, "ab") as fsnaps:
+                while proc.poll() is None:
+                    _time.sleep(sleep)
+
+                    period_start = _time.time()
+
+                    snap.previous = None
+                    snap = _StatusSnapshot(self, snap)
+                    snap.capture(fin, proc)
+
+                    fsnaps.write(snap.marshal())
+                    fsnaps.flush()
+
+                    self.check_timeout(snap)
+
+                    period = _time.time() - period_start
+                    sleep = max(1.0, 2.0 - period)
+
+    def check_timeout(self, snap):
         checkpoint = self.timeout_checkpoint
         since = (snap.timestamp - checkpoint.timestamp) / 1000
 
         if snap.count == checkpoint.count and since > self.timeout:
-            m = "Process {} ({}) timed out"
-            m = m.format(proc.pid, self.operation)
-            eprint(m)
-
-            _os.killpg(_os.getpgid(proc.pid), _signal.SIGTERM)
-
-            raise QuiverException(m)
+            m = "{} timed out".format(self.operation.capitalize())
+            raise QuiverError(m)
 
         if snap.count > checkpoint.count:
             self.timeout_checkpoint = snap
@@ -811,6 +810,9 @@ def _read_lines(file_):
 def _compress_file(path):
     args = "xz", "--compress", "-0", "--threads", "0", path
     _subprocess.check_call(args)
+
+def _new_pg():
+    _os.setpgid(0, 0)
 
 _join = _os.path.join
 

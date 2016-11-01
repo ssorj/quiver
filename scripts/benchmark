@@ -7,9 +7,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -68,6 +68,11 @@ def run_test(server, client, output_dir, args):
     if server == "artemis" and not is_dir(join(home_dir(), "artemis")):
         return
 
+    print("#")
+    print("# Testing client '{}' with server '{}'".format(client, server))
+    print("#")
+    flush()
+
     output_file = join(output_dir, "{}-{}.txt".format(server, client))
     command = "scripts/test-{} --impl {} {}"
 
@@ -79,7 +84,7 @@ def run_test(server, client, output_dir, args):
 def main():
     if "--impl" in ARGS:
         exit("The --impl argument is not allowed here")
-    
+
     script = file_name(ARGS[0])
     timestamp = time.strftime('%Y-%m-%d', time.localtime())
     output_dir = "{}-{}".format(script, timestamp)
@@ -100,9 +105,9 @@ def main():
     for server in openwire_servers:
         for client in openwire_clients:
             run_test(server, client, output_dir, args)
-    
+
     print(output_dir)
-            
+
     for name in (list_dir(output_dir)):
         print("  {}".format(name))
 
