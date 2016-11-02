@@ -70,14 +70,20 @@ def run_test(server, client, output_dir, args):
 
     notice("Testing server '{}' with client '{}'", server, client)
 
-    data_dir = join(output_dir, "{}--{}--data".format(server, client))
-    output_file = join(output_dir, "{}--{}--output.txt".format(server, client))
+    test_dir = join(output_dir, "{}--{}".format(server, client))
+    data_dir = join(test_dir, "data")
+    output_file = join(test_dir, "output.txt")
+    result_file = join(test_dir, "result.txt")
     command = "scripts/test-{} --impl {} {} --output {} &> {}"
+
+    make_dir(test_dir)
 
     try:
         call(command, server, client, args, data_dir, output_file)
+        write(result_file, "SUCCESS")
     except CalledProcessError as e:
         error(e)
+        write(result_file, "FAILURE: {}".format(e))
 
 def main():
     if "--impl" in ARGS:

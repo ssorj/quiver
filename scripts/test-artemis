@@ -44,7 +44,7 @@ def main():
 
     sleep(5)
 
-    command = "{} destination create --name q0 --type {} > /dev/null"
+    command = "{} destination create --name q0 --type {}"
     call(command, server_command, queue_type)
 
     command = "quiver //localhost/q0 {}"
