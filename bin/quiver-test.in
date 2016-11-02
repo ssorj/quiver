@@ -33,32 +33,6 @@ sys.path.insert(0, os.path.join(home, "python"))
 
 from plano import *
 
-amqp_sender_impls = (
-    "qpid-jms",
-    "qpid-messaging-cpp",
-    "qpid-messaging-python",
-    "qpid-proton-cpp",
-    "qpid-proton-python",
-    "rhea",
-    "vertx-proton",
-)
-
-amqp_client_receiver_impls = (
-    "qpid-jms",
-    "qpid-messaging-cpp",
-    "qpid-messaging-python",
-    "qpid-proton-cpp",
-    "qpid-proton-python",
-    "rhea",
-    "vertx-proton",
-)
-
-amqp_server_receiver_impls = (
-    "qpid-proton-cpp",
-    "qpid-proton-python",
-    "rhea",
-)
-
 def test_impls(sender_impl, receiver_impl, failures, peer_to_peer=False):
     options = ""
     temp_file = make_temp()
@@ -92,17 +66,45 @@ def test_impls(sender_impl, receiver_impl, failures, peer_to_peer=False):
 def main():
     set_message_threshold("warn")
 
+    amqp_sender_impls = [
+        "qpid-jms",
+        "qpid-messaging-cpp",
+        "qpid-messaging-python",
+        "qpid-proton-python",
+        "rhea",
+        "vertx-proton",
+    ]
+
+    amqp_client_receiver_impls = [
+        "qpid-jms",
+        "qpid-messaging-cpp",
+        "qpid-messaging-python",
+        "qpid-proton-python",
+        "rhea",
+        "vertx-proton",
+    ]
+
+    amqp_server_receiver_impls = [
+        "qpid-proton-python",
+        "rhea",
+    ]
+
+    if exists(join(home, "exec", "arrow-qpid-proton-cpp")):
+        amqp_sender_impls.append("qpid-proton-cpp")
+        amqp_client_receiver_impls.append("qpid-proton-cpp")
+        amqp_server_receiver_impls.append("qpid-proton-cpp")
+
     failures = list()
 
     print("# Testing brokered send and receive")
 
-    for sender_impl in amqp_sender_impls:
+    for sender_impl in sorted(amqp_sender_impls):
         for receiver_impl in amqp_client_receiver_impls:
             test_impls(sender_impl, receiver_impl, failures)
 
     print("# Testing peer-to-peer send and receive")
 
-    for sender_impl in amqp_sender_impls:
+    for sender_impl in sorted(amqp_sender_impls):
         for receiver_impl in amqp_server_receiver_impls:
             test_impls(sender_impl, receiver_impl, failures, peer_to_peer=True)
 
