@@ -115,6 +115,7 @@ build/java/%.jar: java/pom.xml java/quiver-jms-driver/pom.xml $(shell find java/
 
 .PHONY: update-rhea
 update-rhea:
+	rm -rf javascript/node_modules/rhea
 	npm install rhea --prefix javascript
 
 .PHONY: update-plano
