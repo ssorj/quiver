@@ -120,13 +120,11 @@ def _format_message(category, message, args):
     if not isinstance(message, _types.StringTypes):
         message = str(message)
 
-        if message == "":
-            message = message.__class__.__name__
-
     if args:
         message = message.format(*args)
 
-    message = message.capitalize()
+    if len(message) > 0 and message[0].islower():
+        message = message[0].upper() + message[1:]
 
     if category:
         message = "{0}: {1}".format(category, message)
@@ -193,8 +191,15 @@ def name_extension(file):
 
     return ext
 
-def program_name():
-    return file_name(ARGS[0])
+def program_name(command=None):
+    if command is None:
+        args = ARGS
+    else:
+        args = command.split()
+
+    for arg in args:
+        if "=" not in arg:
+            return file_name(arg)
 
 def read(file):
     with _codecs.open(file, encoding="utf-8", mode="r") as f:
@@ -523,7 +528,7 @@ class _Process(_subprocess.Popen):
         try:
             self.name = kwargs["name"]
         except KeyError:
-            self.name = file_name(command.split(" ")[0])
+            self.name = program_name(command)
 
     def __repr__(self):
         return "process {} ({})".format(self.pid, self.name)
