@@ -22,6 +22,7 @@
 "use strict";
 
 var rhea = require("@quiver_home@/javascript/node_modules/rhea");
+var types = require("@quiver_home@/javascript/node_modules/rhea/lib/types.js");
 
 var container = rhea.create_container({id: process.argv[5]});
 
@@ -41,7 +42,7 @@ for (var i = 0; i < a.length; i++) {
     a[i] = 120;
 }
 
-var body = new Uint8Array(a);
+var body = types.wrap_binary(new Uint8Array(a));
 
 var sent = 0;
 var received = 0;
@@ -88,7 +89,7 @@ container.on("connection_open", function(context) {
 container.on("sendable", function(context) {
     while (context.sender.sendable() && sent < messages) {
         var id = sent + 1;
-        var stime = new Date().getTime();
+        var stime = types.wrap_long(new Date().getTime());
 
         var message = {
             id: id,
