@@ -42,7 +42,9 @@ def main():
     parser.add_argument("-m", "--messages", metavar="COUNT", default="1k")
     parser.add_argument("--peer-to-peer", action="store_true")
     parser.add_argument("--sender-options", metavar="OPTIONS", default="")
+    parser.add_argument("--sender-prelude", metavar="COMMAND", default="")
     parser.add_argument("--receiver-options", metavar="OPTIONS", default="")
+    parser.add_argument("--receiver-prelude", metavar="COMMAND", default="")
     
     args = parser.parse_args()
 
@@ -52,8 +54,8 @@ def main():
         receiver_mode = "--server --passive"
     
     server_command = "{}/exec/amqp-test-broker 127.0.0.1:{} --verbose"
-    sender_command = "quiver-arrow send //127.0.0.1:{}/q0 --impl {} --messages {} --verbose {}"
-    receiver_command = "quiver-arrow receive //127.0.0.1:{}/q0 --impl {} --messages {} --verbose {} {}"
+    sender_command = "{} quiver-arrow send //127.0.0.1:{}/q0 --impl {} --messages {} --verbose {}"
+    receiver_command = "{} quiver-arrow receive //127.0.0.1:{}/q0 --impl {} --messages {} --verbose {} {}"
     
     port = random_port()
     exit_code = 0
@@ -63,12 +65,13 @@ def main():
         server = start_process(server_command, home, port)
 
     try:
-        receiver = start_process(receiver_command, port, args.receiver,
-                                 args.messages, args.receiver_options,
-                                 receiver_mode)
+        receiver = start_process(receiver_command, args.receiver_prelude,
+                                 port, args.receiver, args.messages,
+                                 args.receiver_options, receiver_mode)
         sleep(0.2) # XXX
-        sender = start_process(sender_command, port, args.sender,
-                               args.messages, args.sender_options)
+        sender = start_process(sender_command, args.sender_prelude,
+                               port, args.sender, args.messages,
+                               args.sender_options)
 
         sender_exit_code = wait_for_process(sender)
         receiver_exit_code = wait_for_process(receiver)
