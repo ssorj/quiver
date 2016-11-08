@@ -44,7 +44,7 @@ If the user doesn't supply an explicit `port`, the wrapper will pass a
 hyphen (`-`) for that parameter.  The implementation must determine
 what default port value to use.
 
-Each unit of `credit_window` represents one message (not one byte).
+Each unit of `credit-window` represents one message (not one byte).
 
 ## Output
 
@@ -107,7 +107,7 @@ They must also set an application property named `SendTime` containing
 a `long` representing the send time in milliseconds.
 
 By convention, message bodies are filled with as many `x`s as
-indicated by the `payload_size` parameter.  The `x` should be a single
+indicated by the `boxy-size` parameter.  The `x` should be a single
 byte, not a multi-byte Unicode character.
 
 Sent messages must be non-durable and configured for
