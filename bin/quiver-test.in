@@ -33,7 +33,7 @@ sys.path.insert(0, os.path.join(home, "python"))
 
 from plano import *
 
-def test_impls(sender_impl, receiver_impl, failures, peer_to_peer=False):
+def run_test(sender_impl, receiver_impl, failures, peer_to_peer=False):
     options = [
         "--verbose",
         "--messages", "1k",
@@ -71,7 +71,18 @@ def test_impls(sender_impl, receiver_impl, failures, peer_to_peer=False):
 def main():
     set_message_threshold("warn")
 
-    amqp_sender_impls = [
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--sender-impl", metavar="IMPL", default=None,
+                        help="Test only IMPL sender")
+    parser.add_argument("--receiver-impl", metavar="IMPL", default=None,
+                        help="Test only IMPL receiver")
+    parser.add_argument("--init-only", action="store_true",
+                        help="Initialize and immediately exit")
+
+    args = parser.parse_args()
+
+    sender_impls = [
         "qpid-jms",
         "qpid-messaging-cpp",
         "qpid-messaging-python",
@@ -80,7 +91,7 @@ def main():
         "vertx-proton",
     ]
 
-    amqp_client_receiver_impls = [
+    receiver_impls = [
         "qpid-jms",
         "qpid-messaging-cpp",
         "qpid-messaging-python",
@@ -89,29 +100,47 @@ def main():
         "vertx-proton",
     ]
 
-    amqp_server_receiver_impls = [
+    server_receiver_impls = {
         "qpid-proton-python",
         "rhea",
-    ]
+    }
 
     if exists(join(home, "exec", "arrow-qpid-proton-cpp")):
-        amqp_sender_impls.append("qpid-proton-cpp")
-        amqp_client_receiver_impls.append("qpid-proton-cpp")
-        amqp_server_receiver_impls.append("qpid-proton-cpp")
+        sender_impls.append("qpid-proton-cpp")
+        receiver_impls.append("qpid-proton-cpp")
+        server_receiver_impls.add("qpid-proton-cpp")
+
+    if args.sender_impl is not None:
+        if args.sender_impl not in sender_impls:
+            parser.error("Unknown sender impl '{}'".format(args.sender_impl))
+
+        sender_impls = [args.sender_impl]
+
+    if args.receiver_impl is not None:
+        if args.receiver_impl not in receiver_impls:
+            parser.error("Unknown receiver impl '{}'".format(args.receiver_impl))
+
+        receiver_impls = [args.receiver_impl]
+
+    if args.init_only:
+        return
 
     failures = list()
 
     print("# Testing brokered send and receive")
 
-    for sender_impl in sorted(amqp_sender_impls):
-        for receiver_impl in amqp_client_receiver_impls:
-            test_impls(sender_impl, receiver_impl, failures)
+    for sender_impl in sorted(sender_impls):
+        for receiver_impl in receiver_impls:
+            run_test(sender_impl, receiver_impl, failures)
 
     print("# Testing peer-to-peer send and receive")
 
-    for sender_impl in sorted(amqp_sender_impls):
-        for receiver_impl in amqp_server_receiver_impls:
-            test_impls(sender_impl, receiver_impl, failures, peer_to_peer=True)
+    for sender_impl in sorted(sender_impls):
+        for receiver_impl in receiver_impls:
+            if receiver_impl not in server_receiver_impls:
+                continue
+
+            run_test(sender_impl, receiver_impl, failures, peer_to_peer=True)
 
     print("# Test failures: {}".format(len(failures)))
 
