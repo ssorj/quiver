@@ -34,11 +34,14 @@ sys.path.insert(0, os.path.join(home, "python"))
 from plano import *
 
 def test_impls(sender_impl, receiver_impl, failures, peer_to_peer=False):
-    options = ""
+    options = [
+        "--verbose",
+        "--messages", "1k",
+    ]
     temp_file = make_temp()
 
     if peer_to_peer:
-        options = "--peer-to-peer"
+        options.append("--peer-to-peer")
         summary = "{} -> {} ".format(sender_impl, receiver_impl)
     else:
         summary = "{} -> broker -> {} ".format(sender_impl, receiver_impl)
@@ -47,9 +50,11 @@ def test_impls(sender_impl, receiver_impl, failures, peer_to_peer=False):
 
     flush()
 
+    options = " ".join(options)
+    command = "quiver-impl-test {} {} {} &> {}"
+
     try:
-        command = "quiver-impl-test {} {} {} &> {}"
-        call(command, options, sender_impl, receiver_impl, temp_file)
+        call(command, sender_impl, receiver_impl, options, temp_file)
 
         print("PASSED")
     except CalledProcessError as e:

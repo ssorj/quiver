@@ -7,9 +7,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -25,6 +25,7 @@ from __future__ import with_statement
 
 import argparse
 import os
+import shlex
 import sys
 import traceback
 
@@ -37,41 +38,65 @@ def main():
     set_message_output(sys.stdout)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("sender", metavar="SENDER-IMPL")
-    parser.add_argument("receiver", metavar="RECEIVER-IMPL")
-    parser.add_argument("-m", "--messages", metavar="COUNT", default="1k")
+
+    parser.add_argument("sender_impl", metavar="SENDER-IMPL")
+    parser.add_argument("receiver_impl", metavar="RECEIVER-IMPL")
     parser.add_argument("--peer-to-peer", action="store_true")
     parser.add_argument("--sender-options", metavar="OPTIONS", default="")
-    parser.add_argument("--sender-prelude", metavar="COMMAND", default="")
+    parser.add_argument("--sender-prelude", metavar="PRELUDE", default=None)
     parser.add_argument("--receiver-options", metavar="OPTIONS", default="")
-    parser.add_argument("--receiver-prelude", metavar="COMMAND", default="")
-    
-    args = parser.parse_args()
+    parser.add_argument("--receiver-prelude", metavar="PRELUDE", default=None)
 
-    receiver_mode = ""
-    
+    args, unknown_args = parser.parse_known_args()
+
+    sender_options = shlex.split(args.sender_options)
+    receiver_options = shlex.split(args.receiver_options)
+
     if args.peer_to_peer:
-        receiver_mode = "--server --passive"
-    
-    server_command = "{}/exec/amqp-test-broker 127.0.0.1:{} --verbose"
-    sender_command = "{} quiver-arrow send //127.0.0.1:{}/q0 --impl {} --messages {} --verbose {}"
-    receiver_command = "{} quiver-arrow receive //127.0.0.1:{}/q0 --impl {} --messages {} --verbose {} {}"
-    
+        receiver_options.append("--server")
+        receiver_options.append("--passive")
+
+    if "--impl" in unknown_args:
+        parser.error("The --impl option isn't allowed here")
+
     port = random_port()
+
+    server_command = "{}/exec/amqp-test-broker 127.0.0.1:{}".format(home, port)
+
+    sender_command = [
+        "quiver-arrow", "send",
+        "//127.0.0.1:{}/q0".format(port),
+        "--impl", args.sender_impl,
+    ]
+
+    receiver_command = [
+        "quiver-arrow", "receive",
+        "//127.0.0.1:{}/q0".format(port),
+        "--impl", args.receiver_impl,
+    ]
+
+    if args.sender_prelude is not None:
+        sender_command.insert(0, args.sender_prelude)
+
+    if args.receiver_prelude is not None:
+        receiver_command.insert(0, args.receiver_prelude)
+
+    sender_command += sender_options
+    sender_command += unknown_args
+    receiver_command += receiver_options
+    receiver_command += unknown_args
+
     exit_code = 0
     server = None
-    
-    if not args.peer_to_peer:
-        server = start_process(server_command, home, port)
 
     try:
-        receiver = start_process(receiver_command, args.receiver_prelude,
-                                 port, args.receiver, args.messages,
-                                 args.receiver_options, receiver_mode)
-        sleep(0.2) # XXX
-        sender = start_process(sender_command, args.sender_prelude,
-                               port, args.sender, args.messages,
-                               args.sender_options)
+        if args.peer_to_peer:
+            receiver = start_process(receiver_command)
+            sender = start_process(sender_command)
+        else:
+            server = start_process(server_command)
+            sender = start_process(sender_command)
+            receiver = start_process(receiver_command)
 
         sender_exit_code = wait_for_process(sender)
         receiver_exit_code = wait_for_process(receiver)
@@ -86,7 +111,7 @@ def main():
     finally:
         if server is not None:
             stop_process(server)
-            
+
         exit(exit_code)
 
 if __name__ == "__main__":
