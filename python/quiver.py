@@ -29,6 +29,7 @@ import json as _json
 import numpy as _numpy
 import os as _os
 import resource as _resource
+import shlex as _shlex
 import signal as _signal
 import subprocess as _subprocess
 import sys as _sys
@@ -398,6 +399,8 @@ class QuiverArrowCommand(_Command):
                                  help="Operate in server mode")
         self.parser.add_argument("--passive", action="store_true",
                                  help="Operate in passive mode")
+        self.parser.add_argument("--prelude", metavar="PRELUDE", default="",
+                                 help="Commands to precede the impl invocation")
 
     def init(self):
         super(QuiverArrowCommand, self).init()
@@ -410,19 +413,20 @@ class QuiverArrowCommand(_Command):
             m = "Warning: Implementation '{}' is unknown".format(self.args.impl)
             eprint(m)
 
-        self.connection_mode = "client"
-        self.channel_mode = "active"
         self.operation = self.args.operation
         self.id_ = self.args.id
+        self.connection_mode = "client"
+        self.channel_mode = "active"
+        self.prelude = _shlex.split(self.args.prelude)
+
+        if self.id_ is None:
+            self.id_ = "quiver-{}".format(_unique_id(4))
 
         if self.args.server:
             self.connection_mode = "server"
 
         if self.args.passive:
             self.channel_mode = "passive"
-
-        if self.id_ is None:
-            self.id_ = "quiver-{}".format(_unique_id(4))
 
         url = _urlparse(self.address)
 
@@ -471,7 +475,8 @@ class QuiverArrowCommand(_Command):
         self.latency_nines = None
 
     def run(self):
-        args = (
+        args = self.prelude
+        args += [
             self.impl_file,
             self.connection_mode,
             self.channel_mode,
@@ -483,7 +488,7 @@ class QuiverArrowCommand(_Command):
             str(self.messages),
             str(self.body_size),
             str(self.credit_window),
-        )
+        ]
 
         assert None not in args, args
 

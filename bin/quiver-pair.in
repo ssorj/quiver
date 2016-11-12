@@ -44,15 +44,14 @@ def main():
     parser.add_argument("--impl", metavar="IMPL", default="qpid-proton-python")
     parser.add_argument("--sender-impl", metavar="IMPL", default=None)
     parser.add_argument("--sender-options", metavar="OPTIONS", default="")
-    parser.add_argument("--sender-prelude", metavar="PRELUDE", default=None)
     parser.add_argument("--receiver-impl", metavar="IMPL", default=None)
     parser.add_argument("--receiver-options", metavar="OPTIONS", default="")
-    parser.add_argument("--receiver-prelude", metavar="PRELUDE", default=None)
 
     args, unknown_args = parser.parse_known_args()
 
     sender_impl = args.sender_impl
     sender_options = shlex.split(args.sender_options)
+
     receiver_impl = args.receiver_impl
     receiver_options = shlex.split(args.receiver_options)
 
@@ -64,12 +63,6 @@ def main():
 
     sender_command = ["quiver-arrow", "send", args.address, "--impl", sender_impl]
     receiver_command = ["quiver-arrow", "receive", args.address, "--impl", receiver_impl]
-
-    if args.sender_prelude is not None:
-        sender_command.insert(0, args.sender_prelude)
-
-    if args.receiver_prelude is not None:
-        receiver_command.insert(0, args.receiver_prelude)
 
     sender_command += sender_options
     sender_command += unknown_args
