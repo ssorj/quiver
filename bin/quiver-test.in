@@ -38,7 +38,6 @@ def run_test(sender_impl, receiver_impl, failures, peer_to_peer=False):
         "--verbose",
         "--messages", "1k",
     ]
-    temp_file = make_temp()
 
     if peer_to_peer:
         options.append("--peer-to-peer")
@@ -50,8 +49,9 @@ def run_test(sender_impl, receiver_impl, failures, peer_to_peer=False):
 
     flush()
 
+    command = "quiver-pair {} {} {} &> {}"
     options = " ".join(options)
-    command = "quiver-impl-test {} {} {} &> {}"
+    temp_file = make_temp()
 
     try:
         call(command, sender_impl, receiver_impl, options, temp_file)
@@ -74,9 +74,9 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--sender-impl", metavar="IMPL", default=None,
-                        help="Test only IMPL sender")
+                        help="Test only sender IMPL")
     parser.add_argument("--receiver-impl", metavar="IMPL", default=None,
-                        help="Test only IMPL receiver")
+                        help="Test only receiver IMPL")
     parser.add_argument("--init-only", action="store_true",
                         help="Initialize and immediately exit")
 
