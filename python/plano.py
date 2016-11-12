@@ -528,7 +528,12 @@ class _Process(_subprocess.Popen):
         try:
             self.name = kwargs["name"]
         except KeyError:
-            self.name = program_name(command)
+            if isinstance(command, _types.StringTypes):
+                self.name = program_name(command)
+            elif isinstance(command, _collections.Iterable):
+                self.name = command[0]
+            else:
+                raise Exception()
 
     def __repr__(self):
         return "process {} ({})".format(self.pid, self.name)
