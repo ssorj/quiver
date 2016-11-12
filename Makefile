@@ -29,6 +29,7 @@ TARGETS := \
 	build/bin/quiver \
 	build/bin/quiver-arrow \
 	build/bin/quiver-pair \
+	build/bin/quiver-pair-test \
 	build/bin/quiver-test \
 	build/exec/arrow-activemq-jms \
 	build/exec/arrow-activemq-artemis-jms \

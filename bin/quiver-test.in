@@ -35,12 +35,15 @@ from plano import *
 
 def run_test(sender_impl, receiver_impl, failures, peer_to_peer=False):
     options = [
-        "--verbose",
+        "--sender-impl", sender_impl,
+        "--receiver-impl", receiver_impl,
         "--messages", "1k",
+        "--verbose",
     ]
 
     if peer_to_peer:
         options.append("--peer-to-peer")
+
         summary = "{} -> {} ".format(sender_impl, receiver_impl)
     else:
         summary = "{} -> broker -> {} ".format(sender_impl, receiver_impl)
@@ -49,12 +52,12 @@ def run_test(sender_impl, receiver_impl, failures, peer_to_peer=False):
 
     flush()
 
-    command = "quiver-pair {} {} {} &> {}"
+    command = "quiver-pair-test {} &> {}"
     options = " ".join(options)
     temp_file = make_temp()
 
     try:
-        call(command, sender_impl, receiver_impl, options, temp_file)
+        call(command, options, temp_file)
 
         print("PASSED")
     except CalledProcessError as e:
