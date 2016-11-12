@@ -490,7 +490,8 @@ def _init_call(command, args, kwargs):
 
         notice("Calling '{0}'", command)
     elif isinstance(command, _collections.Iterable):
-        notice("Calling '{0}'", " ".join(command))
+        sh = " ".join(["\"{}\"".format(x) for x in command])
+        notice("Calling '{0}'", sh)
     else:
         raise Exception()
 
