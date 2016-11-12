@@ -39,7 +39,10 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--peer-to-peer", action="store_true")
+    parser.add_argument("--peer-to-peer", action="store_true",
+                        help="Put the receiver in server mode")
+    parser.add_argument("--init-only", action="store_true",
+                        help="Initialize and immediately exit")
 
     args, extra_args = parser.parse_known_args()
 
@@ -51,17 +54,20 @@ def main():
 
     if "-m" not in extra_args and "--messages" not in extra_args:
         extra_args += ["--messages", "1k"]
-    
+
     server_command = ["{}/exec/amqp-test-broker".format(home), domain]
     pair_command = ["quiver-pair", address] + extra_args
 
     exit_code = 0
     server = None
 
+    if args.init_only:
+        return
+
     try:
         if not args.peer_to_peer:
             server = start_process(server_command)
-        
+
         call(pair_command)
     except KeyboardInterrupt:
         pass

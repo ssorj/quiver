@@ -46,6 +46,8 @@ def main():
     parser.add_argument("--sender-options", metavar="OPTIONS", default="")
     parser.add_argument("--receiver-impl", metavar="IMPL", default=None)
     parser.add_argument("--receiver-options", metavar="OPTIONS", default="")
+    parser.add_argument("--init-only", action="store_true",
+                        help="Initialize and immediately exit")
 
     args, unknown_args = parser.parse_known_args()
 
@@ -70,6 +72,9 @@ def main():
     receiver_command += unknown_args
 
     exit_code = 0
+
+    if args.init_only:
+        return
 
     try:
         receiver = start_process(receiver_command)
