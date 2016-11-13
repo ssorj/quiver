@@ -64,10 +64,10 @@ def main():
         receiver_impl = args.impl
 
     sender_command = ["quiver-arrow", "send", args.address, "--impl", sender_impl]
-    receiver_command = ["quiver-arrow", "receive", args.address, "--impl", receiver_impl]
-
     sender_command += sender_options
     sender_command += unknown_args
+
+    receiver_command = ["quiver-arrow", "receive", args.address, "--impl", receiver_impl]
     receiver_command += receiver_options
     receiver_command += unknown_args
 
@@ -76,10 +76,10 @@ def main():
     if args.init_only:
         return
 
-    try:
-        receiver = start_process(receiver_command)
-        sender = start_process(sender_command)
+    receiver = start_process(receiver_command)
+    sender = start_process(sender_command)
 
+    try:
         sender_exit_code = wait_for_process(sender)
         receiver_exit_code = wait_for_process(receiver)
 
