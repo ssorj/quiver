@@ -474,9 +474,6 @@ class working_dir(object):
     def __exit__(self, type, value, traceback):
         change_dir(self.prev_dir)
 
-def _new_pg():
-    _os.setpgid(0, 0)
-
 # XXX Move toward _start_process instead
 def _init_call(command, args, kwargs):
     assert command is not None
@@ -490,15 +487,11 @@ def _init_call(command, args, kwargs):
 
         notice("Calling '{0}'", command)
     elif isinstance(command, _collections.Iterable):
-        quoted = " ".join(["\"{}\"".format(x) for x in command if " " in x])
-        notice("Calling '{0}'", quoted)
+        q = ["\"{}\"".format(x) if " " in x else x for x in command]
+        q = " ".join(q)
+        notice("Calling '{0}'", q)
     else:
         raise Exception()
-
-    if "preexec_fn" not in kwargs:
-        kwargs["preexec_fn"] = _new_pg
-
-    # XXX close_fds in kwargs as well?
 
     return command, kwargs
 
@@ -553,7 +546,7 @@ def stop_process(proc):
 
         return
 
-    _os.killpg(proc.pid, _signal.SIGTERM)
+    proc.terminate()
 
     return wait_for_process(proc)
 
