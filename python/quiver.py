@@ -24,6 +24,7 @@ from __future__ import unicode_literals
 from __future__ import with_statement
 
 import argparse as _argparse
+import atexit as _atexit
 import binascii as _binascii
 import json as _json
 import numpy as _numpy
@@ -235,13 +236,19 @@ class QuiverCommand(_Command):
         receiver = _subprocess.Popen(receiver_args)
         sender = _subprocess.Popen(sender_args)
 
-        if not self.quiet:
-            self.print_status(sender, receiver)
+        try:
+            if not self.quiet:
+                self.print_status(sender, receiver)
 
-        sender.wait()
-        receiver.wait()
+            sender.wait()
+            receiver.wait()
+        except:
+            sender.terminate()
+            receiver.terminate()
 
-        if sender.returncode != 0 or receiver.returncode != 0:
+            raise
+
+        if (sender.returncode, receiver.returncode) != (0, 0):
             _sys.exit(1)
 
         if not self.quiet:
@@ -495,13 +502,13 @@ class QuiverArrowCommand(_Command):
         with open(self.transfers_file, "wb") as fout:
             self.vprint("Calling '{}'", " ".join(args))
 
-            proc = _subprocess.Popen(args, stdout=fout, preexec_fn=_new_pg)
+            proc = _subprocess.Popen(args, stdout=fout)
 
             try:
                 self.vprint("Process {} ({}) started", proc.pid, self.operation)
                 self.monitor_subprocess(proc)
             except:
-                _os.killpg(proc.pid, _signal.SIGTERM)
+                proc.terminate()
                 raise
 
             if proc.returncode == 0:
@@ -815,9 +822,6 @@ def _read_lines(file_):
 def _compress_file(path):
     args = "xz", "--compress", "-0", "--threads", "0", path
     _subprocess.check_call(args)
-
-def _new_pg():
-    _os.setpgid(0, 0)
 
 _join = _os.path.join
 
