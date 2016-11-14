@@ -77,11 +77,18 @@ def main():
         return
 
     receiver = start_process(receiver_command)
+    sleep(0.2) # XXX
     sender = start_process(sender_command)
 
     try:
-        sender_exit_code = wait_for_process(sender)
-        receiver_exit_code = wait_for_process(receiver)
+        try:
+            sender_exit_code = wait_for_process(sender)
+            receiver_exit_code = wait_for_process(receiver)
+        except:
+            stop_process(sender)
+            stop_process(receiver)
+
+            raise
 
         if (sender_exit_code, receiver_exit_code) != (0, 0):
             exit_code = 1
