@@ -427,7 +427,7 @@ class QuiverArrowCommand(_Command):
         self.prelude = _shlex.split(self.args.prelude)
 
         if self.id_ is None:
-            self.id_ = "quiver-{}".format(_unique_id(4))
+            self.id_ = "quiver-{}".format(_unique_id())
 
         if self.args.server:
             self.connection_mode = "server"
@@ -785,14 +785,8 @@ def _print_numeric_field(name, value, unit, fmt="{:,.0f}"):
 
     print("{:<28} {:>28} {}".format(name, value, unit))
 
-def _unique_id(length=16):
-    assert length >= 1
-    assert length <= 16
-
-    uuid_bytes = _uuid.uuid4().bytes
-    uuid_bytes = uuid_bytes[:length]
-
-    return _binascii.hexlify(uuid_bytes).decode("utf-8")
+def _unique_id():
+    return _binascii.hexlify(_uuid.uuid4().bytes[:4]).decode("utf-8")
 
 def _touch(path):
     with open(path, "ab") as f:
