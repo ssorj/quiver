@@ -25,6 +25,7 @@ from __future__ import with_statement
 
 import os
 import sys
+import uuid
 
 from proton import Message
 from proton.handlers import MessagingHandler
@@ -76,6 +77,29 @@ class Handler(MessagingHandler):
             else:
                 raise Exception()
 
+    def on_connection_opening(self, event):
+        # XXX Seems like this should happen by default
+        event.connection.container = event.container.container_id
+
+    # XXX Should this be necessary?
+    def on_link_opening(self, event):
+        if event.link.is_sender:
+            if event.link.remote_source.dynamic:
+                address = str(uuid.uuid4())
+            else:
+                address = event.link.remote_source.address
+
+            assert address is not None
+
+            event.link.source.address = address
+
+        if event.link.is_receiver:
+            address = event.link.remote_target.address
+
+            assert address is not None
+
+            event.link.target.address = address
+
     def on_sendable(self, event):
         assert self.operation == "send"
 
@@ -97,10 +121,12 @@ class Handler(MessagingHandler):
         self.accepted += 1
 
         if self.accepted == self.messages:
-            event.connection.close()
-
-            if self.connection_mode == "server":
+            if self.connection_mode == "client":
+                event.connection.close()
+            elif self.connection_mode == "server":
                 self.listener.close()
+            else:
+                raise Exception()
 
     def on_message(self, event):
         assert self.operation == "receive"
@@ -117,10 +143,12 @@ class Handler(MessagingHandler):
         sys.stdout.write("{},{},{}\n".format(message.id, stime, rtime))
 
         if self.received == self.messages:
-            event.connection.close()
-
-            if self.connection_mode == "server":
+            if self.connection_mode == "client":
+                event.connection.close()
+            elif self.connection_mode == "server":
                 self.listener.close()
+            else:
+                raise Exception()
 
 def main():
     credit_window = int(sys.argv[10])

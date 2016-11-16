@@ -109,10 +109,12 @@ container.on("accepted", function(context) {
     accepted++;
 
     if (accepted == messages) {
-        context.connection.close();
-
-        if (connection_mode == "server") {
+        if (connection_mode == "client") {
+            context.connection.close();
+        } else if (connection_mode == "server") {
             listener.close();
+        } else {
+            throw new Error();
         }
     }
 });
@@ -131,10 +133,12 @@ container.on("message", function(context) {
     received++;
 
     if (received == messages) {
-        context.connection.close();
-
-        if (connection_mode == "server") {
+        if (connection_mode == "client") {
+            context.connection.close();
+        } else if (connection_mode == "server") {
             listener.close();
+        } else {
+            throw new Error();
         }
     }
 });
