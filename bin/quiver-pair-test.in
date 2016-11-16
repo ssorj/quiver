@@ -39,6 +39,10 @@ def main():
 
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("--sender-impl", metavar="IMPL", default="qpid-proton-python")
+    parser.add_argument("--sender-options", metavar="OPTIONS", default="")
+    parser.add_argument("--receiver-impl", metavar="IMPL", default="qpid-proton-python")
+    parser.add_argument("--receiver-options", metavar="OPTIONS", default="")
     parser.add_argument("--peer-to-peer", action="store_true",
                         help="Put the receiver in server mode")
     parser.add_argument("--init-only", action="store_true",
@@ -50,13 +54,17 @@ def main():
     address = "//{}/q0".format(domain)
 
     if args.peer_to_peer:
-        extra_args += ["--receiver-options", "--server --passive"]
-
-    if "-m" not in extra_args and "--messages" not in extra_args:
-        extra_args += ["--messages", "1k"]
+        args.receiver_options += " --server --passive"
 
     server_command = ["{}/exec/amqp-test-broker".format(home), domain]
-    pair_command = ["quiver-pair", address] + extra_args
+
+    pair_command = [
+        "quiver-pair", address,
+        "--sender-impl", args.sender_impl,
+        "--sender-options", args.sender_options,
+        "--receiver-impl", args.receiver_impl,
+        "--receiver-options", args.receiver_options,
+    ] + extra_args
 
     exit_code = 0
     server = None

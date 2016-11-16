@@ -41,10 +41,9 @@ def main():
 
     parser.add_argument("address", metavar="ADDRESS",
                         help="The location of a message queue")
-    parser.add_argument("--impl", metavar="IMPL", default="qpid-proton-python")
-    parser.add_argument("--sender-impl", metavar="IMPL", default=None)
+    parser.add_argument("--sender-impl", metavar="IMPL", default="qpid-proton-python")
     parser.add_argument("--sender-options", metavar="OPTIONS", default="")
-    parser.add_argument("--receiver-impl", metavar="IMPL", default=None)
+    parser.add_argument("--receiver-impl", metavar="IMPL", default="qpid-proton-python")
     parser.add_argument("--receiver-options", metavar="OPTIONS", default="")
     parser.add_argument("--init-only", action="store_true",
                         help="Initialize and immediately exit")
@@ -56,12 +55,6 @@ def main():
 
     receiver_impl = args.receiver_impl
     receiver_options = shlex.split(args.receiver_options)
-
-    if sender_impl is None:
-        sender_impl = args.impl
-
-    if receiver_impl is None:
-        receiver_impl = args.impl
 
     sender_command = ["quiver-arrow", "send", args.address, "--impl", sender_impl]
     sender_command += sender_options
@@ -77,7 +70,7 @@ def main():
         return
 
     receiver = start_process(receiver_command)
-    sleep(0.2) # XXX
+    sleep(1) # XXX
     sender = start_process(sender_command)
 
     try:
