@@ -89,7 +89,7 @@ class BrokerHandler(MessagingHandler):
         self.verbose = False
 
     def on_start(self, event):
-        self.acceptor = event.container.listen(self.domain)
+        event.container.listen(self.domain)
 
         notice("Listening on '{}'", self.domain)
 
