@@ -28,6 +28,7 @@ import getpass as _getpass
 import os as _os
 import random as _random
 import re as _re
+import shlex as _shlex
 import shutil as _shutil
 import signal as _signal
 import subprocess as _subprocess
@@ -514,6 +515,14 @@ def start_process(command, *args, **kwargs):
     notice("{} started", proc)
 
     return proc
+
+def start_process_2(command, *args, **kwargs):
+    if args:
+        command = command.format(*args)
+
+    command = _shlex.split(command)
+
+    return start_process(command, *args, **kwargs)
 
 class _Process(_subprocess.Popen):
     def __init__(self, command, *args, **kwargs):

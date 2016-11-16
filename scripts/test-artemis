@@ -40,7 +40,7 @@ def main():
         if impl in ("activemq-artemis-jms", "activemq-jms"):
             queue_type = "jms-queue"
 
-    server = start_process("{} run", server_command)
+    server = start_process_2("{} run", server_command)
 
     sleep(5)
 

@@ -29,8 +29,8 @@ def main():
     port = random_port()
     data_dir = make_temp_dir()
 
-    command = "qpidd --port {} --auth no --default-queue-limit 0 --data-dir {} > /dev/null"
-    server = start_process(command, port, data_dir)
+    command = "qpidd --port {} --auth no --default-queue-limit 0 --data-dir {}"
+    server = start_process_2(command, port, data_dir)
 
     command = "qpid-config -b localhost:{} add queue q0 > /dev/null"
     call(command, port)
