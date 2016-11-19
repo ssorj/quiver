@@ -28,7 +28,7 @@ QUIVER_HOME = ${PREFIX}/lib/quiver
 TARGETS := \
 	build/bin/quiver \
 	build/bin/quiver-arrow \
-	build/bin/quiver-pair \
+	build/bin/quiver-launch \
 	build/bin/quiver-pair-test \
 	build/bin/quiver-test \
 	build/exec/arrow-activemq-jms \

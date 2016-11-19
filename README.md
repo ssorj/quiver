@@ -267,7 +267,7 @@ number of messages are all sent or received.
 
 ### Running Quiver peer-to-peer
 
-    $ quiver-arrow --server receive q0 &
+    $ quiver-arrow --server --passive receive q0 &
     $ quiver-arrow send q0
 
 ## Implementations

@@ -41,8 +41,10 @@ def main():
 
     parser.add_argument("address", metavar="ADDRESS",
                         help="The location of a message queue")
+    parser.add_argument("--senders", metavar="COUNT", default=1, type=int)
     parser.add_argument("--sender-impl", metavar="IMPL", default="qpid-proton-python")
     parser.add_argument("--sender-options", metavar="OPTIONS", default="")
+    parser.add_argument("--receivers", metavar="COUNT", default=1, type=int)
     parser.add_argument("--receiver-impl", metavar="IMPL", default="qpid-proton-python")
     parser.add_argument("--receiver-options", metavar="OPTIONS", default="")
     parser.add_argument("--init-only", action="store_true",
@@ -69,22 +71,44 @@ def main():
     if args.init_only:
         return
 
-    receiver = start_process(receiver_command)
+    senders = list()
+    receivers = list()
+    
+    for i in range(args.receivers):
+        receiver = start_process(receiver_command)
+        receivers.append(receiver)
+
     sleep(1) # XXX
-    sender = start_process(sender_command)
+
+    for i in range(args.senders):
+        sender = start_process(sender_command)
+        senders.append(sender)
 
     try:
         try:
-            sender_exit_code = wait_for_process(sender)
-            receiver_exit_code = wait_for_process(receiver)
+            for sender in senders:
+                wait_for_process(sender)
+
+            for receiver in receivers:
+                wait_for_process(receiver)
         except:
-            stop_process(sender)
-            stop_process(receiver)
+            for sender in senders:
+                stop_process(sender)
+
+            for receiver in receivers:
+                stop_process(receiver)
 
             raise
 
-        if (sender_exit_code, receiver_exit_code) != (0, 0):
-            exit_code = 1
+        for sender in senders:
+            if sender.returncode != 0:
+                exit_code = 1
+                break
+
+        for receiver in receivers:
+            if receiver.returncode != 0:
+                exit_code = 1
+                break
     except KeyboardInterrupt:
         pass
     except:
