@@ -151,15 +151,14 @@ join = _os.path.join
 split = _os.path.split
 split_extension = _os.path.splitext
 
+current_dir = _os.getcwd
+sleep = _time.sleep
+
 LINE_SEP = _os.linesep
 PATH_SEP = _os.sep
 PATH_VAR_SEP = _os.pathsep
 ENV = _os.environ
 ARGS = _sys.argv
-
-current_dir = _os.getcwd
-
-sleep = _time.sleep
 
 def home_dir(user=""):
     return _os.path.expanduser("~{0}".format(user))
@@ -289,31 +288,12 @@ def _remove_temp_dir():
 
 _atexit.register(_remove_temp_dir)
 
-def read_temp(key):
-    file = _get_temp_file(key)
-    return read(file)
+# XXX Use _tempfile instead
+def make_temp_file():
+    key = unique_id(4)
+    file = join(_temp_dir, "_file_{0}".format(key))
 
-def write_temp(key, string):
-    file = _get_temp_file(key)
-    return write(file, string)
-
-def append_temp(key, string):
-    file = _get_temp_file(key)
     return append(file, string)
-
-def prepend_temp(key, string):
-    file = _get_temp_file(key)
-    return prepend(file, string)
-
-def make_temp(key=None):
-    if key is None:
-        key = unique_id(4)
-
-    return append_temp(key, "")
-
-def open_temp(key, mode="r"):
-    file = _get_temp_file(key)
-    return _codecs.open(file, encoding="utf-8", mode=mode)
 
 # This one is deleted on process exit
 def make_temp_dir():
@@ -475,41 +455,50 @@ class working_dir(object):
     def __exit__(self, type, value, traceback):
         change_dir(self.prev_dir)
 
-# XXX Move toward _start_process instead
-def _init_call(command, args, kwargs):
-    assert command is not None
+def call(command, *args, **kwargs):
+    exit_code = call_for_exit_code(command, *args, **kwargs)
 
+    if exit_code != 0:
+        raise CalledProcessError(exit_code, command)
+
+def call_for_exit_code(command, *args, **kwargs):
+    proc = start_process(command, *args, **kwargs)
+
+    wait_for_process(proc)
+
+    return proc.returncode
+
+def call_for_output(command, *args, **kwargs):
+    kwargs["stdout"] = _subprocess.PIPE
+
+    proc = start_process(command, *args, **kwargs)
+    output = proc.communicate()[0]
+    exit_code = proc.poll()
+
+    if exit_code not in (None, 0):
+        error = CalledProcessError(exit_code, command)
+        error.output = output
+
+        raise error
+
+    return output
+
+def start_process(command, *args, **kwargs):
     if isinstance(command, _types.StringTypes):
         if args:
             command = command.format(*args)
 
-        if "shell" not in kwargs:
-            kwargs["shell"] = True
+        if "shell" not in kwargs or kwargs["shell"] is False:
+            command = _shlex.split(command)
 
         notice("Calling '{0}'", command)
     elif isinstance(command, _collections.Iterable):
-        q = ["\"{}\"".format(x) if " " in x else x for x in command]
-        q = " ".join(q)
-        notice("Calling '{0}'", q)
+        # q = ["\"{}\"".format(x) if " " in x else x for x in command]
+        # q = " ".join(q)
+        notice("Calling '{0}'", command)
     else:
         raise Exception()
 
-    return command, kwargs
-
-def call(command, *args, **kwargs):
-    command, kwargs = _init_call(command, args, kwargs)
-    _subprocess.check_call(command, **kwargs)
-
-def call_for_exit_code(command, *args, **kwargs):
-    command, kwargs = _init_call(command, args, kwargs)
-    return _subprocess.call(command, **kwargs)
-
-def call_for_output(command, *args, **kwargs):
-    command, kwargs = _init_call(command, args, kwargs)
-    return _subprocess_check_output(command, **kwargs)
-
-def start_process(command, *args, **kwargs):
-    command, kwargs = _init_call(command, args, kwargs)
     proc = _Process(command, **kwargs)
 
     notice("{} started", proc)
@@ -517,11 +506,6 @@ def start_process(command, *args, **kwargs):
     return proc
 
 def start_process_2(command, *args, **kwargs):
-    if args:
-        command = command.format(*args)
-
-    command = _shlex.split(command)
-
     return start_process(command, *args, **kwargs)
 
 class _Process(_subprocess.Popen):
@@ -572,13 +556,6 @@ def wait_for_process(proc):
         error("{} exited with code {}", proc, proc.returncode)
 
     return proc.returncode
-
-# def compress_output(self):
-#     with open(self.transfers_file, "rb") as fin:
-#         with _gzip.open("{}.gz".format(self.transfers_file), "wb") as fout:
-#             _shutil.copyfileobj(fin, fout)
-#
-#     _os.remove(self.transfers_file)
 
 def make_archive(input_dir, output_dir, archive_stem):
     temp_dir = make_temp_dir()
@@ -700,19 +677,3 @@ def _copytree(src, dst, symlinks=False, ignore=None):
             errors.append((src, dst, str(why)))
     if errors:
         raise _shutil.Error(errors)
-
-# For Python 2.6 compatibility
-def _subprocess_check_output(command, **kwargs):
-    kwargs["stdout"] = _subprocess.PIPE
-
-    proc = _subprocess.Popen(command, **kwargs)
-    output = proc.communicate()[0]
-    exit_code = proc.poll()
-
-    if exit_code not in (None, 0):
-        error = _subprocess.CalledProcessError(exit_code, command)
-        error.output = output
-
-        raise error
-
-    return output
