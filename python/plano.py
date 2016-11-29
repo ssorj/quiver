@@ -293,7 +293,7 @@ def make_temp_file():
     key = unique_id(4)
     file = join(_temp_dir, "_file_{0}".format(key))
 
-    return append(file, string)
+    return append(file, "")
 
 # This one is deleted on process exit
 def make_temp_dir():
