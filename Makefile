@@ -86,7 +86,7 @@ devel: PREFIX := ${PWD}/install
 devel: install
 	quiver-arrow send //localhost:12345/a/b/c --init-only
 	quiver q0 --init-only
-	quiver-pair q0 --init-only
+	quiver-launch q0 --init-only
 	quiver-pair-test --init-only
 	quiver-test --init-only
 

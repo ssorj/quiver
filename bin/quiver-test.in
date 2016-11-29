@@ -54,10 +54,10 @@ def run_test(sender_impl, receiver_impl, failures, peer_to_peer=False):
 
     command = "quiver-pair-test {} &> {}"
     options = " ".join(options)
-    temp_file = make_temp()
+    temp_file = make_temp_file()
 
     try:
-        call(command, options, temp_file)
+        call(command, options, temp_file, shell=True)
 
         print("PASSED")
     except CalledProcessError as e:
