@@ -90,9 +90,7 @@ def notice(message, *args):
 
 def debug(message, *args):
     if _message_threshold <= _debug:
-        return
-
-    _print_message("Debug", message, args)
+        _print_message("Debug", message, args)
 
 def exit(arg=None, *args):
     if arg in (0, None):
@@ -102,7 +100,7 @@ def exit(arg=None, *args):
         error(arg, args)
         _sys.exit(1)
     elif isinstance(arg, _types.IntType):
-        error("Exiting with code {}", arg)
+        error("Exiting with code {0}", arg)
         _sys.exit(arg)
     else:
         raise Exception()
@@ -278,11 +276,6 @@ def tail_lines(file, n):
 
 _temp_dir = _tempfile.mkdtemp(prefix="plano-")
 
-def _get_temp_file(key):
-    assert not key.startswith("_")
-
-    return join(_temp_dir, "_file_{0}".format(key))
-
 def _remove_temp_dir():
     _shutil.rmtree(_temp_dir, ignore_errors=True)
 
@@ -456,10 +449,15 @@ class working_dir(object):
         change_dir(self.prev_dir)
 
 def call(command, *args, **kwargs):
-    exit_code = call_for_exit_code(command, *args, **kwargs)
+    proc = start_process(command, *args, **kwargs)
 
-    if exit_code != 0:
-        raise CalledProcessError(exit_code, command)
+    wait_for_process(proc)
+
+    if proc.returncode != 0:
+        command_string = _command_string(command)
+        command_string = command_string.format(*args)
+        
+        raise CalledProcessError(proc.returncode, command_string)
 
 def call_for_exit_code(command, *args, **kwargs):
     proc = start_process(command, *args, **kwargs)
@@ -485,28 +483,34 @@ def call_for_output(command, *args, **kwargs):
 
 def start_process(command, *args, **kwargs):
     if isinstance(command, _types.StringTypes):
-        if args:
-            command = command.format(*args)
-
-        if "shell" not in kwargs or kwargs["shell"] is False:
-            command = _shlex.split(command)
-
-        notice("Calling '{0}'", command)
+        command = command.format(*args)
+        command_args = _shlex.split(command)
+        command_string = command
     elif isinstance(command, _collections.Iterable):
-        # q = ["\"{}\"".format(x) if " " in x else x for x in command]
-        # q = " ".join(q)
-        notice("Calling '{0}'", command)
+        assert len(args) == 0, args
+        command_args = command
+        command_string = _command_string(command)
     else:
         raise Exception()
+    
+    notice("Calling '{0}'", command_string)
 
-    proc = _Process(command, **kwargs)
+    if "shell" in kwargs and kwargs["shell"]:
+        proc = _Process(command_string, **kwargs)
+    else:
+        proc = _Process(command_args, **kwargs)
 
-    notice("{} started", proc)
+    debug("{0} started", proc)
 
     return proc
 
-def start_process_2(command, *args, **kwargs):
-    return start_process(command, *args, **kwargs)
+def _command_string(command):
+    if isinstance(command, _types.StringTypes):
+        return command
+    
+    elems = ["\"{0}\"".format(x) if " " in x else x for x in command]
+
+    return " ".join(elems)
 
 class _Process(_subprocess.Popen):
     def __init__(self, command, *args, **kwargs):
@@ -523,18 +527,18 @@ class _Process(_subprocess.Popen):
                 raise Exception()
 
     def __repr__(self):
-        return "process {} ({})".format(self.pid, self.name)
+        return "process {0} ({1})".format(self.pid, self.name)
 
 def stop_process(proc):
-    notice("Stopping {}", proc)
+    notice("Stopping {0}", proc)
 
     if proc.poll() is not None:
         if proc.returncode == 0:
-            notice("{} already exited normally", proc)
+            debug("{0} already exited normally", proc)
         elif proc.returncode == -(_signal.SIGTERM):
-            notice("{} was already terminated", proc)
+            notice("{0} was already terminated", proc)
         else:
-            m = "{} already exited with code {}"
+            m = "{0} already exited with code {1}"
             error(m, proc, proc.returncode)
 
         return
@@ -544,16 +548,16 @@ def stop_process(proc):
     return wait_for_process(proc)
 
 def wait_for_process(proc):
-    notice("Waiting for {} to exit", proc)
+    debug("Waiting for {0} to exit", proc)
 
     proc.wait()
 
     if proc.returncode == 0:
-        notice("{} exited normally", proc)
+        debug("{0} exited normally", proc)
     elif proc.returncode == -(_signal.SIGTERM):
-        notice("{} exited after termination", proc)
+        notice("{0} exited after termination", proc)
     else:
-        error("{} exited with code {}", proc, proc.returncode)
+        error("{0} exited with code {0}", proc, proc.returncode)
 
     return proc.returncode
 

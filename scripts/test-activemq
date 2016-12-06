@@ -33,7 +33,7 @@ def main():
 
     server_command = "{}/activemq/bin/activemq".format(home_dir())
 
-    call("{} start", server_command)
+    call("{} start", server_command, shell=True)
 
     sleep(5)
 
@@ -48,7 +48,7 @@ def main():
         exit_code = e.returncode
     finally:
         try:
-            call("{} stop", server_command)
+            call("{} stop", server_command, shell=True)
         except CalledProcessError:
             pass
 

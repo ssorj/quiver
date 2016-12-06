@@ -44,8 +44,8 @@ def main():
     port = random_port()
 
     config = config_template.replace("@port@", str(port))
-    config_file = write_temp("qdrouterd-config", config)
-    server = start_process_2("qdrouterd --config {}", config_file)
+    config_file = write(make_temp_file(), config)
+    server = start_process("qdrouterd --config {}", config_file)
 
     command = "quiver //localhost:{}/q0 {}"
     args = " ".join(ARGS[1:])
