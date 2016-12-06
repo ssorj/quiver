@@ -557,7 +557,7 @@ def wait_for_process(proc):
     elif proc.returncode == -(_signal.SIGTERM):
         notice("{0} exited after termination", proc)
     else:
-        error("{0} exited with code {0}", proc, proc.returncode)
+        error("{0} exited with code {1}", proc, proc.returncode)
 
     return proc.returncode
 
