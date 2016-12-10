@@ -17,8 +17,6 @@
 # under the License.
 #
 
-export PATH := ${PWD}/install/bin:${PATH}
-
 VERSION := $(shell cat VERSION.txt)
 
 DESTDIR := ""
@@ -51,6 +49,8 @@ ifdef QPID_PROTON_CPP_ENABLED
 	CCFLAGS += -lqpid-proton-cpp
 endif
 
+export PATH := ${PWD}/install/bin:${PATH}
+
 .PHONY: default
 default: devel
 
@@ -74,12 +74,11 @@ build: ${TARGETS}
 
 .PHONY: install
 install: build
-	@mkdir -p ${DESTDIR}${QUIVER_HOME}
-	scripts/install-files python ${DESTDIR}${QUIVER_HOME}/python \*.py
-	scripts/install-files javascript ${DESTDIR}${QUIVER_HOME}/javascript \*
-	scripts/install-files build/java ${DESTDIR}${QUIVER_HOME}/java \*
-	scripts/install-files build/exec ${DESTDIR}${QUIVER_HOME}/exec \*
-	scripts/install-files build/bin ${DESTDIR}${PREFIX}/bin \*
+	scripts/install-files --name \*.py python ${DESTDIR}${QUIVER_HOME}/python
+	scripts/install-files javascript ${DESTDIR}${QUIVER_HOME}/javascript
+	scripts/install-files build/java ${DESTDIR}${QUIVER_HOME}/java
+	scripts/install-files build/exec ${DESTDIR}${QUIVER_HOME}/exec
+	scripts/install-files build/bin ${DESTDIR}${PREFIX}/bin
 
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
@@ -95,12 +94,10 @@ test: devel
 	quiver-test
 
 build/bin/%: bin/%.in
-	@mkdir -p build/bin
-	scripts/configure-file $< $@ quiver_home ${QUIVER_HOME}
+	scripts/configure-file -a quiver_home=${QUIVER_HOME} $< $@
 
 build/exec/%: exec/%.in
-	@mkdir -p build/exec
-	scripts/configure-file $< $@ quiver_home ${QUIVER_HOME}
+	scripts/configure-file -a quiver_home=${QUIVER_HOME} $< $@
 
 build/exec/%: exec/%.cpp
 	@mkdir -p build/exec
