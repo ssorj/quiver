@@ -456,7 +456,7 @@ def call(command, *args, **kwargs):
     if proc.returncode != 0:
         command_string = _command_string(command)
         command_string = command_string.format(*args)
-        
+
         raise CalledProcessError(proc.returncode, command_string)
 
 def call_for_exit_code(command, *args, **kwargs):
@@ -474,7 +474,10 @@ def call_for_output(command, *args, **kwargs):
     exit_code = proc.poll()
 
     if exit_code not in (None, 0):
-        error = CalledProcessError(exit_code, command)
+        command_string = _command_string(command)
+        command_string = command_string.format(*args)
+
+        error = CalledProcessError(exit_code, command_string)
         error.output = output
 
         raise error
@@ -492,7 +495,7 @@ def start_process(command, *args, **kwargs):
         command_string = _command_string(command)
     else:
         raise Exception()
-    
+
     notice("Calling '{0}'", command_string)
 
     if "shell" in kwargs and kwargs["shell"]:
@@ -507,7 +510,7 @@ def start_process(command, *args, **kwargs):
 def _command_string(command):
     if isinstance(command, _types.StringTypes):
         return command
-    
+
     elems = ["\"{0}\"".format(x) if " " in x else x for x in command]
 
     return " ".join(elems)
