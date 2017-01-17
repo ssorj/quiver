@@ -60,7 +60,7 @@ transmission of messages.
 | Qpid Messaging C++    | libqpidmessaging2-dev | qpid-cpp-client-devel
 | Qpid Messaging Python | python-qpid-messaging | python-qpid-messaging
 | Qpid Proton C         | libqpid-proton8-dev   | qpid-proton-c-devel
-| Qpid Proton C++       | -                     | qpid-proton-cpp-devel
+| Qpid Proton C++       | -                     | -
 | Qpid Proton Python    | python-qpid-proton    | python-qpid-proton
 | XZ                    | xz-utils              | xz
 
