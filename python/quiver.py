@@ -223,13 +223,24 @@ class QuiverCommand(_Command):
         self.start_time = None
 
     def run(self):
-        args = _sys.argv[2:]
+        args = [
+            self.address,
+            "--messages", self.args.messages,
+            "--impl", self.args.impl,
+            "--body-size", self.args.body_size,
+            "--credit", self.args.credit,
+            "--timeout", self.args.timeout,
+            "--output", self.output_dir,
+        ]
 
-        if "--output" not in args:
-            args += "--output", self.output_dir
+        if self.quiet:
+            args += "--quiet"
 
-        sender_args = ["quiver-arrow", "send", self.address] + args
-        receiver_args = ["quiver-arrow", "receive", self.address] + args
+        if self.verbose:
+            args += "--verbose"
+
+        sender_args = ["quiver-arrow", "send"] + args
+        receiver_args = ["quiver-arrow", "receive"] + args
 
         self.start_time = now()
 
@@ -442,7 +453,7 @@ class QuiverArrowCommand(_Command):
 
         self.host = url.hostname
         self.port = url.port
-        self.path = url.path[1:]
+        self.path = url.path
 
         if self.host is None:
             self.host = "localhost"
@@ -451,6 +462,9 @@ class QuiverArrowCommand(_Command):
             self.port = "-"
 
         self.port = str(self.port)
+
+        if self.path.startswith("/"):
+            self.path = self.path[1:]
 
         self.impl_file = "{}/exec/arrow-{}".format(self.home_dir, self.impl)
 
