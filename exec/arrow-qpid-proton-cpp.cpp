@@ -20,10 +20,16 @@
  */
 
 #include <proton/connection.hpp>
+#include <proton/connection_options.hpp>
+#include <proton/container.hpp>
 #include <proton/default_container.hpp>
 #include <proton/delivery.hpp>
 #include <proton/link.hpp>
+#include <proton/listener.hpp>
+#include <proton/message.hpp>
+#include <proton/message_id.hpp>
 #include <proton/messaging_handler.hpp>
+#include <proton/thread_safe.hpp>
 #include <proton/tracker.hpp>
 #include <proton/value.hpp>
 #include <proton/receiver_options.hpp>
