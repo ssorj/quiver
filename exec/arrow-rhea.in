@@ -56,6 +56,28 @@ function eprint(message) {
     process.stderr.write("\n");
 }
 
+var buffer = new Buffer(5120);
+var offset = 0;
+
+function flush() {
+    if (offset) {
+        process.stdout.write(buffer.toString('ascii', 0, offset));
+        offset = 0;
+    }
+}
+
+function log(message) {
+    if (offset + message.length >= buffer.length) {
+        flush();
+    }
+    buffer.write(message, offset, message.length, 'ascii');
+    offset += message.length;
+}
+
+container.on("connection_close", function(context) {
+    flush();
+});
+
 container.on("connection_open", function(context) {
     if (channel_mode == "passive") {
         return;
@@ -99,7 +121,7 @@ container.on("sendable", function(context) {
 
         context.sender.send(message);
 
-        process.stdout.write(message.id + "," + stime + "\n");
+        log(message.id + "," + stime + "\n");
 
         sent++;
     }
@@ -128,7 +150,7 @@ container.on("message", function(context) {
     var rtime = new Date().getTime();
     var stime = message.SendTime;
 
-    process.stdout.write(message.id + "," + stime + "," + rtime + "\n");
+    log(message.id + "," + stime + "," + rtime + "\n");
 
     received++;
 
