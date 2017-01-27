@@ -50,7 +50,8 @@ ifdef QPID_PROTON_CPP_ENABLED
 endif
 
 export PATH := ${PWD}/install/bin:${PATH}
-export PYTHONPATH := ${PWD}/install/lib/quiver/python
+export PYTHONPATH := ${PWD}/install/lib/quiver/python:${PYTHONPATH}
+export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
 
 .PHONY: default
 default: devel

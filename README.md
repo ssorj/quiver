@@ -55,6 +55,7 @@ transmission of messages.
 | Java 8 JDK            | openjdk-8-jdk         | java-1.8.0-openjdk-devel
 | Maven                 | maven                 | maven
 | Node.js               | nodejs*               | nodejs
+| Node.js debug         | ?                     | nodejs-debug
 | NumPy                 | python-numpy          | numpy
 | Python 2.7            | python                | python
 | Qpid Messaging C++    | libqpidmessaging2-dev | qpid-cpp-client-devel
