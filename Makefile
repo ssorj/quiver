@@ -20,7 +20,7 @@
 VERSION := $(shell cat VERSION.txt)
 
 DESTDIR := ""
-PREFIX := ${HOME}/.local
+PREFIX := /usr/local
 QUIVER_HOME = ${PREFIX}/lib/quiver
 
 TARGETS := \
@@ -29,6 +29,7 @@ TARGETS := \
 	build/bin/quiver-launch \
 	build/bin/quiver-pair-test \
 	build/bin/quiver-test \
+	build/exec/amqp-test-broker \
 	build/exec/arrow-activemq-jms \
 	build/exec/arrow-activemq-artemis-jms \
 	build/exec/arrow-qpid-jms \
@@ -50,7 +51,6 @@ ifdef QPID_PROTON_CPP_ENABLED
 endif
 
 export PATH := ${PWD}/install/bin:${PATH}
-export PYTHONPATH := ${PWD}/install/lib/quiver/python:${PYTHONPATH}
 export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
 
 .PHONY: default
@@ -72,7 +72,6 @@ clean:
 
 .PHONY: build
 build: ${TARGETS}
-	cp exec/amqp-test-broker build/exec
 
 .PHONY: install
 install: build

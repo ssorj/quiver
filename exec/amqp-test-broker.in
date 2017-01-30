@@ -33,6 +33,9 @@ from proton import *
 from proton.handlers import *
 from proton.reactor import *
 
+home = os.path.normpath("@quiver_home@")
+sys.path.insert(0, os.path.join(home, "python"))
+
 from plano import notice
 
 class Queue(object):
