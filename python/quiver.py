@@ -181,7 +181,7 @@ class _Command(object):
                                  default="100")
         self.parser.add_argument("--credit", metavar="COUNT",
                                  help="Sustain credit for COUNT incoming messages",
-                                 default="100")
+                                 default="1000")
         self.parser.add_argument("--timeout", metavar="SECONDS",
                                  help="Fail after SECONDS without transfers",
                                  default="10")
@@ -469,7 +469,7 @@ class QuiverArrowCommand(_Command):
         self.impl_file = "{}/exec/arrow-{}".format(self.home_dir, self.impl)
 
         if not _os.path.exists(self.impl_file):
-            m = "No impl at '{}'".format(self.impl_file)
+            m = "No implementation at '{}'".format(self.impl_file)
             raise QuiverError(m)
 
         if self.operation == "send":
