@@ -120,6 +120,6 @@ update-rhea:
 	rm -rf javascript/node_modules/rhea
 	npm install rhea --prefix javascript
 
-.PHONY: update-plano
-update-plano:
-	curl "https://raw.githubusercontent.com/ssorj/plano/master/python/plano.py" -o scripts/plano.py
+.PHONY: update-%
+update-%:
+	curl "https://raw.githubusercontent.com/ssorj/$*/master/python/$*.py" -o python/$*.py

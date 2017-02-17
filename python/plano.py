@@ -96,7 +96,7 @@ def exit(arg=None, *args):
     if arg in (0, None):
         _sys.exit()
 
-    if isinstance(arg, _types.StringTypes):
+    if _is_string(arg):
         error(arg, args)
         _sys.exit(1)
     elif isinstance(arg, _types.IntType):
@@ -116,7 +116,7 @@ def _print_message(category, message, args):
     _message_output.flush()
 
 def _format_message(category, message, args):
-    if not isinstance(message, _types.StringTypes):
+    if not _is_string(message):
         message = str(message)
 
     if args:
@@ -199,6 +199,13 @@ def program_name(command=None):
         if "=" not in arg:
             return file_name(arg)
 
+def which(program_name):
+    for dir in ENV["PATH"].split(PATH_VAR_SEP):
+        program = join(dir, program_name)
+        
+        if _os.access(program, _os.X_OK):
+            return program
+        
 def read(file):
     with _codecs.open(file, encoding="utf-8", mode="r") as f:
         return f.read()
@@ -357,9 +364,16 @@ def remove(path):
     return path
 
 def make_link(source_path, link_file):
+    notice("Making link '{0}' to '{1}'", link_file, source_path)
+
     if exists(link_file):
         assert read_link(link_file) == source_path
         return
+
+    link_dir = parent_dir(link_file)
+
+    if link_dir:
+        make_dir(link_dir)
 
     _os.symlink(source_path, link_file)
 
@@ -485,7 +499,7 @@ def call_for_output(command, *args, **kwargs):
     return output
 
 def start_process(command, *args, **kwargs):
-    if isinstance(command, _types.StringTypes):
+    if _is_string(command):
         command = command.format(*args)
         command_args = _shlex.split(command)
         command_string = command
@@ -508,7 +522,7 @@ def start_process(command, *args, **kwargs):
     return proc
 
 def _command_string(command):
-    if isinstance(command, _types.StringTypes):
+    if _is_string(command):
         return command
 
     elems = ["\"{0}\"".format(x) if " " in x else x for x in command]
@@ -522,7 +536,7 @@ class _Process(_subprocess.Popen):
         try:
             self.name = kwargs["name"]
         except KeyError:
-            if isinstance(command, _types.StringTypes):
+            if _is_string(command):
                 self.name = program_name(command)
             elif isinstance(command, _collections.Iterable):
                 self.name = command[0]
@@ -684,3 +698,9 @@ def _copytree(src, dst, symlinks=False, ignore=None):
             errors.append((src, dst, str(why)))
     if errors:
         raise _shutil.Error(errors)
+
+def _is_string(obj):
+    try:
+        return isinstance(obj, basestring)
+    except NameError:
+        return isinstance(obj, str)
