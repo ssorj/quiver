@@ -22,5 +22,6 @@ set -eu
 
 QUEUE=$1
 
-$HOME/artemis/bin/artemis destination delete --name $QUEUE --type core-queue 2> /dev/null || :
-$HOME/artemis/bin/artemis destination create --name $QUEUE --type core-queue
+artemis queue delete --name $QUEUE || :
+artemis address delete --name $QUEUE || :
+artemis queue create --name $QUEUE --no-durable --auto-create-address --address $QUEUE --anycast --preserve-on-no-consumers

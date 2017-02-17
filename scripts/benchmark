@@ -62,10 +62,10 @@ openwire_servers = (
 )
 
 def run_test(server, client, output_dir, args):
-    if server == "activemq" and not is_dir(join(home_dir(), "activemq")):
+    if server == "activemq" and which("activemq") is None:
         return
 
-    if server == "artemis" and not is_dir(join(home_dir(), "artemis")):
+    if server == "artemis" and which("artemis") is None:
         return
 
     notice("Testing server '{}' with client '{}'", server, client)
@@ -79,7 +79,7 @@ def run_test(server, client, output_dir, args):
     make_dir(test_dir)
 
     try:
-        call(command, server, client, args, data_dir, output_file)
+        call(command, server, client, args, data_dir, output_file, shell=True)
         write(result_file, "SUCCESS")
     except CalledProcessError as e:
         error(e)

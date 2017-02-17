@@ -26,26 +26,13 @@ from __future__ import with_statement
 from plano import *
 
 def main():
-    if not is_dir(join(home_dir(), "artemis")):
-        exit("I need an artemis instance installed at $HOME/artemis")
+    # XXX Make sure port 61616 is free
 
-    # XXX Also make sure port 61616 is free
-
-    server_command = join(home_dir(), "artemis", "bin", "artemis")
-    queue_type = "core-queue"
-
-    if "--impl" in ARGS:
-        impl = ARGS[ARGS.index("--impl") + 1]
-
-        if impl in ("activemq-artemis-jms", "activemq-jms"):
-            queue_type = "jms-queue"
-
-    server = start_process("{} run", server_command)
+    server = start_process("artemis run")
 
     sleep(5)
 
-    command = "{} destination create --name q0 --type {}"
-    call(command, server_command, queue_type)
+    call("scripts/recreate-queue-artemis q0")
 
     command = "quiver //localhost/q0 {}"
     args = " ".join(ARGS[1:])
@@ -58,7 +45,7 @@ def main():
         exit_code = e.returncode
     finally:
         try:
-            call("{} stop", server_command)
+            call("artemis stop")
         except CalledProcessError:
             pass
 

@@ -26,14 +26,9 @@ from __future__ import with_statement
 from plano import *
 
 def main():
-    if not is_dir(join(home_dir(), "activemq")):
-        exit("I need an activemq instance installed at $HOME/activemq")
+    # XXX Make sure port 61616 is free
 
-    # XXX Also make sure port 61616 is free
-
-    server_command = "{}/activemq/bin/activemq".format(home_dir())
-
-    call("{} start", server_command, shell=True)
+    call("activemq start", shell=True)
 
     sleep(5)
 
@@ -48,7 +43,7 @@ def main():
         exit_code = e.returncode
     finally:
         try:
-            call("{} stop", server_command, shell=True)
+            call("activemq stop", shell=True)
         except CalledProcessError:
             pass
 
