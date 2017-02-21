@@ -33,8 +33,9 @@ home = os.path.normpath("@quiver_home@")
 sys.path.insert(0, os.path.join(home, "python"))
 
 from plano import *
+from quiver import _quiver_arrow_impls_by_name
 
-def run_test(sender_impl, receiver_impl, peer_to_peer, failures):
+def run_test(sender_impl, receiver_impl, server_impl, peer_to_peer, failures):
     if peer_to_peer:
         summary = "{} -> {} ".format(sender_impl, receiver_impl)
     else:
@@ -44,16 +45,16 @@ def run_test(sender_impl, receiver_impl, peer_to_peer, failures):
 
     flush()
 
-    domain = "127.0.0.1:{}".format(random_port())
-    address = "//{}/q0".format(domain)
+    address = "//127.0.0.1:{}/q0".format(random_port())
+    server_command = "quiver-server {} --impl {} --verbose".format(address, server_impl)
+    server = None
     test_output_file = make_temp_file()
     test_command = build_test_command(address, sender_impl, receiver_impl, peer_to_peer)
-    server = None
 
     with open(test_output_file, "w") as f:
         try:
             if not peer_to_peer:
-                server = start_process("quiver-server {}", address, stdout=f, stderr=f)
+                server = start_process(server_command, stdout=f, stderr=f)
 
                 def signal_handler(signum, frame):
                     stop_process(server)
@@ -107,6 +108,12 @@ def main():
                         help="Test only sender IMPL")
     parser.add_argument("--receiver-impl", metavar="IMPL", default=None,
                         help="Test only receiver IMPL")
+    parser.add_argument("--server-impl", metavar="IMPL", default="builtin",
+                        help="Test using server IMPL")
+    parser.add_argument("--client-server", action="store_true",
+                        help="Test only client-server mode")
+    parser.add_argument("--peer-to-peer", action="store_true",
+                        help="Test only peer-to-peer mode")
     parser.add_argument("--init-only", action="store_true",
                         help="Initialize and immediately exit")
 
@@ -130,47 +137,60 @@ def main():
         "vertx-proton",
     ]
 
-    server_receiver_impls = {
+    peer_to_peer_impls = {
         "qpid-proton-python",
         "rhea",
     }
 
-    if exists(join(home, "exec", "arrow-qpid-proton-cpp")):
+    if exists(join(home, "exec", "quiver-arrow-qpid-proton-cpp")):
         sender_impls.append("qpid-proton-cpp")
         receiver_impls.append("qpid-proton-cpp")
-        server_receiver_impls.add("qpid-proton-cpp")
+        peer_to_peer_impls.add("qpid-proton-cpp")
 
     if args.sender_impl is not None:
-        if args.sender_impl not in sender_impls:
-            parser.error("Unknown sender impl '{}'".format(args.sender_impl))
-
-        sender_impls = [args.sender_impl]
+        try:
+            sender_impls = [_quiver_arrow_impls_by_name[args.sender_impl]]
+        except KeyError:
+            exit("Implementation '{}' is unknown", args.sender_impl)
 
     if args.receiver_impl is not None:
-        if args.receiver_impl not in receiver_impls:
-            parser.error("Unknown receiver impl '{}'".format(args.receiver_impl))
+        try:
+            receiver_impls = [_quiver_arrow_impls_by_name[args.receiver_impl]]
+        except KeyError:
+            exit("Implementation '{}' is unknown", args.receiver_impl)
 
-        receiver_impls = [args.receiver_impl]
+    server_impl = args.server_impl
+
+    client_server = True
+    peer_to_peer = True
+
+    if args.client_server:
+        peer_to_peer = False
+
+    if args.peer_to_peer:
+        client_server = False
 
     if args.init_only:
         return
 
     failures = list()
 
-    print("# Testing client-server send and receive")
+    if client_server:
+        print("# Testing client-server send and receive with server '{}'".format(server_impl))
 
-    for sender_impl in sorted(sender_impls):
-        for receiver_impl in receiver_impls:
-            run_test(sender_impl, receiver_impl, False, failures)
+        for sender_impl in sorted(sender_impls):
+            for receiver_impl in receiver_impls:
+                run_test(sender_impl, receiver_impl, server_impl, False, failures)
 
-    print("# Testing peer-to-peer send and receive")
+    if peer_to_peer:
+        print("# Testing peer-to-peer send and receive")
 
-    for sender_impl in sorted(sender_impls):
-        for receiver_impl in receiver_impls:
-            if receiver_impl not in server_receiver_impls:
-                continue
+        for sender_impl in sorted(sender_impls):
+            for receiver_impl in receiver_impls:
+                if receiver_impl not in peer_to_peer_impls:
+                    continue
 
-            run_test(sender_impl, receiver_impl, True, failures)
+                run_test(sender_impl, receiver_impl, server_impl, True, failures)
 
     print("# Test failures: {}".format(len(failures)))
 
