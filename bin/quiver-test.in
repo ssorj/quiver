@@ -46,43 +46,41 @@ def run_test(sender_impl, receiver_impl, peer_to_peer, failures):
 
     domain = "127.0.0.1:{}".format(random_port())
     address = "//{}/q0".format(domain)
-    temp_file = make_temp_file()
-
-    command = build_test_command(address, sender_impl, receiver_impl, peer_to_peer)
-    command = "{} &>> {}".format(command, temp_file)
-
+    test_output_file = make_temp_file()
+    test_command = build_test_command(address, sender_impl, receiver_impl, peer_to_peer)
     server = None
 
-    try:
-        if not peer_to_peer:
-            server = start_process("quiver-server {} &>> {}", address, temp_file, shell=True)
+    with open(test_output_file, "w") as f:
+        try:
+            if not peer_to_peer:
+                server = start_process("quiver-server {}", address, stdout=f, stderr=f)
 
-            def signal_handler(signum, frame):
+                def signal_handler(signum, frame):
+                    stop_process(server)
+                    exit()
+
+                signal.signal(signal.SIGTERM, signal_handler)
+
+                sleep(1) # XXX Ugh
+
+            call(test_command, stdout=f, stderr=f)
+
+            print("PASSED")
+        except KeyboardInterrupt:
+            raise
+        except CalledProcessError as e:
+            failures.append(str(e))
+
+            print("FAILED")
+
+            with open(test_output_file, "r") as f:
+                for line in f:
+                    print("> {}".format(line), end="")
+        except:
+            traceback.print_exc()
+        finally:
+            if server is not None:
                 stop_process(server)
-                exit()
-
-            signal.signal(signal.SIGTERM, signal_handler)
-
-            sleep(1) # XXX Ugh
-
-        call(command, shell=True)
-
-        print("PASSED")
-    except KeyboardInterrupt:
-        raise
-    except CalledProcessError as e:
-        failures.append(str(e))
-
-        print("FAILED")
-
-        with open(temp_file, "r") as f:
-            for line in f:
-                print("> {}".format(line), end="")
-    except:
-        traceback.print_exc()
-    finally:
-        if server is not None:
-            stop_process(server)
 
     flush()
 
