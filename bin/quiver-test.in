@@ -33,17 +33,8 @@ sys.path.insert(0, os.path.join(home, "python"))
 
 from plano import *
 
-def run_test(sender_impl, receiver_impl, failures, peer_to_peer=False):
-    options = [
-        "--sender-impl", sender_impl,
-        "--receiver-impl", receiver_impl,
-        "--messages", "1k",
-        "--verbose",
-    ]
-
+def run_test(sender_impl, receiver_impl, peer_to_peer, failures):
     if peer_to_peer:
-        options.append("--peer-to-peer")
-
         summary = "{} -> {} ".format(sender_impl, receiver_impl)
     else:
         summary = "{} -> server -> {} ".format(sender_impl, receiver_impl)
@@ -52,14 +43,28 @@ def run_test(sender_impl, receiver_impl, failures, peer_to_peer=False):
 
     flush()
 
-    command = "quiver-pair-test {} &> {}"
-    options = " ".join(options)
+    domain = "127.0.0.1:{}".format(random_port())
+    address = "//{}/q0".format(domain)
     temp_file = make_temp_file()
 
+    command = build_test_command(address, sender_impl, receiver_impl, peer_to_peer)
+    command = "{} &>> {}".format(command, temp_file)
+
+    server = None
+
     try:
-        call(command, options, temp_file, shell=True)
+        if not peer_to_peer:
+            server = start_process("quiver-server {} &>> {}", address, temp_file, shell=True)
+
+            sleep(1) # XXX Ugh
+
+        # XXX signal handler
+            
+        call(command, shell=True)
 
         print("PASSED")
+    except KeyboardInterrupt:
+        raise
     except CalledProcessError as e:
         failures.append(str(e))
 
@@ -68,9 +73,28 @@ def run_test(sender_impl, receiver_impl, failures, peer_to_peer=False):
         with open(temp_file, "r") as f:
             for line in f:
                 print("> {}".format(line), end="")
+    except:
+        traceback.print_exc()
+    finally:
+        if server is not None:
+            stop_process(server)
 
     flush()
 
+def build_test_command(address, sender_impl, receiver_impl, peer_to_peer):
+    command = [
+        "quiver-launch", address,
+        "--sender-impl", sender_impl,
+        "--receiver-impl", receiver_impl,
+        "--messages", "1k",
+        "--verbose",
+    ]
+
+    if peer_to_peer:
+        command += ["--receiver-options", "'--server --passive'"]
+
+    return " ".join(command)
+    
 def main():
     set_message_threshold("warn")
 
@@ -134,7 +158,7 @@ def main():
 
     for sender_impl in sorted(sender_impls):
         for receiver_impl in receiver_impls:
-            run_test(sender_impl, receiver_impl, failures)
+            run_test(sender_impl, receiver_impl, False, failures)
 
     print("# Testing peer-to-peer send and receive")
 
@@ -143,7 +167,7 @@ def main():
             if receiver_impl not in server_receiver_impls:
                 continue
 
-            run_test(sender_impl, receiver_impl, failures, peer_to_peer=True)
+            run_test(sender_impl, receiver_impl, True, failures)
 
     print("# Test failures: {}".format(len(failures)))
 

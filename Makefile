@@ -27,7 +27,6 @@ TARGETS := \
 	build/bin/quiver \
 	build/bin/quiver-arrow \
 	build/bin/quiver-launch \
-	build/bin/quiver-pair-test \
 	build/bin/quiver-server \
 	build/bin/quiver-test \
 	build/exec/arrow-activemq-jms \
@@ -89,13 +88,12 @@ install: build
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
 devel: install
+	quiver q0 --init-only --verbose --impl qpid-cpp
+	quiver --quiet --init-only q0 --impl python
 	quiver-arrow send //localhost:12345/a/b/c --init-only
-	quiver q0 --init-only
-	quiver --init-only q0
 	quiver-launch q0 --init-only
-	quiver-pair-test --init-only
-	quiver-test --init-only
 	quiver-server q0 --init-only
+	quiver-test --init-only
 
 .PHONY: test
 test: devel
