@@ -176,7 +176,13 @@ _quiver_server_epilog = _quiver_server_epilog.lstrip()
 _quiver_server_epilog = _quiver_server_epilog.format(_epilog_addresses, _epilog_server_impls)
 
 class QuiverError(Exception):
-    pass
+    def __init__(self, message, *args):
+        if isinstance(message, Exception):
+            message = str(message)
+
+        message = message.format(*args)
+
+        super(QuiverError, self).__init__(message)
 
 class _Command(object):
     def __init__(self, home_dir):
@@ -243,8 +249,7 @@ class _Command(object):
             if value.endswith("k"): return int(value[:-1]) * 1000
             return int(value)
         except ValueError:
-            m = "Failure parsing '{}' as integer with unit".format(value)
-            self.parser.error(m)
+            self.parser.error("Failure parsing '{}' as integer with unit".format(value))
 
     def vprint(self, message, *args, **kwargs):
         if not self.verbose:
@@ -286,14 +291,8 @@ class QuiverCommand(_Command):
         receiver = _subprocess.Popen(receiver_args)
         sender = _subprocess.Popen(sender_args)
 
-        def signal_handler(signum, frame):
-            sender.terminate()
-            receiver.terminate()
+        _install_sigterm_handler(sender, receiver)
 
-            _sys.exit(0)
-
-        _signal.signal(_signal.SIGTERM, signal_handler)
-        
         try:
             if not self.quiet:
                 self.print_status(sender, receiver)
@@ -514,8 +513,7 @@ class QuiverArrowCommand(_Command):
         self.impl_file = "{}/exec/quiver-arrow-{}".format(self.home_dir, self.impl)
 
         if not _os.path.exists(self.impl_file):
-            m = "No implementation at '{}'".format(self.impl_file)
-            raise QuiverError(m)
+            raise QuiverError("No implementation at '{}'", self.impl_file)
 
         if self.operation == "send":
             self.snapshots_file = _join(self.output_dir, "sender-snapshots.csv")
@@ -563,12 +561,8 @@ class QuiverArrowCommand(_Command):
 
             proc = _subprocess.Popen(args, stdout=fout)
 
-            def signal_handler(signum, frame):
-                proc.terminate()
-                _sys.exit(0)
+            _install_sigterm_handler(proc)
 
-            _signal.signal(_signal.SIGTERM, signal_handler)
-            
             try:
                 self.vprint("Process {} ({}) started", proc.pid, self.operation)
                 self.monitor_subprocess(proc)
@@ -579,9 +573,8 @@ class QuiverArrowCommand(_Command):
             if proc.returncode == 0:
                 self.vprint("Process {} ({}) exited normally", proc.pid, self.operation)
             else:
-                m = "Process {} ({}) exited with code {}"
-                m = m.format(proc.pid, self.operation, proc.returncode)
-                raise QuiverError(m)
+                raise QuiverError("Process {} ({}) exited with code {}",
+                                  proc.pid, self.operation, proc.returncode)
 
         if _os.path.getsize(self.transfers_file) == 0:
             raise QuiverError("No transfers")
@@ -624,8 +617,7 @@ class QuiverArrowCommand(_Command):
         since = (snap.timestamp - checkpoint.timestamp) / 1000
 
         if snap.count == checkpoint.count and since > self.timeout:
-            m = "{} timed out".format(self.operation.capitalize())
-            raise QuiverError(m)
+            raise QuiverError("{} timed out", self.operation.capitalize())
 
         if snap.count > checkpoint.count:
             self.timeout_checkpoint = snap
@@ -717,7 +709,7 @@ class QuiverArrowCommand(_Command):
 class QuiverServerCommand(object):
     def __init__(self, home_dir):
         self.home_dir = home_dir
-        
+
         self.parser = _argparse.ArgumentParser(description=_quiver_server_description,
                                                epilog=_quiver_server_epilog,
                                                formatter_class=_Formatter)
@@ -741,7 +733,7 @@ class QuiverServerCommand(object):
             return
 
         _print(message, *args, **kwargs)
-        
+
     def init(self):
         self.args = self.parser.parse_args()
 
@@ -765,7 +757,7 @@ class QuiverServerCommand(object):
         self.host = url.hostname
         self.port = url.port
         self.path = url.path
-        
+
         if self.host is None:
             self.host = "localhost"
 
@@ -780,8 +772,7 @@ class QuiverServerCommand(object):
         self.impl_file = "{}/exec/quiver-server-{}".format(self.home_dir, self.impl)
 
         if not _os.path.exists(self.impl_file):
-            m = "No implementation at '{}'".format(self.impl_file)
-            raise QuiverError(m)
+            raise QuiverError("No implementation at '{}'", self.impl_file)
 
     def run(self):
         args = self.prelude
@@ -793,17 +784,14 @@ class QuiverServerCommand(object):
         ]
 
         assert None not in args, args
-        
+
         proc = _subprocess.Popen(args)
 
-        def signal_handler(signum, frame):
-            proc.terminate()
-            _sys.exit(0)
+        _install_sigterm_handler(proc)
 
-        _signal.signal(_signal.SIGTERM, signal_handler)
-        
         try:
             self.vprint("Process {} (server) started", proc.pid)
+
             while True:
                 _time.sleep(1)
         except:
@@ -813,9 +801,7 @@ class QuiverServerCommand(object):
         if proc.returncode == 0:
             self.vprint("Process {} (server) exited normally", proc.pid)
         else:
-            m = "Process {} (server) exited with code {}"
-            m = m.format(proc.pid, proc.returncode)
-            raise QuiverError(m)
+            raise QuiverError("Process {} (server) exited with code {}", proc.pid, proc.returncode)
 
 class _Formatter(_argparse.ArgumentDefaultsHelpFormatter,
                  _argparse.RawDescriptionHelpFormatter):
@@ -988,6 +974,15 @@ def _read_lines(file_):
 def _compress_file(path):
     args = "xz", "--compress", "-0", "--threads", "0", path
     _subprocess.check_call(args)
+
+def _install_sigterm_handler(*children):
+    def signal_handler(signum, frame):
+        for child in children:
+            child.terminate()
+
+        _sys.exit(0)
+
+    _signal.signal(_signal.SIGTERM, signal_handler)
 
 _join = _os.path.join
 
