@@ -28,8 +28,8 @@ TARGETS := \
 	build/bin/quiver-arrow \
 	build/bin/quiver-launch \
 	build/bin/quiver-pair-test \
+	build/bin/quiver-server \
 	build/bin/quiver-test \
-	build/exec/amqp-test-broker \
 	build/exec/arrow-activemq-jms \
 	build/exec/arrow-activemq-artemis-jms \
 	build/exec/arrow-qpid-jms \
@@ -38,6 +38,11 @@ TARGETS := \
 	build/exec/arrow-qpid-messaging-python \
 	build/exec/arrow-qpid-proton-python \
 	build/exec/arrow-qpid-messaging-cpp \
+	build/exec/quiver-server-activemq \
+	build/exec/quiver-server-activemq-artemis \
+	build/exec/quiver-server-builtin \
+	build/exec/quiver-server-qpid-cpp \
+	build/exec/quiver-server-qpid-dispatch \
 	build/java/quiver-activemq-artemis-jms.jar \
 	build/java/quiver-activemq-jms.jar \
 	build/java/quiver-qpid-jms.jar \
@@ -86,9 +91,11 @@ devel: PREFIX := ${PWD}/install
 devel: install
 	quiver-arrow send //localhost:12345/a/b/c --init-only
 	quiver q0 --init-only
+	quiver --init-only q0
 	quiver-launch q0 --init-only
 	quiver-pair-test --init-only
 	quiver-test --init-only
+	quiver-server q0 --init-only
 
 .PHONY: test
 test: devel

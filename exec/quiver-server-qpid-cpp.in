@@ -23,30 +23,41 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import os
+import signal
+import sys
+
+home_dir = os.path.normpath("@quiver_home@")
+sys.path.insert(0, os.path.join(home_dir, "python"))
+
 from plano import *
 
 def main():
-    port = random_port()
+    assert which("qpidd") is not None
+    assert which("qpid-config") is not None
+
+    host = sys.argv[1]
+    port = sys.argv[2]
+    path = sys.argv[3]
+
+    if port == "-":
+        port = "5672"
+    
     data_dir = make_temp_dir()
+    
+    server = start_process("qpidd --interface {} --port {} --auth no --default-queue-limit 0 --data-dir {}",
+                           host, port, data_dir)
 
-    command = "qpidd --port {} --auth no --default-queue-limit 0 --data-dir {}"
-    server = start_process(command, port, data_dir)
-
-    command = "qpid-config -b localhost:{} add queue q0 > /dev/null"
-    call(command, port)
-
-    command = "quiver //localhost:{}/q0 {}"
-    args = " ".join(ARGS[1:])
-    exit_code = 0
-
-    try:
-        call(command, port, args)
-    except CalledProcessError as e:
-        error(e)
-        exit_code = e.returncode
-    finally:
+    def signal_handler(signum, frame):
         stop_process(server)
-        exit(exit_code)
+        exit()
+
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    call("qpid-config -b {}:{} add queue {}", host, port, path)
+    
+    while True:
+        sleep(1)
 
 try:
     main()

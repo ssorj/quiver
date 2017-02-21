@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/python
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -18,10 +18,33 @@
 # under the License.
 #
 
-set -eu
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
 
-QUEUE=$1
+import os
+import sys
 
-artemis queue delete --name $QUEUE || :
-artemis address delete --name $QUEUE || :
-artemis queue create --name $QUEUE --no-durable --auto-create-address --address $QUEUE --anycast --preserve-on-no-consumers
+home_dir = os.path.normpath("@quiver_home@")
+sys.path.insert(0, os.path.join(home_dir, "python"))
+
+from quiver import *
+
+def main():
+    command = QuiverServerCommand(home_dir)
+    command.init()
+
+    if command.init_only:
+        return
+    
+    command.run()
+
+if __name__ == "__main__":
+    try:
+        main()
+    except QuiverError as e:
+        eprint(str(e))
+        sys.exit(1)
+    except KeyboardInterrupt:
+        pass

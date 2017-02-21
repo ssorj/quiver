@@ -36,7 +36,7 @@ from proton.reactor import *
 home = os.path.normpath("@quiver_home@")
 sys.path.insert(0, os.path.join(home, "python"))
 
-from plano import notice
+from plano import *
 
 class Queue(object):
     def __init__(self, address):
@@ -105,6 +105,8 @@ class BrokerHandler(MessagingHandler):
         return queue
 
     def on_link_opening(self, event):
+        # XXX check that address matches config
+        
         if event.link.is_sender:
             if event.link.remote_source.dynamic:
                 address = str(uuid.uuid4())
@@ -168,20 +170,20 @@ class BrokerHandler(MessagingHandler):
             queue.forward_messages(link)
 
 def main():
-    description = "A simple AMQP message broker for testing"
-    parser = ArgumentParser(description=description)
+    host = sys.argv[1]
+    port = sys.argv[2]
+    path = sys.argv[3]
 
-    parser.add_argument("domain", metavar="DOMAIN", default="localhost:5672",
-                        help="Listen at DOMAIN (default localhost:5672)")
-    parser.add_argument("--verbose", action="store_true")
+    if port == "-":
+        port = "5672"
+    
+    domain = "{}:{}".format(host, port)
 
-    args = parser.parse_args()
-
-    handler = BrokerHandler(args.domain)
-    handler.verbose = args.verbose
+    handler = BrokerHandler(domain)
+    handler.verbose = True # XXX
 
     container = Container(handler)
-    container.container_id = "amqp-test-broker"
+    container.container_id = "quiver-server-builtin"
 
     container.run()
 

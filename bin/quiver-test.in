@@ -46,7 +46,7 @@ def run_test(sender_impl, receiver_impl, failures, peer_to_peer=False):
 
         summary = "{} -> {} ".format(sender_impl, receiver_impl)
     else:
-        summary = "{} -> broker -> {} ".format(sender_impl, receiver_impl)
+        summary = "{} -> server -> {} ".format(sender_impl, receiver_impl)
 
     print("{:.<73} ".format(summary), end="")
 
@@ -130,7 +130,7 @@ def main():
 
     failures = list()
 
-    print("# Testing brokered send and receive")
+    print("# Testing client-server send and receive")
 
     for sender_impl in sorted(sender_impls):
         for receiver_impl in receiver_impls:

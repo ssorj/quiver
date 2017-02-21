@@ -68,6 +68,14 @@ transmission of messages.
 \* On Debian you will also need to symlink `/usr/bin/nodejs` to
 `/usr/bin/node`.
 
+### Using Fedora packages
+
+    $ sudo dnf enable jross/ssorj
+    $ sudo dnf install quiver
+
+If you don't have `dnf`, use the repo files at
+<https://copr.fedorainfracloud.org/coprs/jross/ssorj/>.
+
 ### Installing from source
 
 By default, installs from source go to `$HOME/.local`.  Make sure
@@ -75,14 +83,6 @@ By default, installs from source go to `$HOME/.local`.  Make sure
 
     $ cd quiver
     $ make install
-
-### Using packages
-
-    $ sudo dnf enable jross/ssorj
-    $ sudo dnf install quiver
-
-If you don't have `dnf`, use the repo files at
-<https://copr.fedorainfracloud.org/coprs/jross/ssorj/>.
 
 ## Development
 

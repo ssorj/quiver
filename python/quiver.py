@@ -24,7 +24,6 @@ from __future__ import unicode_literals
 from __future__ import with_statement
 
 import argparse as _argparse
-import atexit as _atexit
 import binascii as _binascii
 import json as _json
 import numpy as _numpy
@@ -43,7 +42,7 @@ try:
 except ImportError:
     from urlparse import urlparse as _urlparse
 
-_impls_by_name = {
+_quiver_arrow_impls_by_name = {
     "activemq-jms": "activemq-jms",
     "activemq-artemis-jms": "activemq-artemis-jms",
     "artemis-jms": "activemq-artemis-jms",
@@ -61,15 +60,29 @@ _impls_by_name = {
     "vertx-proton": "vertx-proton",
 }
 
-_common_epilog = """
+_quiver_server_impls_by_name = {
+    "activemq": "activemq",
+    "activemq-artemis": "activemq-artemis",
+    "artemis": "activemq-artemis",
+    "builtin": "builtin",
+    "dispatch": "qpid-dispatch",
+    "qdrouterd": "qpid-dispatch",
+    "qpid-cpp": "qpid-cpp",
+    "qpid-dispatch": "qpid-dispatch",
+    "qpidd": "qpid-cpp",
+}
+
+_epilog_addresses = """
 addresses:
   [//DOMAIN/]PATH                 The default domain is 'localhost'
   //example.net/jobs
   //10.0.0.10:5672/jobs/alpha
   //localhost/q0
   q0
+"""
 
-implementations:
+_epilog_arrow_impls = """
+arrow implementations:
   activemq-artemis-jms            Client mode only; requires Artemis server
   activemq-jms                    Client mode only; ActiveMQ or Artemis server
   qpid-jms [jms]                  Client mode only
@@ -81,6 +94,14 @@ implementations:
   vertx-proton [java]             Client mode only
 """
 
+_epilog_server_impls = """
+server implementations:
+  activemq
+  activemq-artemis [artemis]
+  qpid-cpp [qpidd]
+  qpid-dispatch [dispatch, qdrouterd]
+"""
+
 _quiver_description = """
 Start a sender-receiver pair for a particular messaging address.
 
@@ -89,6 +110,8 @@ message servers and APIs.
 """
 
 _quiver_epilog = """
+{}
+
 {}
 example usage:
   $ qdrouterd &                   # Start a message server
@@ -109,6 +132,8 @@ operations:
   receive               Receive messages
 
 {}
+
+{}
 server and passive modes:
   By default quiver-arrow operates in client and active modes, meaning
   that it creates an outbound connection to a server and actively
@@ -124,15 +149,31 @@ example usage:
   $ quiver-arrow send q0          # Start sending
 """
 
-_common_epilog = _common_epilog.lstrip()
+_quiver_server_description = """
+Start a message server with the given queue.
+"""
+
+_quiver_server_epilog = """
+{}
+
+{}
+"""
+
+_epilog_addresses = _epilog_addresses.lstrip()
+_epilog_arrow_impls = _epilog_arrow_impls.lstrip()
+_epilog_server_impls = _epilog_server_impls.lstrip()
 
 _quiver_description = _quiver_description.lstrip()
 _quiver_epilog = _quiver_epilog.lstrip()
-_quiver_epilog = _quiver_epilog.format(_common_epilog)
+_quiver_epilog = _quiver_epilog.format(_epilog_addresses, _epilog_arrow_impls)
 
 _quiver_arrow_description = _quiver_arrow_description.lstrip()
 _quiver_arrow_epilog = _quiver_arrow_epilog.lstrip()
-_quiver_arrow_epilog = _quiver_arrow_epilog.format(_common_epilog)
+_quiver_arrow_epilog = _quiver_arrow_epilog.format(_epilog_addresses, _epilog_arrow_impls)
+
+_quiver_server_description = _quiver_server_description.lstrip()
+_quiver_server_epilog = _quiver_server_epilog.lstrip()
+_quiver_server_epilog = _quiver_server_epilog.format(_epilog_addresses, _epilog_server_impls)
 
 class QuiverError(Exception):
     pass
@@ -209,9 +250,7 @@ class _Command(object):
         if not self.verbose:
             return
 
-        m = "{}: {}".format(_program, message)
-        m = m.format(*args)
-        print(m, **kwargs)
+        _print(message, *args, **kwargs)
 
 class QuiverCommand(_Command):
     def __init__(self, home_dir):
@@ -247,6 +286,14 @@ class QuiverCommand(_Command):
         receiver = _subprocess.Popen(receiver_args)
         sender = _subprocess.Popen(sender_args)
 
+        def signal_handler(signum, frame):
+            sender.terminate()
+            receiver.terminate()
+
+            _sys.exit(0)
+
+        _signal.signal(_signal.SIGTERM, signal_handler)
+        
         try:
             if not self.quiet:
                 self.print_status(sender, receiver)
@@ -424,12 +471,10 @@ class QuiverArrowCommand(_Command):
         super(QuiverArrowCommand, self).init()
 
         try:
-            self.impl = _impls_by_name[self.args.impl]
+            self.impl = _quiver_arrow_impls_by_name[self.args.impl]
         except KeyError:
             self.impl = self.args.impl
-
-            m = "Warning: Implementation '{}' is unknown".format(self.args.impl)
-            eprint(m)
+            eprint("Warning: Implementation '{}' is unknown", self.args.impl)
 
         self.operation = self.args.operation
         self.id_ = self.args.id
@@ -518,6 +563,12 @@ class QuiverArrowCommand(_Command):
 
             proc = _subprocess.Popen(args, stdout=fout)
 
+            def signal_handler(signum, frame):
+                proc.terminate()
+                _sys.exit(0)
+
+            _signal.signal(_signal.SIGTERM, signal_handler)
+            
             try:
                 self.vprint("Process {} ({}) started", proc.pid, self.operation)
                 self.monitor_subprocess(proc)
@@ -526,8 +577,7 @@ class QuiverArrowCommand(_Command):
                 raise
 
             if proc.returncode == 0:
-                m = "Process {} ({}) exited normally"
-                self.vprint(m, proc.pid, self.operation)
+                self.vprint("Process {} ({}) exited normally", proc.pid, self.operation)
             else:
                 m = "Process {} ({}) exited with code {}"
                 m = m.format(proc.pid, self.operation, proc.returncode)
@@ -664,6 +714,109 @@ class QuiverArrowCommand(_Command):
         with open(self.summary_file, "wb") as f:
             _json.dump(props, f, indent=2)
 
+class QuiverServerCommand(object):
+    def __init__(self, home_dir):
+        self.home_dir = home_dir
+        
+        self.parser = _argparse.ArgumentParser(description=_quiver_server_description,
+                                               epilog=_quiver_server_epilog,
+                                               formatter_class=_Formatter)
+
+        self.parser.add_argument("address", metavar="ADDRESS",
+                                 help="The location of a message queue")
+        self.parser.add_argument("--impl", metavar="NAME",
+                                 help="Use NAME implementation",
+                                 default="builtin")
+        self.parser.add_argument("--prelude", metavar="PRELUDE", default="",
+                                 help="Commands to precede the impl invocation")
+        self.parser.add_argument("--init-only", action="store_true",
+                                 help="Initialize and immediately exit")
+        self.parser.add_argument("--quiet", action="store_true",
+                                 help="Print nothing to the console")
+        self.parser.add_argument("--verbose", action="store_true",
+                                 help="Print details to the console")
+
+    def vprint(self, message, *args, **kwargs):
+        if not self.verbose:
+            return
+
+        _print(message, *args, **kwargs)
+        
+    def init(self):
+        self.args = self.parser.parse_args()
+
+        try:
+            self.impl = _quiver_server_impls_by_name[self.args.impl]
+        except KeyError:
+            self.impl = self.args.impl
+            eprint("Warning: Implementation '{}' is unknown", self.args.impl)
+
+        self.address = self.args.address
+        self.prelude = _shlex.split(self.args.prelude)
+        self.init_only = self.args.init_only
+        self.quiet = self.args.quiet
+        self.verbose = self.args.verbose
+
+        url = _urlparse(self.address)
+
+        if url.path is None:
+            raise QuiverError("The address URL has no path")
+
+        self.host = url.hostname
+        self.port = url.port
+        self.path = url.path
+        
+        if self.host is None:
+            self.host = "localhost"
+
+        if self.port is None:
+            self.port = "-"
+
+        self.port = str(self.port)
+
+        if self.path.startswith("/"):
+            self.path = self.path[1:]
+
+        self.impl_file = "{}/exec/quiver-server-{}".format(self.home_dir, self.impl)
+
+        if not _os.path.exists(self.impl_file):
+            m = "No implementation at '{}'".format(self.impl_file)
+            raise QuiverError(m)
+
+    def run(self):
+        args = self.prelude
+        args += [
+            self.impl_file,
+            self.host,
+            self.port,
+            self.path,
+        ]
+
+        assert None not in args, args
+        
+        proc = _subprocess.Popen(args)
+
+        def signal_handler(signum, frame):
+            proc.terminate()
+            _sys.exit(0)
+
+        _signal.signal(_signal.SIGTERM, signal_handler)
+        
+        try:
+            self.vprint("Process {} (server) started", proc.pid)
+            while True:
+                _time.sleep(1)
+        except:
+            proc.terminate()
+            raise
+
+        if proc.returncode == 0:
+            self.vprint("Process {} (server) exited normally", proc.pid)
+        else:
+            m = "Process {} (server) exited with code {}"
+            m = m.format(proc.pid, proc.returncode)
+            raise QuiverError(m)
+
 class _Formatter(_argparse.ArgumentDefaultsHelpFormatter,
                  _argparse.RawDescriptionHelpFormatter):
     pass
@@ -768,10 +921,9 @@ def eprint(message, *args, **kwargs):
     if isinstance(message, Exception):
         message = str(message)
 
-    message = "{}: {}".format(_program, message)
-    message = message.format(*args)
+    kwargs["file"] = _sys.stderr
 
-    print(message, file=_sys.stderr, **kwargs)
+    _print(message, *args, **kwargs)
 
 def now():
     return long(_time.time() * 1000)
@@ -788,6 +940,12 @@ def _parse_receive(line):
     receive_time = int(receive_time)
 
     return message_id, send_time, receive_time
+
+def _print(message, *args, **kwargs):
+    message = "{}: {}".format(_program, message)
+    message = message.format(*args)
+
+    print(message, **kwargs)
 
 def _print_numeric_field(name, value, unit, fmt="{:,.0f}"):
     name = "{}:".format(name)

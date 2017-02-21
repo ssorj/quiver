@@ -23,35 +23,49 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import os
+import signal
+import sys
+
+home_dir = os.path.normpath("@quiver_home@")
+sys.path.insert(0, os.path.join(home_dir, "python"))
+
 from plano import *
 
 def main():
-    # XXX Make sure port 61616 is free
+    assert which("artemis") is not None
 
+    host = sys.argv[1]
+    port = sys.argv[2]
+    path = sys.argv[3]
+
+    assert host == "localhost"
+    assert port == "-"
+    
     server = start_process("artemis run")
 
-    sleep(5)
+    def signal_handler(signum, frame):
+        call("artemis stop")
+        exit()
 
-    call("scripts/recreate-queue-artemis q0")
+    signal.signal(signal.SIGTERM, signal_handler)
 
-    command = "quiver //localhost/q0 {}"
-    args = " ".join(ARGS[1:])
-    exit_code = 0
+    sleep(5) # XXX Ugh
 
     try:
-        call(command, args)
-    except CalledProcessError as e:
-        error(e)
-        exit_code = e.returncode
-    finally:
-        try:
-            call("artemis stop")
-        except CalledProcessError:
-            pass
+        call("artemis queue delete --name {}", path)
+    except:
+        pass
 
-        sleep(5)
+    try:
+        call("artemis address delete --name {}", path)
+    except:
+        pass
 
-        exit(exit_code)
+    call("artemis queue create --name {} --no-durable --auto-create-address --address {} --anycast --preserve-on-no-consumers", path, path)
+
+    while True:
+        sleep(1)
 
 try:
     main()

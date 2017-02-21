@@ -28,23 +28,23 @@ import time
 from plano import *
 
 amqp_servers = (
-    "activemq",
+#    "activemq",
     "artemis",
-    "qdrouterd",
-    "qpidd",
+#    "qdrouterd",
+#    "qpidd",
 )
 
-amqp_clients = (
+amqp_arrows = (
     "qpid-jms",
     "qpid-messaging-cpp",
-    "qpid-messaging-python",
-    "qpid-proton-cpp",
-    "qpid-proton-python",
-    "rhea",
-    "vertx-proton",
+#    "qpid-messaging-python",
+#    "qpid-proton-cpp",
+#    "qpid-proton-python",
+#    "rhea",
+#    "vertx-proton",
 )
 
-core_clients = (
+core_arrows = (
     "activemq-artemis-jms",
 )
 
@@ -52,7 +52,7 @@ core_servers = (
     "artemis",
 )
 
-openwire_clients = (
+openwire_arrows = (
     "activemq-jms",
 )
 
@@ -61,29 +61,36 @@ openwire_servers = (
     "artemis",
 )
 
-def run_test(server, client, output_dir, args):
+def run_test(server, arrow, output_dir, args):
     if server == "activemq" and which("activemq") is None:
         return
 
     if server == "artemis" and which("artemis") is None:
         return
 
-    notice("Testing server '{}' with client '{}'", server, client)
+    notice("Testing server '{}' with client '{}'", server, arrow)
 
-    test_dir = join(output_dir, "{}--{}".format(server, client))
+    test_dir = join(output_dir, "{}--{}".format(server, arrow))
     data_dir = join(test_dir, "data")
     output_file = join(test_dir, "output.txt")
     result_file = join(test_dir, "result.txt")
-    command = "scripts/test-{} --impl {} {} --output {} &> {}"
 
     make_dir(test_dir)
 
+    server = start_process("quiver-server --impl {} --verbose q0", server)
+
+    sleep(10) # XXX Ugh
+    
     try:
-        call(command, server, client, args, data_dir, output_file, shell=True)
-        write(result_file, "SUCCESS")
+        call("quiver //localhost/q0 --impl {} {} --output {} &> {}",
+             arrow, args, data_dir, output_file, shell=True)
+        write(result_file, "PASSED")
     except CalledProcessError as e:
         error(e)
-        write(result_file, "FAILURE: {}".format(e))
+        write(result_file, "FAILED: {}".format(e))
+    finally:
+        stop_process(server)
+        sleep(5) # XXX
 
 def main():
     if "--impl" in ARGS:
@@ -102,16 +109,16 @@ def main():
     args = " ".join(ARGS[1:])
 
     for server in amqp_servers:
-        for client in amqp_clients:
-            run_test(server, client, output_dir, args)
+        for arrow in amqp_arrows:
+            run_test(server, arrow, output_dir, args)
 
-    for server in core_servers:
-        for client in core_clients:
-            run_test(server, client, output_dir, args)
+#    for server in core_servers:
+#        for arrow in core_arrows:
+#            run_test(server, arrow, output_dir, args)
 
-    for server in openwire_servers:
-        for client in openwire_clients:
-            run_test(server, client, output_dir, args)
+#    for server in openwire_servers:
+#        for arrow in openwire_arrows:
+#            run_test(server, arrow, output_dir, args)
 
     print(output_dir)
 

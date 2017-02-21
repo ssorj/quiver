@@ -56,8 +56,6 @@ def main():
     if args.peer_to_peer:
         args.receiver_options += " --server --passive"
 
-    server_command = ["{}/exec/amqp-test-broker".format(home), domain]
-
     pair_command = [
         "quiver-launch", address,
         "--sender-impl", args.sender_impl,
@@ -74,7 +72,9 @@ def main():
 
     try:
         if not args.peer_to_peer:
-            server = start_process(server_command)
+            server = start_process("quiver-server {}", address)
+
+            sleep(1) # XXX Ugh
 
         call(pair_command)
     except KeyboardInterrupt:
