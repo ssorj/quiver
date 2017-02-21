@@ -511,7 +511,7 @@ class QuiverArrowCommand(_Command):
         if self.path.startswith("/"):
             self.path = self.path[1:]
 
-        self.impl_file = "{}/exec/arrow-{}".format(self.home_dir, self.impl)
+        self.impl_file = "{}/exec/quiver-arrow-{}".format(self.home_dir, self.impl)
 
         if not _os.path.exists(self.impl_file):
             m = "No implementation at '{}'".format(self.impl_file)

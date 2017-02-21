@@ -29,14 +29,14 @@ TARGETS := \
 	build/bin/quiver-launch \
 	build/bin/quiver-server \
 	build/bin/quiver-test \
-	build/exec/arrow-activemq-jms \
-	build/exec/arrow-activemq-artemis-jms \
-	build/exec/arrow-qpid-jms \
-	build/exec/arrow-vertx-proton \
-	build/exec/arrow-rhea \
-	build/exec/arrow-qpid-messaging-python \
-	build/exec/arrow-qpid-proton-python \
-	build/exec/arrow-qpid-messaging-cpp \
+	build/exec/quiver-arrow-activemq-artemis-jms \
+	build/exec/quiver-arrow-activemq-jms \
+	build/exec/quiver-arrow-qpid-jms \
+	build/exec/quiver-arrow-qpid-messaging-cpp \
+	build/exec/quiver-arrow-qpid-messaging-python \
+	build/exec/quiver-arrow-qpid-proton-python \
+	build/exec/quiver-arrow-rhea \
+	build/exec/quiver-arrow-vertx-proton \
 	build/exec/quiver-server-activemq \
 	build/exec/quiver-server-activemq-artemis \
 	build/exec/quiver-server-builtin \
@@ -50,7 +50,7 @@ TARGETS := \
 CCFLAGS := -Os -std=c++11 -lstdc++ -lqpid-proton -lqpidmessaging -lqpidtypes
 
 ifdef QPID_PROTON_CPP_ENABLED
-	TARGETS += build/exec/arrow-qpid-proton-cpp
+	TARGETS += build/exec/quiver-arrow-qpid-proton-cpp
 	CCFLAGS += -lqpid-proton-cpp
 endif
 
