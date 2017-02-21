@@ -72,7 +72,7 @@ help:
 clean:
 	rm -rf build
 	rm -rf install
-	rm -rf $(find java -maxdepth 2 -type d -name target)
+	find java -name target -type d -exec rm -rf {} +
 
 .PHONY: build
 build: ${TARGETS}
