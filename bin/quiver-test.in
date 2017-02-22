@@ -25,7 +25,6 @@ from __future__ import with_statement
 
 import argparse
 import os
-import signal
 import sys
 import traceback
 
@@ -59,13 +58,6 @@ def run_test(sender_impl, receiver_impl, server_impl, peer_to_peer, failures):
         try:
             if not peer_to_peer:
                 server = start_process(server_command, stdout=fw, stderr=fw)
-
-                def signal_handler(signum, frame):
-                    stop_process(server)
-                    exit()
-
-                signal.signal(signal.SIGTERM, signal_handler)
-
                 wait_for_port(port)
 
             call(command, stdout=fw, stderr=fw)

@@ -26,7 +26,6 @@ from __future__ import with_statement
 import argparse
 import os
 import shlex
-import signal
 import sys
 import traceback
 
@@ -84,17 +83,6 @@ def main():
     for i in range(args.senders):
         sender = start_process(sender_command)
         senders.append(sender)
-
-    def signal_handler(signum, frame):
-        for sender in senders:
-            stop_process(sender)
-
-        for receiver in receivers:
-            stop_process(receiver)
-
-        exit(0)
-
-    signal.signal(signal.SIGTERM, signal_handler)
 
     try:
         try:

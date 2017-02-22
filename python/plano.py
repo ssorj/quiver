@@ -499,6 +499,46 @@ def call_for_output(command, *args, **kwargs):
 
     return output
 
+_child_processes = list()
+
+class _Process(_subprocess.Popen):
+    def __init__(self, command, *args, **kwargs):
+        super(_Process, self).__init__(command, *args, **kwargs)
+
+        try:
+            self.name = kwargs["name"]
+        except KeyError:
+            if _is_string(command):
+                self.name = program_name(command)
+            elif isinstance(command, _collections.Iterable):
+                self.name = command[0]
+            else:
+                raise Exception()
+
+        _child_processes.append(self)
+
+    def __repr__(self):
+        return "process {0} ({1})".format(self.pid, self.name)
+
+def _command_string(command):
+    if _is_string(command):
+        return command
+
+    elems = ["\"{0}\"".format(x) if " " in x else x for x in command]
+
+    return " ".join(elems)
+
+def terminate_child_processes():
+    for proc in _child_processes:
+        if proc.poll() is None:
+            proc.terminate()
+
+def _sigterm_handler(signum, frame):
+    terminate_child_processes()
+    exit(-(_signal.SIGTERM))
+
+_signal.signal(_signal.SIGTERM, _sigterm_handler)
+
 def start_process(command, *args, **kwargs):
     if _is_string(command):
         command = command.format(*args)
@@ -521,31 +561,6 @@ def start_process(command, *args, **kwargs):
     debug("{0} started", proc)
 
     return proc
-
-def _command_string(command):
-    if _is_string(command):
-        return command
-
-    elems = ["\"{0}\"".format(x) if " " in x else x for x in command]
-
-    return " ".join(elems)
-
-class _Process(_subprocess.Popen):
-    def __init__(self, command, *args, **kwargs):
-        super(_Process, self).__init__(command, *args, **kwargs)
-
-        try:
-            self.name = kwargs["name"]
-        except KeyError:
-            if _is_string(command):
-                self.name = program_name(command)
-            elif isinstance(command, _collections.Iterable):
-                self.name = command[0]
-            else:
-                raise Exception()
-
-    def __repr__(self):
-        return "process {0} ({1})".format(self.pid, self.name)
 
 def stop_process(proc):
     notice("Stopping {0}", proc)
