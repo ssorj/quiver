@@ -46,16 +46,19 @@ def run_test(sender_impl, receiver_impl, server_impl, peer_to_peer, failures):
 
     flush()
 
-    address = "//127.0.0.1:{}/q0".format(random_port())
+    port = random_port()
+    address = "//127.0.0.1:{}/q0".format(port)
+
     server_command = "quiver-server {} --impl {} --verbose".format(address, server_impl)
     server = None
-    test_output_file = make_temp_file()
-    test_command = build_test_command(address, sender_impl, receiver_impl, peer_to_peer)
 
-    with open(test_output_file, "w") as f:
+    output_file = make_temp_file()
+    command = build_test_command(address, sender_impl, receiver_impl, peer_to_peer)
+
+    with open(output_file, "w") as fw:
         try:
             if not peer_to_peer:
-                server = start_process(server_command, stdout=f, stderr=f)
+                server = start_process(server_command, stdout=fw, stderr=fw)
 
                 def signal_handler(signum, frame):
                     stop_process(server)
@@ -63,9 +66,9 @@ def run_test(sender_impl, receiver_impl, server_impl, peer_to_peer, failures):
 
                 signal.signal(signal.SIGTERM, signal_handler)
 
-                sleep(1) # XXX Ugh
+                wait_for_port(port)
 
-            call(test_command, stdout=f, stderr=f)
+            call(command, stdout=fw, stderr=fw)
 
             print("PASSED")
         except KeyboardInterrupt:
@@ -75,8 +78,8 @@ def run_test(sender_impl, receiver_impl, server_impl, peer_to_peer, failures):
 
             print("FAILED")
 
-            with open(test_output_file, "r") as f:
-                for line in f:
+            with open(output_file, "r") as fr:
+                for line in fr:
                     print("> {}".format(line), end="")
         except:
             traceback.print_exc()
@@ -105,15 +108,15 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--sender-impl", metavar="IMPL", default=None,
+    parser.add_argument("--sender", metavar="IMPL", default=None,
                         help="Test only sender IMPL")
-    parser.add_argument("--receiver-impl", metavar="IMPL", default=None,
+    parser.add_argument("--receiver", metavar="IMPL", default=None,
                         help="Test only receiver IMPL")
-    parser.add_argument("--server-impl", metavar="IMPL", default="builtin",
+    parser.add_argument("--server", metavar="IMPL", default="builtin",
                         help="Test using server IMPL")
-    parser.add_argument("--client-server", action="store_true",
+    parser.add_argument("--client-server-only", action="store_true",
                         help="Test only client-server mode")
-    parser.add_argument("--peer-to-peer", action="store_true",
+    parser.add_argument("--peer-to-peer-only", action="store_true",
                         help="Test only peer-to-peer mode")
     parser.add_argument("--init-only", action="store_true",
                         help="Initialize and immediately exit")
@@ -141,30 +144,30 @@ def main():
     sender_impls = arrow_impls
     receiver_impls = arrow_impls
 
-    if args.sender_impl is not None:
-        if args.sender_impl not in _quiver_arrow_impls_by_name:
-            warn("Implementation '{}' is unknown", args.sender_impl)
+    if args.sender is not None:
+        if args.sender not in _quiver_arrow_impls_by_name:
+            warn("Implementation '{}' is unknown", args.sender)
 
-        sender_impls = [_quiver_arrow_impls_by_name.get(args.sender_impl, args.sender_impl)]
+        sender_impls = [_quiver_arrow_impls_by_name.get(args.sender, args.sender)]
 
-    if args.receiver_impl is not None:
-        if args.receiver_impl not in _quiver_arrow_impls_by_name:
-            warn("Implementation '{}' is unknown", args.receiver_impl)
+    if args.receiver is not None:
+        if args.receiver not in _quiver_arrow_impls_by_name:
+            warn("Implementation '{}' is unknown", args.receiver)
 
-        receiver_impls = [_quiver_arrow_impls_by_name.get(args.receiver_impl, args.receiver_impl)]
+        receiver_impls = [_quiver_arrow_impls_by_name.get(args.receiver, args.receiver)]
 
-    if args.server_impl not in _quiver_server_impls_by_name:
-        warn("Implementation '{}' is unknown", args.server_impl)
+    if args.server not in _quiver_server_impls_by_name:
+        warn("Implementation '{}' is unknown", args.server)
 
-    server_impl = _quiver_server_impls_by_name.get(args.server_impl, args.server_impl)
+    server_impl = _quiver_server_impls_by_name.get(args.server, args.server)
 
     client_server = True
     peer_to_peer = True
 
-    if args.client_server:
+    if args.client_server_only:
         peer_to_peer = False
 
-    if args.peer_to_peer:
+    if args.peer_to_peer_only:
         client_server = False
 
     if args.init_only:
