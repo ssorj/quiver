@@ -24,24 +24,25 @@ from __future__ import unicode_literals
 from __future__ import with_statement
 
 import time
+import traceback
 
 from plano import *
 
 amqp_servers = (
-#    "activemq",
-    "artemis",
-#    "qdrouterd",
-#    "qpidd",
+    "activemq",
+    "activemq-artemis",
+    "qdrouterd",
+    "qpidd",
 )
 
 amqp_arrows = (
     "qpid-jms",
     "qpid-messaging-cpp",
-#    "qpid-messaging-python",
-#    "qpid-proton-cpp",
-#    "qpid-proton-python",
-#    "rhea",
-#    "vertx-proton",
+    "qpid-messaging-python",
+    "qpid-proton-cpp",
+    "qpid-proton-python",
+    "rhea",
+    "vertx-proton",
 )
 
 core_arrows = (
@@ -49,7 +50,7 @@ core_arrows = (
 )
 
 core_servers = (
-    "artemis",
+    "activemq-artemis",
 )
 
 openwire_arrows = (
@@ -58,14 +59,14 @@ openwire_arrows = (
 
 openwire_servers = (
     "activemq",
-    "artemis",
+    "activemq-artemis",
 )
 
 def run_test(server, arrow, output_dir, args):
     if server == "activemq" and which("activemq") is None:
         return
 
-    if server == "artemis" and which("artemis") is None:
+    if server == "activemq-artemis" and which("artemis") is None:
         return
 
     notice("Testing server '{}' with client '{}'", server, arrow)
@@ -74,23 +75,37 @@ def run_test(server, arrow, output_dir, args):
     data_dir = join(test_dir, "data")
     output_file = join(test_dir, "output.txt")
     result_file = join(test_dir, "result.txt")
+    command = "quiver q0 --impl {} {} --output {}".format(arrow, args, data_dir)
+    server_command = "quiver-server --impl {} --verbose q0".format(server)
+    server_output_file = join(test_dir, "server.txt")
 
     make_dir(test_dir)
 
-    server = start_process("quiver-server --impl {} --verbose q0", server)
+    with open(server_output_file, "w") as sfw:
+         server = start_process(server_command, stdout=sfw, stderr=sfw)
 
-    sleep(10) # XXX Ugh
-    
-    try:
-        call("quiver //localhost/q0 --impl {} {} --output {} &> {}",
-             arrow, args, data_dir, output_file, shell=True)
-        write(result_file, "PASSED")
-    except CalledProcessError as e:
-        error(e)
-        write(result_file, "FAILED: {}".format(e))
-    finally:
-        stop_process(server)
-        sleep(5) # XXX
+         wait_for_port(5672)
+         sleep(5) # XXX Ugh
+
+         with open(output_file, "w") as fw:
+             try:
+                 call(command, stdout=fw, stderr=fw)
+                 write(result_file, "PASSED")
+             except KeyboardInterrupt:
+                 raise
+             except CalledProcessError as e:
+                 error(e)
+
+                 write(result_file, "FAILED: {}".format(e))
+
+                 with open(output_file, "r") as fr:
+                     for line in fr:
+                         print("> {}".format(line), end="")
+             except:
+                 traceback.print_exc()
+             finally:
+                 stop_process(server)
+                 sleep(5) # XXX
 
 def main():
     if "--impl" in ARGS:
@@ -112,13 +127,13 @@ def main():
         for arrow in amqp_arrows:
             run_test(server, arrow, output_dir, args)
 
-#    for server in core_servers:
-#        for arrow in core_arrows:
-#            run_test(server, arrow, output_dir, args)
+    for server in core_servers:
+        for arrow in core_arrows:
+            run_test(server, arrow, output_dir, args)
 
-#    for server in openwire_servers:
-#        for arrow in openwire_arrows:
-#            run_test(server, arrow, output_dir, args)
+    for server in openwire_servers:
+        for arrow in openwire_arrows:
+            run_test(server, arrow, output_dir, args)
 
     print(output_dir)
 

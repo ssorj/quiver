@@ -31,6 +31,7 @@ import re as _re
 import shlex as _shlex
 import shutil as _shutil
 import signal as _signal
+import socket as _socket
 import subprocess as _subprocess
 import sys as _sys
 import tarfile as _tarfile
@@ -75,14 +76,14 @@ def fail(message, *args):
     if isinstance(message, BaseException):
         raise message
 
-    raise Exception(message)
+    raise Exception(message.format(*args))
 
 def error(message, *args):
     _print_message("Error", message, args)
 
 def warn(message, *args):
     if _message_threshold <= _warn:
-        _print_message("Warn", message, args)
+        _print_message("Warning", message, args)
 
 def notice(message, *args):
     if _message_threshold <= _notice:
@@ -202,10 +203,10 @@ def program_name(command=None):
 def which(program_name):
     for dir in ENV["PATH"].split(PATH_VAR_SEP):
         program = join(dir, program_name)
-        
+
         if _os.access(program, _os.X_OK):
             return program
-        
+
 def read(file):
     with _codecs.open(file, encoding="utf-8", mode="r") as f:
         return f.read()
@@ -574,7 +575,7 @@ def wait_for_process(proc):
     elif proc.returncode == -(_signal.SIGTERM):
         notice("{0} exited after termination", proc)
     else:
-        error("{0} exited with code {1}", proc, proc.returncode)
+        notice("{0} exited with code {1}", proc, proc.returncode)
 
     return proc.returncode
 
@@ -630,6 +631,25 @@ def rename_archive(archive_file, new_archive_stem):
 
 def random_port(min=49152, max=65535):
     return _random.randint(min, max)
+
+def wait_for_port(port, host="", timeout=30):
+    sock = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+    sock.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1)
+    sock.settimeout(timeout)
+
+    start = _time.time()
+
+    try:
+        while True:
+            if sock.connect_ex((host, port)) == 0:
+                return
+
+            sleep(0.1)
+
+            if _time.time() - start > timeout:
+                fail("Timed out waiting for port {} to open", port)
+    finally:
+        sock.close()
 
 # Modified copytree impl that allows for already existing destination
 # dirs
