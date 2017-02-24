@@ -73,8 +73,8 @@ _quiver_server_impls_by_name = {
     "qpidd": "qpid-cpp",
 }
 
-_epilog_addresses = """
-addresses:
+_epilog_urls = """
+URLs:
   [//DOMAIN/]PATH                 The default domain is 'localhost'
   //example.net/jobs
   //10.0.0.10:5672/jobs/alpha
@@ -83,7 +83,7 @@ addresses:
 """
 
 _epilog_arrow_impls = """
-arrow implementations:
+implementations:
   activemq-artemis-jms            Client mode only; requires Artemis server
   activemq-jms                    Client mode only; ActiveMQ or Artemis server
   qpid-jms [jms]                  Client mode only
@@ -160,21 +160,21 @@ _quiver_server_epilog = """
 {}
 """
 
-_epilog_addresses = _epilog_addresses.lstrip()
+_epilog_urls = _epilog_urls.lstrip()
 _epilog_arrow_impls = _epilog_arrow_impls.lstrip()
 _epilog_server_impls = _epilog_server_impls.lstrip()
 
 _quiver_description = _quiver_description.lstrip()
 _quiver_epilog = _quiver_epilog.lstrip()
-_quiver_epilog = _quiver_epilog.format(_epilog_addresses, _epilog_arrow_impls)
+_quiver_epilog = _quiver_epilog.format(_epilog_urls, _epilog_arrow_impls)
 
 _quiver_arrow_description = _quiver_arrow_description.lstrip()
 _quiver_arrow_epilog = _quiver_arrow_epilog.lstrip()
-_quiver_arrow_epilog = _quiver_arrow_epilog.format(_epilog_addresses, _epilog_arrow_impls)
+_quiver_arrow_epilog = _quiver_arrow_epilog.format(_epilog_urls, _epilog_arrow_impls)
 
 _quiver_server_description = _quiver_server_description.lstrip()
 _quiver_server_epilog = _quiver_server_epilog.lstrip()
-_quiver_server_epilog = _quiver_server_epilog.format(_epilog_addresses, _epilog_server_impls)
+_quiver_server_epilog = _quiver_server_epilog.format(_epilog_urls, _epilog_server_impls)
 
 class QuiverError(Exception):
     def __init__(self, message, *args):
@@ -198,7 +198,7 @@ class _Command(object):
 
         self.args = self.parser.parse_args()
 
-        self.address = self.args.address
+        self.url = self.args.url
         self.messages = self.parse_int_with_unit(self.args.messages)
         self.body_size = self.parse_int_with_unit(self.args.body_size)
         self.credit_window = self.parse_int_with_unit(self.args.credit)
@@ -216,7 +216,7 @@ class _Command(object):
             _os.makedirs(self.output_dir)
 
     def add_common_arguments(self):
-        self.parser.add_argument("address", metavar="ADDRESS",
+        self.parser.add_argument("url", metavar="URL",
                                  help="The location of a message queue")
         self.parser.add_argument("-m", "--messages", metavar="COUNT",
                                  help="Send or receive COUNT messages",
@@ -269,7 +269,7 @@ class QuiverCommand(_Command):
 
     def run(self):
         args = [
-            self.address,
+            self.url,
             "--messages", self.args.messages,
             "--impl", self.args.impl,
             "--body-size", self.args.body_size,
@@ -412,7 +412,7 @@ class QuiverCommand(_Command):
 
         print("-" * 80)
 
-        v = "{} {} ({})".format(self.args.impl, self.address, self.output_dir)
+        v = "{} {} ({})".format(self.args.impl, self.url, self.output_dir)
         print("Subject: {}".format(v))
 
         _print_numeric_field("Messages", self.messages, "messages")
@@ -491,10 +491,10 @@ class QuiverArrowCommand(_Command):
         if self.args.passive:
             self.channel_mode = "passive"
 
-        url = _urlparse(self.address)
+        url = _urlparse(self.url)
 
         if url.path is None:
-            raise QuiverError("The address URL has no path")
+            raise QuiverError("The URL has no path")
 
         self.host = url.hostname
         self.port = url.port
@@ -679,7 +679,7 @@ class QuiverArrowCommand(_Command):
         props = {
             "config": {
                 "impl": self.impl,
-                "address": self.address,
+                "url": self.url,
                 "output_dir": self.output_dir,
                 "connection_mode": self.connection_mode,
                 "channel_mode": self.channel_mode,
@@ -714,7 +714,7 @@ class QuiverServerCommand(object):
                                                epilog=_quiver_server_epilog,
                                                formatter_class=_Formatter)
 
-        self.parser.add_argument("address", metavar="ADDRESS",
+        self.parser.add_argument("url", metavar="URL",
                                  help="The location of a message queue")
         self.parser.add_argument("--impl", metavar="NAME",
                                  help="Use NAME implementation",
@@ -745,7 +745,7 @@ class QuiverServerCommand(object):
             self.impl = self.args.impl
             eprint("Warning: Implementation '{}' is unknown", self.args.impl)
 
-        self.address = self.args.address
+        self.url = self.args.url
         self.ready_file = self.args.ready_file
         self.prelude = _shlex.split(self.args.prelude)
         self.init_only = self.args.init_only
@@ -757,10 +757,10 @@ class QuiverServerCommand(object):
         if not _os.path.exists(self.impl_file):
             raise QuiverError("No implementation at '{}'", self.impl_file)
 
-        url = _urlparse(self.address)
+        url = _urlparse(self.url)
 
         if url.path is None:
-            raise QuiverError("The address URL has no path")
+            raise QuiverError("The URL has no path")
 
         self.host = url.hostname
         self.port = url.port

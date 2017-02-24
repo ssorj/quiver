@@ -39,7 +39,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("address", metavar="ADDRESS",
+    parser.add_argument("url", metavar="URL",
                         help="The location of a message queue")
     parser.add_argument("--senders", metavar="COUNT", default=1, type=int)
     parser.add_argument("--sender-impl", metavar="IMPL", default="qpid-proton-python")
@@ -58,11 +58,11 @@ def main():
     receiver_impl = args.receiver_impl
     receiver_options = shlex.split(args.receiver_options)
 
-    sender_command = ["quiver-arrow", "send", args.address, "--impl", sender_impl]
+    sender_command = ["quiver-arrow", "send", args.url, "--impl", sender_impl]
     sender_command += sender_options
     sender_command += unknown_args
 
-    receiver_command = ["quiver-arrow", "receive", args.address, "--impl", receiver_impl]
+    receiver_command = ["quiver-arrow", "receive", args.url, "--impl", receiver_impl]
     receiver_command += receiver_options
     receiver_command += unknown_args
 

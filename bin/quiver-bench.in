@@ -51,7 +51,7 @@ def run_test(arrow_impl, server_impl, peer_to_peer, output_dir, failures):
 
     test_data_dir = join(test_dir, "data")
     test_output_file = join(test_dir, "output.txt")
-    test_command = "quiver //127.0.0.1/q0 -m 1m --impl {} --output {}".format(arrow_impl, test_data_dir)
+    test_command = "quiver //127.0.0.1/q0 -m 100 --impl {} --output {}".format(arrow_impl, test_data_dir)
 
     server_output_file = join(test_dir, "server-output.txt")
     server_ready_file = make_temp_file()
@@ -86,12 +86,12 @@ def run_test(arrow_impl, server_impl, peer_to_peer, output_dir, failures):
                 print("FAILED")
 
                 print("--- Test output ---")
-                
+
                 for line in read_lines(test_output_file):
                     print("> {}".format(line), end="")
 
                 print("--- Server output ---")
-                
+
                 for line in read_lines(server_output_file):
                     print("> {}".format(line), end="")
             except:
@@ -104,7 +104,7 @@ def run_test(arrow_impl, server_impl, peer_to_peer, output_dir, failures):
 
 class Timeout(Exception):
     pass
-    
+
 def main():
     set_message_threshold("warn")
 
@@ -180,6 +180,8 @@ def main():
     make_dir(output_dir)
 
     failures = list()
+
+    #print("# Testing client-server send and receive with server '{}'".format(server_impl))
 
     if client_server:
         for arrow_impl in arrow_impls:
