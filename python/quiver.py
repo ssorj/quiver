@@ -24,10 +24,10 @@ from __future__ import unicode_literals
 from __future__ import with_statement
 
 import argparse as _argparse
-import binascii as _binascii
 import json as _json
 import numpy as _numpy
 import os as _os
+import plano as _plano
 import resource as _resource
 import shlex as _shlex
 import signal as _signal
@@ -35,12 +35,13 @@ import subprocess as _subprocess
 import sys as _sys
 import tempfile as _tempfile
 import time as _time
-import uuid as _uuid
 
 try:
     from urllib.parse import urlparse as _urlparse
 except ImportError:
     from urlparse import urlparse as _urlparse
+
+_plano.set_message_threshold("error")
 
 _quiver_arrow_impls_by_name = {
     "activemq-jms": "activemq-jms",
@@ -482,7 +483,7 @@ class QuiverArrowCommand(_Command):
         self.prelude = _shlex.split(self.args.prelude)
 
         if self.id_ is None:
-            self.id_ = "quiver-{}".format(_unique_id())
+            self.id_ = "quiver-{}".format(_plano.unique_id(4))
 
         if self.args.server:
             self.connection_mode = "server"
@@ -539,8 +540,7 @@ class QuiverArrowCommand(_Command):
         self.latency_nines = None
 
     def run(self):
-        args = self.prelude
-        args += [
+        args = self.prelude + [
             self.impl_file,
             self.connection_mode,
             self.channel_mode,
@@ -719,6 +719,8 @@ class QuiverServerCommand(object):
         self.parser.add_argument("--impl", metavar="NAME",
                                  help="Use NAME implementation",
                                  default="builtin")
+        self.parser.add_argument("--ready-file", metavar="FILE",
+                                 help="File used to indicate the server is ready")
         self.parser.add_argument("--prelude", metavar="PRELUDE", default="",
                                  help="Commands to precede the impl invocation")
         self.parser.add_argument("--init-only", action="store_true",
@@ -744,10 +746,16 @@ class QuiverServerCommand(object):
             eprint("Warning: Implementation '{}' is unknown", self.args.impl)
 
         self.address = self.args.address
+        self.ready_file = self.args.ready_file
         self.prelude = _shlex.split(self.args.prelude)
         self.init_only = self.args.init_only
         self.quiet = self.args.quiet
         self.verbose = self.args.verbose
+
+        self.impl_file = "{}/exec/quiver-server-{}".format(self.home_dir, self.impl)
+
+        if not _os.path.exists(self.impl_file):
+            raise QuiverError("No implementation at '{}'", self.impl_file)
 
         url = _urlparse(self.address)
 
@@ -769,18 +777,16 @@ class QuiverServerCommand(object):
         if self.path.startswith("/"):
             self.path = self.path[1:]
 
-        self.impl_file = "{}/exec/quiver-server-{}".format(self.home_dir, self.impl)
-
-        if not _os.path.exists(self.impl_file):
-            raise QuiverError("No implementation at '{}'", self.impl_file)
+        if self.ready_file is None:
+            self.ready_file = "-"
 
     def run(self):
-        args = self.prelude
-        args += [
+        args = self.prelude + [
             self.impl_file,
             self.host,
             self.port,
             self.path,
+            self.ready_file,
         ]
 
         assert None not in args, args
@@ -789,14 +795,10 @@ class QuiverServerCommand(object):
 
         _install_sigterm_handler(proc)
 
-        try:
-            self.vprint("Process {} (server) started", proc.pid)
+        self.vprint("Process {} (server) started", proc.pid)
 
-            while True:
-                _time.sleep(1)
-        except:
-            proc.terminate()
-            raise
+        while proc.poll() is None:
+            _time.sleep(1)
 
         if proc.returncode == 0:
             self.vprint("Process {} (server) exited normally", proc.pid)
@@ -942,9 +944,6 @@ def _print_numeric_field(name, value, unit, fmt="{:,.0f}"):
         value = fmt.format(value)
 
     print("{:<28} {:>28} {}".format(name, value, unit))
-
-def _unique_id():
-    return _binascii.hexlify(_uuid.uuid4().bytes[:4]).decode("utf-8")
 
 def _touch(path):
     with open(path, "ab") as f:

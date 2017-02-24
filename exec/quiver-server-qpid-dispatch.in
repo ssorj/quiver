@@ -32,18 +32,18 @@ sys.path.insert(0, os.path.join(home_dir, "python"))
 from plano import *
 
 config_template = """
-router {
+router {{
     mode: standalone
-    id: test-qdrouterd-1
-}
+    id: quiver-test-router
+}}
 
-listener {
-    host: ::
-    port: @port@
+listener {{
+    host: {}
+    port: {}
     linkCapacity: 1000
     authenticatePeer: off
     saslMechanisms: ANONYMOUS
-}
+}}
 """
 
 def main():
@@ -52,14 +52,20 @@ def main():
     host = sys.argv[1]
     port = sys.argv[2]
     path = sys.argv[3]
+    ready_file = sys.argv[4]
 
     if port == "-":
-        port = "5672"
-    
-    config = config_template.replace("@port@", port)
+        port = 5672
+
+    config = config_template.format(host, port)
     config_file = write(make_temp_file(), config)
 
     server = start_process("qdrouterd --config {}", config_file)
+
+    wait_for_port(port)
+
+    if ready_file != "-":
+        write(ready_file, "ready\n")
 
     while True:
         sleep(1)

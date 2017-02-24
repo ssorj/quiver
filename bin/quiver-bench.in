@@ -1,0 +1,207 @@
+#!/usr/bin/python
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
+
+import argparse
+import os
+import sys
+import time
+import tempfile
+import traceback
+
+home = os.path.normpath("@quiver_home@")
+sys.path.insert(0, os.path.join(home, "python"))
+
+from plano import *
+from quiver import _quiver_arrow_impls_by_name
+from quiver import _quiver_server_impls_by_name
+
+def run_test(arrow_impl, server_impl, peer_to_peer, output_dir, failures):
+    if peer_to_peer:
+        summary = "{} -> {} ".format(arrow_impl, arrow_impl)
+    else:
+        summary = "{} -> {} -> {} ".format(arrow_impl, server_impl, arrow_impl)
+
+    print("{:.<113} ".format(summary), end="")
+
+    flush()
+
+    test_dir = join(output_dir, arrow_impl, server_impl)
+
+    test_data_dir = join(test_dir, "data")
+    test_output_file = join(test_dir, "output.txt")
+    test_command = "quiver //127.0.0.1/q0 -m 1m --impl {} --output {}".format(arrow_impl, test_data_dir)
+
+    server_output_file = join(test_dir, "server-output.txt")
+    server_ready_file = make_temp_file()
+    server_command = "quiver-server //127.0.0.1/q0 --impl {} --ready-file {} --verbose".format \
+                     (server_impl, server_ready_file)
+    server = None
+
+    make_dir(test_dir)
+
+    with open(server_output_file, "w") as sf:
+        with open(test_output_file, "w") as tf:
+            try:
+                if not peer_to_peer:
+                    server = start_process(server_command, stdout=sf, stderr=sf)
+
+                    for i in range(10):
+                        if read(server_ready_file) == "ready\n":
+                            break
+
+                        sleep(1)
+                    else:
+                        raise Timeout("Timed out waiting for server to be ready")
+
+                call(test_command, stdout=tf, stderr=tf)
+
+                print("PASSED")
+            except KeyboardInterrupt:
+                raise
+            except (CalledProcessError, Timeout) as e:
+                failures.append(str(e))
+
+                print("FAILED")
+
+                print("--- Test output ---")
+                
+                for line in read_lines(test_output_file):
+                    print("> {}".format(line), end="")
+
+                print("--- Server output ---")
+                
+                for line in read_lines(server_output_file):
+                    print("> {}".format(line), end="")
+            except:
+                traceback.print_exc()
+            finally:
+                if server is not None:
+                    stop_process(server)
+
+    flush()
+
+class Timeout(Exception):
+    pass
+    
+def main():
+    set_message_threshold("warn")
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--arrow", metavar="IMPL", default=None,
+                        help="Test only arrow IMPL")
+    parser.add_argument("--server", metavar="IMPL", default=None,
+                        help="Test only server IMPL")
+    parser.add_argument("--client-server-only", action="store_true",
+                        help="Test only client-server mode")
+    parser.add_argument("--peer-to-peer-only", action="store_true",
+                        help="Test only peer-to-peer mode")
+    parser.add_argument("--init-only", action="store_true",
+                        help="Initialize and immediately exit")
+
+    args = parser.parse_args()
+
+    arrow_impls = [
+        "qpid-jms",
+        "qpid-messaging-cpp",
+        "qpid-messaging-python",
+        "qpid-proton-python",
+        "rhea",
+        "vertx-proton",
+    ]
+
+    peer_to_peer_arrow_impls = [
+        "qpid-proton-python",
+        "rhea",
+    ]
+
+    server_impls = [
+        "activemq",
+        "activemq-artemis",
+        "qpid-cpp",
+        "qpid-dispatch",
+    ]
+
+    if exists(join(home, "exec", "quiver-arrow-qpid-proton-cpp")):
+        arrow_impls.append("qpid-proton-cpp")
+        peer_to_peer_arrow_impls.append("qpid-proton-cpp")
+
+    if args.arrow is not None:
+        if args.arrow not in _quiver_arrow_impls_by_name:
+            warn("Implementation '{}' is unknown", args.arrow)
+
+        arrow_impls = [_quiver_arrow_impls_by_name.get(args.arrow, args.arrow)]
+
+    if args.server is not None:
+        if args.server not in _quiver_server_impls_by_name:
+            warn("Implementation '{}' is unknown", args.server)
+
+        server_impls = [_quiver_server_impls_by_name.get(args.server, args.server)]
+
+    client_server = True
+    peer_to_peer = True
+
+    if args.client_server_only:
+        peer_to_peer = False
+
+    if args.peer_to_peer_only:
+        client_server = False
+
+    if args.init_only:
+        return
+
+    script = file_name(ARGS[0])
+    timestamp = time.strftime('%Y-%m-%d', time.localtime())
+    output_dir = "{}-{}".format(script, timestamp)
+
+    remove(output_dir)
+    make_dir(output_dir)
+
+    failures = list()
+
+    if client_server:
+        for arrow_impl in arrow_impls:
+            for server_impl in server_impls:
+                run_test(arrow_impl, server_impl, False, output_dir, failures)
+
+    #if peer_to_peer:
+    #    print("# Testing peer-to-peer send and receive")
+
+    #    for arrow_impl in arrow_impls:
+    #        if arrow_impl not in peer_to_peer_arrow_impls:
+    #            continue
+
+    #        run_test(arrow_impl, server_impl, True, output_dir, failures)
+
+    print("Test failures: {}".format(len(failures)))
+
+    for failure in failures:
+        print(failure) # Need summary
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

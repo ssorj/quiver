@@ -38,17 +38,23 @@ def main():
     host = sys.argv[1]
     port = sys.argv[2]
     path = sys.argv[3]
+    ready_file = sys.argv[4]
 
     if port == "-":
-        port = "5672"
-    
+        port = 5672
+
     data_dir = make_temp_dir()
-    
+
     server = start_process("qpidd --interface {} --port {} --auth no --default-queue-limit 0 --data-dir {}",
                            host, port, data_dir)
 
+    wait_for_port(port)
+
     call("qpid-config -b {}:{} add queue {}", host, port, path)
-    
+
+    if ready_file != "-":
+        write(ready_file, "ready\n")
+
     while True:
         sleep(1)
 

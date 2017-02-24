@@ -26,6 +26,7 @@ QUIVER_HOME = ${PREFIX}/lib/quiver
 TARGETS := \
 	build/bin/quiver \
 	build/bin/quiver-arrow \
+	build/bin/quiver-bench \
 	build/bin/quiver-launch \
 	build/bin/quiver-server \
 	build/bin/quiver-test \

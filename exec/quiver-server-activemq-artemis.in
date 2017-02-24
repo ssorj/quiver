@@ -34,38 +34,54 @@ from plano import *
 
 def main():
     assert which("artemis") is not None
+    assert which("artemis-service") is not None
 
     host = sys.argv[1]
     port = sys.argv[2]
     path = sys.argv[3]
+    ready_file = sys.argv[4]
 
-    assert host == "localhost"
+    assert host in ("localhost", "127.0.0.1")
     assert port == "-"
-    
-    server = start_process("artemis run")
+
+    wait_for_server_to_stop()
+
+    server = call("artemis-service start")
 
     def signal_handler(signum, frame):
-        call("artemis stop")
+        call("artemis-service stop")
+        wait_for_server_to_stop()
         exit()
 
     signal.signal(signal.SIGTERM, signal_handler)
 
     wait_for_port(61616)
+    wait_for_port(5672)
 
-    try:
-        call("artemis queue delete --name {}", path)
-    except:
-        pass
-
-    try:
-        call("artemis address delete --name {}", path)
-    except:
-        pass
+    # Ignore failures
+    call_for_exit_code("artemis queue delete --name {}", path)
+    call_for_exit_code("artemis address delete --name {}", path)
 
     call("artemis queue create --name {} --no-durable --auto-create-address --address {} --anycast --preserve-on-no-consumers", path, path)
 
+    if ready_file != "-":
+        write(ready_file, "ready\n")
+
     while True:
         sleep(1)
+
+def wait_for_server_to_stop():
+    for i in range(10):
+        if not server_is_running():
+            return
+
+        sleep(1)
+
+    fail("The one already running isn't stopping")
+
+def server_is_running():
+    with open(os.devnull, "w") as f:
+        return call_for_exit_code("artemis-service status", shell=True, stdout=f) == 0
 
 try:
     main()
