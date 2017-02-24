@@ -101,7 +101,11 @@ def exit(arg=None, *args):
         error(arg, args)
         _sys.exit(1)
     elif isinstance(arg, _types.IntType):
-        error("Exiting with code {0}", arg)
+        if arg > 0:
+            error("Exiting with code {0}", arg)
+        else:
+            notice("Exiting with code {0}", arg)
+
         _sys.exit(arg)
     else:
         raise Exception()
@@ -588,9 +592,9 @@ def wait_for_process(proc):
     if proc.returncode == 0:
         debug("{0} exited normally", proc)
     elif proc.returncode == -(_signal.SIGTERM):
-        notice("{0} exited after termination", proc)
+        debug("{0} exited after termination", proc)
     else:
-        notice("{0} exited with code {1}", proc, proc.returncode)
+        debug("{0} exited with code {1}", proc, proc.returncode)
 
     return proc.returncode
 
@@ -650,7 +654,6 @@ def random_port(min=49152, max=65535):
 def wait_for_port(port, host="", timeout=30):
     sock = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
     sock.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1)
-    sock.settimeout(timeout)
 
     start = _time.time()
 
@@ -662,7 +665,7 @@ def wait_for_port(port, host="", timeout=30):
             sleep(0.1)
 
             if _time.time() - start > timeout:
-                fail("Timed out waiting for port {} to open", port)
+                fail("Timed out waiting for port {0} to open", port)
     finally:
         sock.close()
 
