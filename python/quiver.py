@@ -316,8 +316,8 @@ class QuiverCommand(_Command):
         sender_snaps = _join(self.output_dir, "sender-snapshots.csv")
         receiver_snaps = _join(self.output_dir, "receiver-snapshots.csv")
 
-        _touch(sender_snaps)
-        _touch(receiver_snaps)
+        _plano.touch(sender_snaps)
+        _plano.touch(receiver_snaps)
 
         ssnap, rsnap = None, None
         i = 0
@@ -582,7 +582,7 @@ class QuiverArrowCommand(_Command):
         self.compute_results()
         self.save_summary()
 
-        _compress_file(self.transfers_file)
+        _plano.call("xz --compress -0 --threads 0 {}", self.transfers_file)
 
     def monitor_subprocess(self, proc):
         snap = _StatusSnapshot(self, None)
@@ -945,10 +945,6 @@ def _print_numeric_field(name, value, unit, fmt="{:,.0f}"):
 
     print("{:<28} {:>28} {}".format(name, value, unit))
 
-def _touch(path):
-    with open(path, "ab") as f:
-        f.write(b"")
-
 def _read_line(file_):
     fpos = file_.tell()
     line = file_.readline()
@@ -970,10 +966,6 @@ def _read_lines(file_):
 
         yield line[:-1]
 
-def _compress_file(path):
-    args = "xz", "--compress", "-0", "--threads", "0", path
-    _subprocess.check_call(args)
-
 def _install_sigterm_handler(*children):
     def signal_handler(signum, frame):
         for child in children:
@@ -983,8 +975,7 @@ def _install_sigterm_handler(*children):
 
     _signal.signal(_signal.SIGTERM, signal_handler)
 
-_join = _os.path.join
-
-_program = _os.path.split(_sys.argv[0])[1]
+_join = _plano.join
+_program = _plano.program_name()
 _ticks_per_ms = _os.sysconf(_os.sysconf_names["SC_CLK_TCK"]) / 1000
 _page_size = _resource.getpagesize()
