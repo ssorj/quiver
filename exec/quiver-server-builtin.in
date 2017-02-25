@@ -83,18 +83,22 @@ class Queue(object):
             link.send(message)
 
 class BrokerHandler(MessagingHandler):
-    def __init__(self, domain):
+    def __init__(self, domain, ready_file):
         super(BrokerHandler, self).__init__()
 
         self.domain = domain
-        self.queues = dict()
-
+        self.ready_file = ready_file
         self.verbose = False
+
+        self.queues = dict()
 
     def on_start(self, event):
         event.container.listen(self.domain)
 
         notice("Listening on '{}'", self.domain)
+
+        if self.ready_file != "-":
+            write(self.ready_file, "ready\n")
 
     def get_queue(self, address):
         try:
@@ -106,7 +110,7 @@ class BrokerHandler(MessagingHandler):
 
     def on_link_opening(self, event):
         # XXX check that address matches config
-        
+
         if event.link.is_sender:
             if event.link.remote_source.dynamic:
                 address = str(uuid.uuid4())
@@ -173,13 +177,14 @@ def main():
     host = sys.argv[1]
     port = sys.argv[2]
     path = sys.argv[3]
+    ready_file = sys.argv[4]
 
     if port == "-":
         port = "5672"
-    
+
     domain = "{}:{}".format(host, port)
 
-    handler = BrokerHandler(domain)
+    handler = BrokerHandler(domain, ready_file)
     handler.verbose = True # XXX
 
     container = Container(handler)
