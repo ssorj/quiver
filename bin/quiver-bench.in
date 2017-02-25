@@ -110,12 +110,12 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--sender-impls", metavar="IMPLS", default=None,
-                        help="Test only senders in IMPLS")
-    parser.add_argument("--receiver-impls", metavar="IMPLS", default=None,
-                        help="Test only receivers in IMPLS")
-    parser.add_argument("--server-impls", metavar="IMPLS", default=None,
-                        help="Test only servers in IMPLS")
+    parser.add_argument("--sender-impls", metavar="NAMES", default=None,
+                        help="Test only senders in NAMES")
+    parser.add_argument("--receiver-impls", metavar="NAMES", default=None,
+                        help="Test only receivers in NAMES")
+    parser.add_argument("--server-impls", metavar="NAMES", default=None,
+                        help="Test only servers in NAMES")
     parser.add_argument("--client-server-only", action="store_true",
                         help="Test only client-server mode")
     parser.add_argument("--peer-to-peer-only", action="store_true",

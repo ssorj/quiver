@@ -94,7 +94,7 @@ def lookup_arrow_impl(name, fallback=None):
         return _arrow_impl_aliases[name]
 
     if fallback is not None:
-        eprint("Warning: Implementation '{}' is unknown", self.args.impl)
+        eprint("Warning: quiver-arrow implementation '{}' is unknown", name)
         return fallback
 
 def lookup_server_impl(name, fallback=None):
@@ -105,7 +105,7 @@ def lookup_server_impl(name, fallback=None):
         return _server_impl_aliases[name]
 
     if fallback is not None:
-        eprint("Warning: Implementation '{}' is unknown", self.args.impl)
+        eprint("Warning: quiver-server implementation '{}' is unknown", self.args.impl)
         return fallback
 
 _epilog_urls = """
@@ -200,16 +200,13 @@ _epilog_arrow_impls = _epilog_arrow_impls.lstrip()
 _epilog_server_impls = _epilog_server_impls.lstrip()
 
 _quiver_description = _quiver_description.lstrip()
-_quiver_epilog = _quiver_epilog.lstrip()
-_quiver_epilog = _quiver_epilog.format(_epilog_urls, _epilog_arrow_impls)
+_quiver_epilog = _quiver_epilog.format(_epilog_urls, _epilog_arrow_impls).lstrip()
 
 _quiver_arrow_description = _quiver_arrow_description.lstrip()
-_quiver_arrow_epilog = _quiver_arrow_epilog.lstrip()
-_quiver_arrow_epilog = _quiver_arrow_epilog.format(_epilog_urls, _epilog_arrow_impls)
+_quiver_arrow_epilog = _quiver_arrow_epilog.format(_epilog_urls, _epilog_arrow_impls).lstrip()
 
 _quiver_server_description = _quiver_server_description.lstrip()
-_quiver_server_epilog = _quiver_server_epilog.lstrip()
-_quiver_server_epilog = _quiver_server_epilog.format(_epilog_urls, _epilog_server_impls)
+_quiver_server_epilog = _quiver_server_epilog.format(_epilog_urls, _epilog_server_impls).lstrip()
 
 class QuiverError(Exception):
     def __init__(self, message, *args):
@@ -220,45 +217,29 @@ class QuiverError(Exception):
 
         super(QuiverError, self).__init__(message)
 
-class _Command(object):
+class Command(object):
     def __init__(self, home_dir):
         self.home_dir = home_dir
 
-        self.parser = None
+        self.parser = _argparse.ArgumentParser()
+        self.parser.formatter_class = _Formatter
+
+        self.init_only = False
+        self.quiet = False
+        self.verbose = False
+
+        self.args = None
 
     def init(self):
         assert self.parser is not None
-
-        self.add_common_arguments()
+        assert self.args is None
 
         self.args = self.parser.parse_args()
 
-        self.url = self.args.url
-        self.messages = self.parse_int_with_unit(self.args.messages)
-        self.body_size = self.parse_int_with_unit(self.args.body_size)
-        self.credit_window = self.parse_int_with_unit(self.args.credit)
-        self.timeout = self.parse_int_with_unit(self.args.timeout)
-
-        self.output_dir = self.args.output
-        self.init_only = self.args.init_only
-        self.quiet = self.args.quiet
-        self.verbose = self.args.verbose
-
-        if self.output_dir is None:
-            self.output_dir = _tempfile.mkdtemp(prefix="quiver-")
-
-        if not _os.path.exists(self.output_dir):
-            _os.makedirs(self.output_dir)
-
-    def add_common_arguments(self):
-        self.parser.add_argument("url", metavar="URL",
-                                 help="The location of a message queue")
+    def add_common_test_arguments(self):
         self.parser.add_argument("-m", "--messages", metavar="COUNT",
                                  help="Send or receive COUNT messages",
                                  default="1m")
-        self.parser.add_argument("--impl", metavar="NAME",
-                                 help="Use NAME implementation",
-                                 default="qpid-proton-python")
         self.parser.add_argument("--body-size", metavar="COUNT",
                                  help="Send message bodies containing COUNT bytes",
                                  default="100")
@@ -268,14 +249,56 @@ class _Command(object):
         self.parser.add_argument("--timeout", metavar="SECONDS",
                                  help="Fail after SECONDS without transfers",
                                  default="10")
-        self.parser.add_argument("--output", metavar="DIRECTORY",
-                                 help="Save output files to DIRECTORY")
+
+    def add_common_tool_arguments(self):
         self.parser.add_argument("--init-only", action="store_true",
                                  help="Initialize and immediately exit")
         self.parser.add_argument("--quiet", action="store_true",
                                  help="Print nothing to the console")
         self.parser.add_argument("--verbose", action="store_true",
                                  help="Print details to the console")
+
+    def init_common_test_attributes(self):
+        self.messages = self.parse_int_with_unit(self.args.messages)
+        self.body_size = self.parse_int_with_unit(self.args.body_size)
+        self.credit_window = self.parse_int_with_unit(self.args.credit)
+        self.timeout = self.parse_int_with_unit(self.args.timeout)
+
+    def init_common_tool_attributes(self):
+        self.init_only = self.args.init_only
+        self.quiet = self.args.quiet
+        self.verbose = self.args.verbose
+
+    def init_url_attributes(self):
+        self.url = self.args.url
+
+        url = _urlparse(self.url)
+
+        if url.path is None:
+            raise QuiverError("The URL has no path")
+
+        self.host = url.hostname
+        self.port = url.port
+        self.path = url.path
+
+        if self.host is None:
+            self.host = "localhost"
+
+        if self.port is None:
+            self.port = "-"
+
+        self.port = str(self.port)
+
+        if self.path.startswith("/"):
+            self.path = self.path[1:]
+
+    def init_output_dir(self):
+        self.output_dir = self.args.output
+
+        if self.output_dir is None:
+            self.output_dir = _tempfile.mkdtemp(prefix="quiver-")
+
+        _plano.make_dir(self.output_dir)
 
     def parse_int_with_unit(self, value):
         assert self.parser is not None
@@ -293,20 +316,52 @@ class _Command(object):
 
         _print(message, *args, **kwargs)
 
-class QuiverCommand(_Command):
+class QuiverCommand(Command):
     def __init__(self, home_dir):
         super(QuiverCommand, self).__init__(home_dir)
 
-        self.parser = _argparse.ArgumentParser(description=_quiver_description,
-                                               epilog=_quiver_epilog,
-                                               formatter_class=_Formatter)
+        self.parser.description = _quiver_description
+        self.parser.epilog = _quiver_epilog
+
+        self.parser.add_argument("url", metavar="URL",
+                                 help="The location of a message queue")
+        self.parser.add_argument("--impl", metavar="NAME",
+                                 help="Use NAME implementation to send and receive")
+        self.parser.add_argument("--sender-impl", metavar="NAME",
+                                 help="Use NAME implementation to send")
+        self.parser.add_argument("--receiver-impl", metavar="NAME",
+                                 help="Use NAME implementation to receive")
+        self.parser.add_argument("--output", metavar="DIRECTORY",
+                                 help="Save output files to DIRECTORY")
+
+        self.add_common_test_arguments()
+        self.add_common_tool_arguments()
+
         self.start_time = None
+
+    def init(self):
+        super(QuiverCommand, self).init()
+
+        self.url = self.args.url
+
+        self.impl = lookup_arrow_impl(self.args.impl, self.args.impl)
+        self.sender_impl = self.impl
+        self.receiver_impl = self.impl
+
+        if self.sender_impl is None:
+            self.sender_impl = lookup_arrow_impl(self.args.sender_impl, self.args.sender_impl)
+
+        if self.receiver_impl is None:
+            self.receiver_impl = lookup_arrow_impl(self.args.receiver_impl, self.args.receiver_impl)
+
+        self.init_output_dir()
+        self.init_common_test_attributes()
+        self.init_common_tool_attributes()
 
     def run(self):
         args = [
             self.url,
             "--messages", self.args.messages,
-            "--impl", self.args.impl,
             "--body-size", self.args.body_size,
             "--credit", self.args.credit,
             "--timeout", self.args.timeout,
@@ -319,8 +374,8 @@ class QuiverCommand(_Command):
         if self.verbose:
             args += "--verbose"
 
-        sender_args = ["quiver-arrow", "send"] + args
-        receiver_args = ["quiver-arrow", "receive"] + args
+        sender_args = ["quiver-arrow", "send", "--impl", self.sender_impl] + args
+        receiver_args = ["quiver-arrow", "receive", "--impl", self.receiver_impl] + args
 
         self.start_time = now()
 
@@ -391,8 +446,8 @@ class QuiverCommand(_Command):
               "{:>8}"
     heading_row_1 = column_groups.format(" Sender ", " Receiver ", "")
     heading_row_2 = columns.format \
-        ("T [s]", "Count [m]", "Rate [m/s]", "CPU [%]", "RSS [M]",
-         "T [s]", "Count [m]", "Rate [m/s]", "CPU [%]", "RSS [M]",
+        ("Time [s]", "Count [m]", "Rate [m/s]", "CPU [%]", "RSS [M]",
+         "Time [s]", "Count [m]", "Rate [m/s]", "CPU [%]", "RSS [M]",
          "Lat [ms]")
     heading_row_3 = column_groups.format("", "", "")
 
@@ -481,20 +536,23 @@ class QuiverCommand(_Command):
 
         print("-" * 80)
 
-class QuiverArrowCommand(_Command):
+class QuiverArrowCommand(Command):
     def __init__(self, home_dir):
         super(QuiverArrowCommand, self).__init__(home_dir)
 
-        self.start_time = None
-        self.timeout_checkpoint = None
-
-        self.parser = _argparse.ArgumentParser(description=_quiver_arrow_description,
-                                               epilog=_quiver_arrow_epilog,
-                                               formatter_class=_Formatter)
+        self.parser.description = _quiver_arrow_description
+        self.parser.epilog = _quiver_arrow_epilog
 
         self.parser.add_argument("operation", metavar="OPERATION",
                                  choices=["send", "receive"],
                                  help="Either 'send' or 'receive'")
+        self.parser.add_argument("url", metavar="URL",
+                                 help="The location of a message queue")
+        self.parser.add_argument("--impl", metavar="NAME",
+                                 help="Use NAME implementation",
+                                 default="qpid-proton-python")
+        self.parser.add_argument("--output", metavar="DIRECTORY",
+                                 help="Save output files to DIRECTORY")
         self.parser.add_argument("--id", metavar="ID",
                                  help="Use ID as the client or server identity")
         self.parser.add_argument("--server", action="store_true",
@@ -504,15 +562,24 @@ class QuiverArrowCommand(_Command):
         self.parser.add_argument("--prelude", metavar="PRELUDE", default="",
                                  help="Commands to precede the impl invocation")
 
+        self.add_common_test_arguments()
+        self.add_common_tool_arguments()
+
     def init(self):
         super(QuiverArrowCommand, self).init()
 
-        self.impl = lookup_arrow_impl(self.args.impl, self.args.impl)
         self.operation = self.args.operation
+        self.impl = lookup_arrow_impl(self.args.impl, self.args.impl)
+
         self.id_ = self.args.id
         self.connection_mode = "client"
         self.channel_mode = "active"
         self.prelude = _shlex.split(self.args.prelude)
+
+        self.impl_file = "{}/exec/quiver-arrow-{}".format(self.home_dir, self.impl)
+
+        if not _os.path.exists(self.impl_file):
+            raise QuiverError("No implementation at '{}'", self.impl_file)
 
         if self.id_ is None:
             self.id_ = "quiver-{}".format(_plano.unique_id(4))
@@ -523,30 +590,26 @@ class QuiverArrowCommand(_Command):
         if self.args.passive:
             self.channel_mode = "passive"
 
-        url = _urlparse(self.url)
+        self.init_url_attributes()
+        self.init_output_files()
+        self.init_common_test_attributes()
+        self.init_common_tool_attributes()
 
-        if url.path is None:
-            raise QuiverError("The URL has no path")
+        self.start_time = None
+        self.timeout_checkpoint = None
 
-        self.host = url.hostname
-        self.port = url.port
-        self.path = url.path
+        self.first_send_time = None
+        self.last_send_time = None
+        self.first_receive_time = None
+        self.last_receive_time = None
+        self.message_count = None
+        self.message_rate = None
+        self.latency_average = None
+        self.latency_quartiles = None
+        self.latency_nines = None
 
-        if self.host is None:
-            self.host = "localhost"
-
-        if self.port is None:
-            self.port = "-"
-
-        self.port = str(self.port)
-
-        if self.path.startswith("/"):
-            self.path = self.path[1:]
-
-        self.impl_file = "{}/exec/quiver-arrow-{}".format(self.home_dir, self.impl)
-
-        if not _os.path.exists(self.impl_file):
-            raise QuiverError("No implementation at '{}'", self.impl_file)
+    def init_output_files(self):
+        self.init_output_dir()
 
         if self.operation == "send":
             self.snapshots_file = _join(self.output_dir, "sender-snapshots.csv")
@@ -560,16 +623,6 @@ class QuiverArrowCommand(_Command):
             self.transfers_parse_func = _parse_receive
         else:
             raise Exception()
-
-        self.first_send_time = None
-        self.last_send_time = None
-        self.first_receive_time = None
-        self.last_receive_time = None
-        self.message_count = None
-        self.message_rate = None
-        self.latency_average = None
-        self.latency_quartiles = None
-        self.latency_nines = None
 
     def run(self):
         args = self.prelude + [
@@ -738,13 +791,12 @@ class QuiverArrowCommand(_Command):
         with open(self.summary_file, "wb") as f:
             _json.dump(props, f, indent=2)
 
-class QuiverServerCommand(object):
+class QuiverServerCommand(Command):
     def __init__(self, home_dir):
-        self.home_dir = home_dir
+        super(QuiverServerCommand, self).__init__(home_dir)
 
-        self.parser = _argparse.ArgumentParser(description=_quiver_server_description,
-                                               epilog=_quiver_server_epilog,
-                                               formatter_class=_Formatter)
+        self.parser.description = _quiver_server_description
+        self.parser.epilog = _quiver_server_epilog
 
         self.parser.add_argument("url", metavar="URL",
                                  help="The location of a message queue")
@@ -755,24 +807,13 @@ class QuiverServerCommand(object):
                                  help="File used to indicate the server is ready")
         self.parser.add_argument("--prelude", metavar="PRELUDE", default="",
                                  help="Commands to precede the impl invocation")
-        self.parser.add_argument("--init-only", action="store_true",
-                                 help="Initialize and immediately exit")
-        self.parser.add_argument("--quiet", action="store_true",
-                                 help="Print nothing to the console")
-        self.parser.add_argument("--verbose", action="store_true",
-                                 help="Print details to the console")
 
-    def vprint(self, message, *args, **kwargs):
-        if not self.verbose:
-            return
-
-        _print(message, *args, **kwargs)
+        self.add_common_tool_arguments()
 
     def init(self):
-        self.args = self.parser.parse_args()
+        super(QuiverServerCommand, self).init()
 
         self.impl = lookup_server_impl(self.args.impl, self.args.impl)
-        self.url = self.args.url
         self.ready_file = self.args.ready_file
         self.prelude = _shlex.split(self.args.prelude)
         self.init_only = self.args.init_only
@@ -784,28 +825,10 @@ class QuiverServerCommand(object):
         if not _os.path.exists(self.impl_file):
             raise QuiverError("No implementation at '{}'", self.impl_file)
 
-        url = _urlparse(self.url)
-
-        if url.path is None:
-            raise QuiverError("The URL has no path")
-
-        self.host = url.hostname
-        self.port = url.port
-        self.path = url.path
-
-        if self.host is None:
-            self.host = "localhost"
-
-        if self.port is None:
-            self.port = "-"
-
-        self.port = str(self.port)
-
-        if self.path.startswith("/"):
-            self.path = self.path[1:]
-
         if self.ready_file is None:
             self.ready_file = "-"
+
+        self.init_url_attributes()
 
     def run(self):
         args = self.prelude + [
