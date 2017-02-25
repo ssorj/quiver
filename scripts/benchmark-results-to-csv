@@ -34,46 +34,54 @@ def main():
 
     args = parser.parse_args()
 
-    for client in list_dir(args.results_dir):
-        client_dir = join(args.results_dir, client)
+    for sender in list_dir(args.results_dir):
+        sender_dir = join(args.results_dir, sender)
 
-        for server in list_dir(client_dir):
-            server_dir = join(client_dir, server)
-            result_file = join(server_dir, "result.txt")
-            data_dir = join(server_dir, "data")
-            summary_file = join(data_dir, "receiver-summary.json")
+        for receiver in list_dir(sender_dir):
+            receiver_dir = join(sender_dir, receiver)
 
-            if not exists(summary_file):
-                continue
+            for server in list_dir(receiver_dir):
+                server_dir = join(receiver_dir, server)
 
-            result = read(result_file)
+                status_file = join(server_dir, "status.txt")
+                data_dir = join(server_dir, "data")
+                summary_file = join(data_dir, "receiver-summary.json")
 
-            if result == "PASSED":
-                with open(summary_file, "rb") as f:
-                    data = json.load(f)
+                if not exists(summary_file):
+                    continue
 
-                message_rate = data["results"]["message_rate"]
-                latency_average = data["results"]["latency_average"]
-                latency_nines = data["results"]["latency_nines"]
+                try:
+                    status = read(status_file)
+                except:
+                    continue
 
-                record = [
-                    client,
-                    server,
-                    result,
-                    message_rate,
-                    latency_average,
-                    latency_nines[0],
-                    latency_nines[1],
-                    latency_nines[2],
-                    latency_nines[3],
-                ]
-            else:
-                record = [client, server, result]
+                if status == "PASSED":
+                    with open(summary_file, "rb") as f:
+                        data = json.load(f)
 
-            record = map(str, record)
-            record = ",".join(record)
+                    message_rate = data["results"]["message_rate"]
+                    latency_average = data["results"]["latency_average"]
+                    latency_nines = data["results"]["latency_nines"]
 
-            print(record)
+                    record = [
+                        sender,
+                        receiver,
+                        server,
+                        status,
+                        message_rate,
+                        latency_average,
+                        latency_nines[0],
+                        latency_nines[1],
+                        latency_nines[2],
+                        latency_nines[3],
+                    ]
+                else:
+                    record = [client, server, result]
+
+                record = map(str, record)
+                record = ",".join(record)
+
+                print(record)
 
 try:
     main()

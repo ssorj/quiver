@@ -41,10 +41,10 @@ def main():
 
     parser.add_argument("url", metavar="URL",
                         help="The location of a message queue")
-    parser.add_argument("--senders", metavar="COUNT", default=1, type=int)
+    parser.add_argument("--sender-count", metavar="COUNT", default=1, type=int)
     parser.add_argument("--sender-impl", metavar="IMPL", default="qpid-proton-python")
     parser.add_argument("--sender-options", metavar="OPTIONS", default="")
-    parser.add_argument("--receivers", metavar="COUNT", default=1, type=int)
+    parser.add_argument("--receiver-count", metavar="COUNT", default=1, type=int)
     parser.add_argument("--receiver-impl", metavar="IMPL", default="qpid-proton-python")
     parser.add_argument("--receiver-options", metavar="OPTIONS", default="")
     parser.add_argument("--init-only", action="store_true",
@@ -78,7 +78,7 @@ def main():
         receiver = start_process(receiver_command)
         receivers.append(receiver)
 
-    sleep(1) # XXX
+    sleep(1) # XXX Use wait_for_port
 
     for i in range(args.senders):
         sender = start_process(sender_command)

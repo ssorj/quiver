@@ -310,6 +310,22 @@ class Command(object):
         except ValueError:
             self.parser.error("Failure parsing '{}' as integer with unit".format(value))
 
+    def run(self):
+        raise NotImplementedError()
+
+    def main(self):
+        try:
+            self.init()
+
+            if self.init_only:
+                return
+
+            self.run()
+        except _QuiverError as e:
+            _plano.exit(str(e))
+        except KeyboardInterrupt:
+            pass
+
     def vprint(self, message, *args, **kwargs):
         if not self.verbose:
             return
@@ -325,12 +341,16 @@ class QuiverCommand(Command):
 
         self.parser.add_argument("url", metavar="URL",
                                  help="The location of a message queue")
+        self.parser.add_argument("--arrow", metavar="IMPL",
+                                 help="Use IMPL to send and receive")
+        self.parser.add_argument("--sender", metavar="IMPL",
+                                 help="Use IMPL to send")
+        self.parser.add_argument("--receiver", metavar="IMPL",
+                                 help="Use IMPL to receive")
         self.parser.add_argument("--impl", metavar="NAME",
-                                 help="Use NAME implementation to send and receive")
-        self.parser.add_argument("--sender-impl", metavar="NAME",
-                                 help="Use NAME implementation to send")
-        self.parser.add_argument("--receiver-impl", metavar="NAME",
-                                 help="Use NAME implementation to receive")
+                                 help=_argparse.SUPPRESS)
+        self.parser.add_argument("--peer-to-peer", action="store_true",
+                                 help="Test peer-to-peer mode")
         self.parser.add_argument("--output", metavar="DIRECTORY",
                                  help="Save output files to DIRECTORY")
 
@@ -342,21 +362,35 @@ class QuiverCommand(Command):
     def init(self):
         super(QuiverCommand, self).init()
 
-        self.url = self.args.url
+        self.peer_to_peer = self.args.peer_to_peer
 
-        self.impl = lookup_arrow_impl(self.args.impl, self.args.impl)
-        self.sender_impl = self.impl
-        self.receiver_impl = self.impl
-
-        if self.sender_impl is None:
-            self.sender_impl = lookup_arrow_impl(self.args.sender_impl, self.args.sender_impl)
-
-        if self.receiver_impl is None:
-            self.receiver_impl = lookup_arrow_impl(self.args.receiver_impl, self.args.receiver_impl)
-
+        self.init_arrow_impl_attributes()
+        self.init_url_attributes()
         self.init_output_dir()
         self.init_common_test_attributes()
         self.init_common_tool_attributes()
+
+    def init_arrow_impl_attributes(self):
+        self.arrow_impl = lookup_arrow_impl(self.args.arrow, self.args.arrow)
+
+        if self.arrow_impl is None:
+            self.arrow_impl = lookup_arrow_impl(self.args.impl, self.args.impl)
+
+        self.sender_impl = self.arrow_impl
+
+        if self.sender_impl is None:
+            self.sender_impl = lookup_arrow_impl(self.args.sender, self.args.sender)
+
+        if self.sender_impl is None:
+            self.sender_impl = "qpid-proton-python"
+
+        self.receiver_impl = self.arrow_impl
+
+        if self.receiver_impl is None:
+            self.receiver_impl = lookup_arrow_impl(self.args.receiver, self.args.receiver)
+
+        if self.receiver_impl is None:
+            self.receiver_impl = "qpid-proton-python"
 
     def run(self):
         args = [
@@ -369,17 +403,29 @@ class QuiverCommand(Command):
         ]
 
         if self.quiet:
-            args += "--quiet"
+            args += ["--quiet"]
 
         if self.verbose:
-            args += "--verbose"
+            args += ["--verbose"]
 
         sender_args = ["quiver-arrow", "send", "--impl", self.sender_impl] + args
         receiver_args = ["quiver-arrow", "receive", "--impl", self.receiver_impl] + args
 
+        if self.peer_to_peer:
+            receiver_args += ["--server", "--passive"]
+
         self.start_time = now()
 
         receiver = _subprocess.Popen(receiver_args)
+
+        if self.peer_to_peer:
+            port = self.port
+
+            if port == "-":
+                port = 5672
+
+            _plano.wait_for_port(port, host=self.host)
+
         sender = _subprocess.Popen(sender_args)
 
         _install_sigterm_handler(sender, receiver)

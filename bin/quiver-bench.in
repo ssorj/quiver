@@ -36,34 +36,42 @@ sys.path.insert(0, os.path.join(home, "python"))
 from plano import *
 from quiver import *
 
-def run_test(arrow_impl, server_impl, peer_to_peer, output_dir, failures):
-    if peer_to_peer:
-        summary = "{} -> {} ".format(arrow_impl, arrow_impl)
+def run_test(sender_impl, receiver_impl, server_impl, output_dir, failures):
+    if server_impl is None:
+        summary = "{} -> {} ".format(sender_impl, receiver_impl)
+        test_dir = join(output_dir, sender_impl, receiver_impl, "peer-to-peer")
     else:
-        summary = "{} -> {} -> {} ".format(arrow_impl, server_impl, arrow_impl)
+        summary = "{} -> {} -> {} ".format(sender_impl, server_impl, receiver_impl)
+        test_dir = join(output_dir, sender_impl, receiver_impl, server_impl)
 
     print("{:.<113} ".format(summary), end="")
 
     flush()
 
-    test_dir = join(output_dir, arrow_impl, server_impl)
-
     test_data_dir = join(test_dir, "data")
     test_output_file = join(test_dir, "output.txt")
-    test_command = "quiver //127.0.0.1/q0 -m 100 --impl {} --output {}".format(arrow_impl, test_data_dir)
+    test_status_file = join(test_dir, "status.txt")
 
+    # XXX arrayify
+
+    test_command = "quiver //127.0.0.1/q0 -m 100 --sender {} --receiver {} --output {}".format \
+                   (sender_impl, receiver_impl, test_data_dir)
+
+    if server_impl is None:
+        test_command = "{} --peer-to-peer".format(test_command)
+
+    server = None
     server_output_file = join(test_dir, "server-output.txt")
     server_ready_file = make_temp_file()
     server_command = "quiver-server //127.0.0.1/q0 --impl {} --ready-file {} --verbose".format \
-                     (server_impl, server_ready_file)
-    server = None
+                         (server_impl, server_ready_file)
 
     make_dir(test_dir)
 
     with open(server_output_file, "w") as sf:
         with open(test_output_file, "w") as tf:
             try:
-                if not peer_to_peer:
+                if server_impl is not None:
                     server = start_process(server_command, stdout=sf, stderr=sf)
 
                     for i in range(30):
@@ -76,24 +84,33 @@ def run_test(arrow_impl, server_impl, peer_to_peer, output_dir, failures):
 
                 call(test_command, stdout=tf, stderr=tf)
 
-                print("PASSED")
+                write(test_status_file, "PASSED")
             except KeyboardInterrupt:
                 raise
             except (CalledProcessError, Timeout) as e:
                 failures.append(str(e))
 
+                write(test_status_file, "FAILED: {}".format(str(e)))
+
+                # XXX Record the result in this format
+
                 print("FAILED")
                 print("--- Error message ---")
                 print("> {}".format(str(e)))
+                print("--- Test command ---")
+                print("> {}".format(test_command))
                 print("--- Test output ---")
 
                 for line in read_lines(test_output_file):
                     print("> {}".format(line), end="")
 
-                print("--- Server output ---")
+                if server_impl is not None:
+                    print("--- Server command ---")
+                    print("> {}".format(server_command))
+                    print("--- Server output ---")
 
-                for line in read_lines(server_output_file):
-                    print("> {}".format(line), end="")
+                    for line in read_lines(server_output_file):
+                        print("> {}".format(line), end="")
             except:
                 traceback.print_exc()
             finally:
@@ -110,32 +127,32 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--sender-impls", metavar="NAMES", default=None,
-                        help="Test only senders in NAMES")
-    parser.add_argument("--receiver-impls", metavar="NAMES", default=None,
-                        help="Test only receivers in NAMES")
-    parser.add_argument("--server-impls", metavar="NAMES", default=None,
-                        help="Test only servers in NAMES")
-    parser.add_argument("--client-server-only", action="store_true",
+    parser.add_argument("--senders", metavar="IMPLS", default=None,
+                        help="Test only senders in IMPLS")
+    parser.add_argument("--receivers", metavar="IMPLS", default=None,
+                        help="Test only receivers in IMPLS")
+    parser.add_argument("--servers", metavar="IMPLS", default=None,
+                        help="Test only servers in IMPLS")
+    parser.add_argument("--client-server", action="store_true",
                         help="Test only client-server mode")
-    parser.add_argument("--peer-to-peer-only", action="store_true",
+    parser.add_argument("--peer-to-peer", action="store_true",
                         help="Test only peer-to-peer mode")
     parser.add_argument("--init-only", action="store_true",
                         help="Initialize and immediately exit")
 
     args = parser.parse_args()
 
-    arrow_impls = list(ARROW_IMPLS)
-    peer_to_peer_arrow_impls = list(PEER_TO_PEER_ARROW_IMPLS)
+    sender_impls = list(ARROW_IMPLS)
+    receiver_impls = list(ARROW_IMPLS)
     server_impls = list(SERVER_IMPLS)
 
     client_server = True
     peer_to_peer = True
 
-    if args.client_server_only:
+    if args.client_server:
         peer_to_peer = False
 
-    if args.peer_to_peer_only:
+    if args.peer_to_peer:
         client_server = False
 
     if args.init_only:
@@ -150,21 +167,30 @@ def main():
 
     failures = list()
 
-    #print("# Testing client-server send and receive with server '{}'".format(server_impl))
-
     if client_server:
-        for arrow_impl in arrow_impls:
-            for server_impl in server_impls:
-                run_test(arrow_impl, server_impl, False, output_dir, failures)
+        for sender_impl in sender_impls:
+            for receiver_impl in receiver_impls:
+                for server_impl in server_impls:
+                    if "activemq-artemis-jms" in (sender_impl, receiver_impl):
+                        if server_impl != "activemq-artemis":
+                            continue
 
-    #if peer_to_peer:
-    #    print("# Testing peer-to-peer send and receive")
+                    if "activemq-jms" in (sender_impl, receiver_impl):
+                        if server_impl not in ("activemq", "activemq-artemis"):
+                            continue
 
-    #    for arrow_impl in arrow_impls:
-    #        if arrow_impl not in peer_to_peer_arrow_impls:
-    #            continue
+                    run_test(sender_impl, receiver_impl, server_impl, output_dir, failures)
 
-    #        run_test(arrow_impl, server_impl, True, output_dir, failures)
+    if peer_to_peer:
+        for sender_impl in sender_impls:
+            if sender_impl in ("activemq-jms", "activemq-artemis-jms"):
+                continue
+
+            for receiver_impl in receiver_impls:
+                if receiver_impl not in PEER_TO_PEER_ARROW_IMPLS:
+                    continue
+
+                run_test(sender_impl, receiver_impl, None, output_dir, failures)
 
     print("Test failures: {}".format(len(failures)))
 
