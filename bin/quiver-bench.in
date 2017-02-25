@@ -34,8 +34,7 @@ home = os.path.normpath("@quiver_home@")
 sys.path.insert(0, os.path.join(home, "python"))
 
 from plano import *
-from quiver import _quiver_arrow_impls_by_name
-from quiver import _quiver_server_impls_by_name
+from quiver import *
 
 def run_test(arrow_impl, server_impl, peer_to_peer, output_dir, failures):
     if peer_to_peer:
@@ -67,7 +66,7 @@ def run_test(arrow_impl, server_impl, peer_to_peer, output_dir, failures):
                 if not peer_to_peer:
                     server = start_process(server_command, stdout=sf, stderr=sf)
 
-                    for i in range(10):
+                    for i in range(30):
                         if read(server_ready_file) == "ready\n":
                             break
 
@@ -84,7 +83,8 @@ def run_test(arrow_impl, server_impl, peer_to_peer, output_dir, failures):
                 failures.append(str(e))
 
                 print("FAILED")
-
+                print("--- Error message ---")
+                print("> {}".format(str(e)))
                 print("--- Test output ---")
 
                 for line in read_lines(test_output_file):
@@ -110,10 +110,12 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--arrow", metavar="IMPL", default=None,
-                        help="Test only arrow IMPL")
-    parser.add_argument("--server", metavar="IMPL", default=None,
-                        help="Test only server IMPL")
+    parser.add_argument("--sender-impls", metavar="IMPLS", default=None,
+                        help="Test only senders in IMPLS")
+    parser.add_argument("--receiver-impls", metavar="IMPLS", default=None,
+                        help="Test only receivers in IMPLS")
+    parser.add_argument("--server-impls", metavar="IMPLS", default=None,
+                        help="Test only servers in IMPLS")
     parser.add_argument("--client-server-only", action="store_true",
                         help="Test only client-server mode")
     parser.add_argument("--peer-to-peer-only", action="store_true",
@@ -123,42 +125,9 @@ def main():
 
     args = parser.parse_args()
 
-    arrow_impls = [
-        "qpid-jms",
-        "qpid-messaging-cpp",
-        "qpid-messaging-python",
-        "qpid-proton-python",
-        "rhea",
-        "vertx-proton",
-    ]
-
-    peer_to_peer_arrow_impls = [
-        "qpid-proton-python",
-        "rhea",
-    ]
-
-    server_impls = [
-        "activemq",
-        "activemq-artemis",
-        "qpid-cpp",
-        "qpid-dispatch",
-    ]
-
-    if exists(join(home, "exec", "quiver-arrow-qpid-proton-cpp")):
-        arrow_impls.append("qpid-proton-cpp")
-        peer_to_peer_arrow_impls.append("qpid-proton-cpp")
-
-    if args.arrow is not None:
-        if args.arrow not in _quiver_arrow_impls_by_name:
-            warn("Implementation '{}' is unknown", args.arrow)
-
-        arrow_impls = [_quiver_arrow_impls_by_name.get(args.arrow, args.arrow)]
-
-    if args.server is not None:
-        if args.server not in _quiver_server_impls_by_name:
-            warn("Implementation '{}' is unknown", args.server)
-
-        server_impls = [_quiver_server_impls_by_name.get(args.server, args.server)]
+    arrow_impls = list(ARROW_IMPLS)
+    peer_to_peer_arrow_impls = list(PEER_TO_PEER_ARROW_IMPLS)
+    server_impls = list(SERVER_IMPLS)
 
     client_server = True
     peer_to_peer = True

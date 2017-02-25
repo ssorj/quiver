@@ -94,7 +94,6 @@ devel: install
 	quiver-arrow send //localhost:12345/a/b/c --init-only
 	quiver-launch q0 --init-only
 	quiver-server q0 --init-only
-	quiver-test --init-only
 
 .PHONY: test
 test: devel

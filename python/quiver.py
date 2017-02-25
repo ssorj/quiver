@@ -43,35 +43,70 @@ except ImportError:
 
 _plano.set_message_threshold("error")
 
-_quiver_arrow_impls_by_name = {
-    "activemq-jms": "activemq-jms",
-    "activemq-artemis-jms": "activemq-artemis-jms",
+ARROW_IMPLS = [
+    "activemq-artemis-jms",
+    "activemq-jms",
+    "qpid-jms",
+    "qpid-messaging-cpp",
+    "qpid-messaging-python",
+    "qpid-proton-cpp",
+    "qpid-proton-python",
+    "rhea",
+    "vertx-proton",
+]
+
+PEER_TO_PEER_ARROW_IMPLS = [
+    "qpid-proton-cpp",
+    "qpid-proton-python",
+    "rhea",
+    # XXX "vertx-proton",
+]
+
+SERVER_IMPLS = [
+    "activemq",
+    "activemq-artemis",
+    "builtin",
+    "qpid-cpp",
+    "qpid-dispatch",
+]
+
+_arrow_impl_aliases = {
     "artemis-jms": "activemq-artemis-jms",
     "cpp": "qpid-proton-cpp",
     "java": "vertx-proton",
     "javascript": "rhea",
     "jms": "qpid-jms",
     "python": "qpid-proton-python",
-    "qpid-jms": "qpid-jms",
-    "qpid-messaging-cpp": "qpid-messaging-cpp",
-    "qpid-messaging-python": "qpid-messaging-python",
-    "qpid-proton-cpp": "qpid-proton-cpp",
-    "qpid-proton-python": "qpid-proton-python",
-    "rhea": "rhea",
-    "vertx-proton": "vertx-proton",
 }
 
-_quiver_server_impls_by_name = {
-    "activemq": "activemq",
-    "activemq-artemis": "activemq-artemis",
+_server_impl_aliases = {
     "artemis": "activemq-artemis",
-    "builtin": "builtin",
     "dispatch": "qpid-dispatch",
     "qdrouterd": "qpid-dispatch",
-    "qpid-cpp": "qpid-cpp",
-    "qpid-dispatch": "qpid-dispatch",
     "qpidd": "qpid-cpp",
 }
+
+def lookup_arrow_impl(name, fallback=None):
+    if name in ARROW_IMPLS:
+        return name
+
+    if name in _arrow_impl_aliases:
+        return _arrow_impl_aliases[name]
+
+    if fallback is not None:
+        eprint("Warning: Implementation '{}' is unknown", self.args.impl)
+        return fallback
+
+def lookup_server_impl(name, fallback=None):
+    if name in SERVER_IMPLS:
+        return name
+
+    if name in _server_impl_aliases:
+        return _server_impl_aliases[name]
+
+    if fallback is not None:
+        eprint("Warning: Implementation '{}' is unknown", self.args.impl)
+        return fallback
 
 _epilog_urls = """
 URLs:
@@ -412,6 +447,8 @@ class QuiverCommand(_Command):
 
         print("-" * 80)
 
+        # XXX Get impl info from json config of arrow output
+
         v = "{} {} ({})".format(self.args.impl, self.url, self.output_dir)
         print("Subject: {}".format(v))
 
@@ -470,12 +507,7 @@ class QuiverArrowCommand(_Command):
     def init(self):
         super(QuiverArrowCommand, self).init()
 
-        try:
-            self.impl = _quiver_arrow_impls_by_name[self.args.impl]
-        except KeyError:
-            self.impl = self.args.impl
-            eprint("Warning: Implementation '{}' is unknown", self.args.impl)
-
+        self.impl = lookup_arrow_impl(self.args.impl, self.args.impl)
         self.operation = self.args.operation
         self.id_ = self.args.id
         self.connection_mode = "client"
@@ -739,12 +771,7 @@ class QuiverServerCommand(object):
     def init(self):
         self.args = self.parser.parse_args()
 
-        try:
-            self.impl = _quiver_server_impls_by_name[self.args.impl]
-        except KeyError:
-            self.impl = self.args.impl
-            eprint("Warning: Implementation '{}' is unknown", self.args.impl)
-
+        self.impl = lookup_server_impl(self.args.impl, self.args.impl)
         self.url = self.args.url
         self.ready_file = self.args.ready_file
         self.prelude = _shlex.split(self.args.prelude)
