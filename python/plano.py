@@ -652,6 +652,9 @@ def random_port(min=49152, max=65535):
     return _random.randint(min, max)
 
 def wait_for_port(port, host="", timeout=30):
+    if _is_string(port):
+        port = int(port)
+
     sock = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
     sock.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1)
 
