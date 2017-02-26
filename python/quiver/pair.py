@@ -75,6 +75,8 @@ class QuiverPairCommand(Command):
 
         self.parser.add_argument("url", metavar="URL",
                                  help="The location of a message queue")
+        self.parser.add_argument("--output", metavar="DIRECTORY",
+                                 help="Save output files to DIRECTORY")
         self.parser.add_argument("--arrow", metavar="IMPL",
                                  help="Use IMPL to send and receive")
         self.parser.add_argument("--sender", metavar="IMPL",
@@ -85,8 +87,6 @@ class QuiverPairCommand(Command):
                                  help=_argparse.SUPPRESS)
         self.parser.add_argument("--peer-to-peer", action="store_true",
                                  help="Test peer-to-peer mode")
-        self.parser.add_argument("--output", metavar="DIRECTORY",
-                                 help="Save output files to DIRECTORY")
 
         self.add_common_test_arguments()
         self.add_common_tool_arguments()
@@ -98,13 +98,13 @@ class QuiverPairCommand(Command):
 
         self.peer_to_peer = self.args.peer_to_peer
 
-        self.init_arrow_impl_attributes()
         self.init_url_attributes()
         self.init_output_dir()
+        self.init_impl_attributes()
         self.init_common_test_attributes()
         self.init_common_tool_attributes()
 
-    def init_arrow_impl_attributes(self):
+    def init_impl_attributes(self):
         self.arrow_impl = lookup_arrow_impl(self.args.arrow, self.args.arrow)
 
         if self.arrow_impl is None:

@@ -29,6 +29,7 @@ import plano as _plano
 import shlex as _shlex
 import subprocess as _subprocess
 import time as _time
+import traceback as _traceback
 
 from .common import *
 from .common import _install_sigterm_handler
@@ -99,15 +100,15 @@ class QuiverBenchCommand(Command):
         self.init_common_tool_attributes()
 
     def init_impl_attributes(self):
-        sender_impls = list(ARROW_IMPLS)
-        receiver_impls = list(ARROW_IMPLS)
-        server_impls = list(SERVER_IMPLS)
+        self.sender_impls = list(ARROW_IMPLS)
+        self.receiver_impls = list(ARROW_IMPLS)
+        self.server_impls = list(SERVER_IMPLS)
 
     def run(self):
-        if client_server:
-            for sender_impl in sender_impls:
-                for receiver_impl in receiver_impls:
-                    for server_impl in server_impls:
+        if self.client_server:
+            for sender_impl in self.sender_impls:
+                for receiver_impl in self.receiver_impls:
+                    for server_impl in self.server_impls:
                         if "activemq-artemis-jms" in (sender_impl, receiver_impl):
                             if server_impl != "activemq-artemis":
                                 continue
@@ -118,12 +119,12 @@ class QuiverBenchCommand(Command):
 
                         self.run_test(sender_impl, receiver_impl, server_impl)
 
-        if peer_to_peer:
-            for sender_impl in sender_impls:
+        if self.peer_to_peer:
+            for sender_impl in self.sender_impls:
                 if sender_impl in ("activemq-jms", "activemq-artemis-jms"):
                     continue
 
-                for receiver_impl in receiver_impls:
+                for receiver_impl in self.receiver_impls:
                     if receiver_impl not in PEER_TO_PEER_ARROW_IMPLS:
                         continue
 
@@ -144,51 +145,62 @@ class QuiverBenchCommand(Command):
 
         print("{:.<113} ".format(summary), end="")
 
-        flush()
+        _plano.flush()
 
         test_data_dir = _join(test_dir, "data")
         test_output_file = _join(test_dir, "output.txt")
         test_status_file = _join(test_dir, "status.txt")
 
-        # XXX arrayify
-
-        test_command = "quiver //127.0.0.1/q0 -m 100 --sender {} --receiver {} --output {}".format \
-                       (sender_impl, receiver_impl, test_data_dir)
-
+        test_command = [
+            "quiver", "//127.0.0.1/q0",
+            "--sender", sender_impl,
+            "--receiver", receiver_impl,
+            "--output", test_data_dir,
+            "--messages", self.args.messages,
+            "--body-size", self.args.body_size,
+            "--credit", self.args.credit,
+            "--timeout", self.args.timeout,
+        ]
+        
         if server_impl is None:
-            test_command = "{} --peer-to-peer".format(test_command)
-
+            test_command.append("--peer-to-peer")
+            
         server = None
         server_output_file = _join(test_dir, "server-output.txt")
-        server_ready_file = make_temp_file()
-        server_command = "quiver-server //127.0.0.1/q0 --impl {} --ready-file {} --verbose".format \
-                             (server_impl, server_ready_file)
+        server_ready_file = _plano.make_temp_file()
 
-        make_dir(test_dir)
+        server_command = [
+            "quiver-server", "//127.0.0.1/q0",
+            "--impl", server_impl,
+            "--ready-file", server_ready_file,
+            "--verbose",
+        ]
+        
+        _plano.make_dir(test_dir)
 
         with open(server_output_file, "w") as sf:
             with open(test_output_file, "w") as tf:
                 try:
                     if server_impl is not None:
-                        server = start_process(server_command, stdout=sf, stderr=sf)
+                        server = _plano.start_process(server_command, stdout=sf, stderr=sf)
 
                         for i in range(30):
-                            if read(server_ready_file) == "ready\n":
+                            if _plano.read(server_ready_file) == "ready\n":
                                 break
 
                             sleep(1)
                         else:
                             raise _Timeout("Timed out waiting for server to be ready")
 
-                    call(test_command, stdout=tf, stderr=tf)
+                    _plano.call(test_command, stdout=tf, stderr=tf)
 
-                    write(test_status_file, "PASSED")
+                    _plano.write(test_status_file, "PASSED")
                 except KeyboardInterrupt:
                     raise
-                except (CalledProcessError, _Timeout) as e:
+                except (_plano.CalledProcessError, _Timeout) as e:
                     self.failures.append(str(e))
 
-                    write(test_status_file, "FAILED: {}".format(str(e)))
+                    _plano.write(test_status_file, "FAILED: {}".format(str(e)))
 
                     # XXX Record the result in this format
 
@@ -199,7 +211,7 @@ class QuiverBenchCommand(Command):
                     print("> {}".format(test_command))
                     print("--- Test output ---")
 
-                    for line in read_lines(test_output_file):
+                    for line in _plano.read_lines(test_output_file):
                         print("> {}".format(line), end="")
 
                     if server_impl is not None:
@@ -207,15 +219,15 @@ class QuiverBenchCommand(Command):
                         print("> {}".format(server_command))
                         print("--- Server output ---")
 
-                        for line in read_lines(server_output_file):
+                        for line in _plano.read_lines(server_output_file):
                             print("> {}".format(line), end="")
                 except:
-                    traceback.print_exc()
+                    _traceback.print_exc()
                 finally:
                     if server is not None:
-                        stop_process(server)
+                        _plano.stop_process(server)
 
-        flush()
+        _plano.flush()
 
 class _Timeout(Exception):
     pass

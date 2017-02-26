@@ -29,7 +29,6 @@ TARGETS := \
 	build/bin/quiver-bench \
 	build/bin/quiver-launch \
 	build/bin/quiver-server \
-	build/bin/quiver-test \
 	build/exec/quiver-arrow-activemq-artemis-jms \
 	build/exec/quiver-arrow-activemq-jms \
 	build/exec/quiver-arrow-qpid-jms \
@@ -98,7 +97,6 @@ devel: install
 
 .PHONY: test
 test: devel
-	quiver-test
 
 build/bin/%: bin/%.in
 	scripts/configure-file -a quiver_home=${QUIVER_HOME} $< $@
