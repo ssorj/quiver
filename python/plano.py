@@ -573,10 +573,9 @@ def stop_process(proc):
         if proc.returncode == 0:
             debug("{0} already exited normally", proc)
         elif proc.returncode == -(_signal.SIGTERM):
-            notice("{0} was already terminated", proc)
+            debug("{0} was already terminated", proc)
         else:
-            m = "{0} already exited with code {1}"
-            error(m, proc, proc.returncode)
+            debug("{0} already exited with code {1}", proc, proc.returncode)
 
         return
 
