@@ -93,11 +93,11 @@ class QuiverArrowCommand(Command):
                                  help="Either 'send' or 'receive'")
         self.parser.add_argument("url", metavar="URL",
                                  help="The location of a message queue")
+        self.parser.add_argument("--output", metavar="DIR",
+                                 help="Save output files to DIR")
         self.parser.add_argument("--impl", metavar="NAME",
                                  help="Use NAME implementation",
                                  default="qpid-proton-python")
-        self.parser.add_argument("--output", metavar="DIRECTORY",
-                                 help="Save output files to DIRECTORY")
         self.parser.add_argument("--id", metavar="ID",
                                  help="Use ID as the client or server identity")
         self.parser.add_argument("--server", action="store_true",
@@ -114,16 +114,15 @@ class QuiverArrowCommand(Command):
         super(QuiverArrowCommand, self).init()
 
         self.operation = self.args.operation
-        self.impl = lookup_arrow_impl(self.args.impl, self.args.impl)
-
+        self.impl = self.get_arrow_impl_name(self.args.impl, self.args.impl)
         self.id_ = self.args.id
         self.connection_mode = "client"
         self.channel_mode = "active"
         self.prelude = _shlex.split(self.args.prelude)
 
-        self.impl_file = "{}/exec/quiver-arrow-{}".format(self.home_dir, self.impl)
+        self.impl_file = self.get_arrow_impl_file(self.impl)
 
-        if not _os.path.exists(self.impl_file):
+        if not _plano.exists(self.impl_file):
             raise CommandError("No implementation at '{}'", self.impl_file)
 
         if self.id_ is None:

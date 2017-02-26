@@ -71,14 +71,14 @@ class QuiverServerCommand(Command):
     def init(self):
         super(QuiverServerCommand, self).init()
 
-        self.impl = lookup_server_impl(self.args.impl, self.args.impl)
+        self.impl = self.get_server_impl_name(self.args.impl, self.args.impl)
         self.ready_file = self.args.ready_file
         self.prelude = _shlex.split(self.args.prelude)
         self.init_only = self.args.init_only
         self.quiet = self.args.quiet
         self.verbose = self.args.verbose
 
-        self.impl_file = "{}/exec/quiver-server-{}".format(self.home_dir, self.impl)
+        self.impl_file = self.get_server_impl_file(self.impl)
 
         if not _plano.exists(self.impl_file):
             raise CommandError("No implementation at '{}'", self.impl_file)

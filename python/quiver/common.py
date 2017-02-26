@@ -60,7 +60,6 @@ PEER_TO_PEER_ARROW_IMPLS = [
     "qpid-proton-cpp",
     "qpid-proton-python",
     "rhea",
-    # XXX "vertx-proton",
 ]
 
 SERVER_IMPLS = [
@@ -86,29 +85,6 @@ _server_impl_aliases = {
     "qdrouterd": "qpid-dispatch",
     "qpidd": "qpid-cpp",
 }
-
-def lookup_arrow_impl(name, fallback=None):
-    if name in ARROW_IMPLS:
-        return name
-
-    if name in _arrow_impl_aliases:
-        return _arrow_impl_aliases[name]
-
-    if fallback is not None:
-        eprint("Warning: quiver-arrow implementation '{}' is unknown", name)
-        return fallback
-
-def lookup_server_impl(name, fallback=None):
-    if name in SERVER_IMPLS:
-        return name
-
-    if name in _server_impl_aliases:
-        return _server_impl_aliases[name]
-
-    if fallback is not None:
-        eprint("Warning: quiver-server implementation '{}' is unknown", self.args.impl)
-        return fallback
-
 
 class CommandError(Exception):
     def __init__(self, message, *args):
@@ -227,6 +203,30 @@ class Command(object):
             _plano.exit(str(e))
         except KeyboardInterrupt:
             pass
+
+    def get_arrow_impl_name(self, name, fallback=None):
+        if name in ARROW_IMPLS:
+            return name
+
+        if name in _arrow_impl_aliases:
+            return _arrow_impl_aliases[name]
+
+        return fallback
+
+    def get_server_impl_name(self, name, fallback=None):
+        if name in SERVER_IMPLS:
+            return name
+
+        if name in _server_impl_aliases:
+            return _server_impl_aliases[name]
+
+        return fallback
+
+    def get_arrow_impl_file(self, name):
+        return _plano.join(self.home_dir, "exec", "quiver-arrow-{}".format(name))
+
+    def get_server_impl_file(self, name):
+        return _plano.join(self.home_dir, "exec", "quiver-server-{}".format(name))
 
     def vprint(self, message, *args, **kwargs):
         if not self.verbose:

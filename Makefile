@@ -88,8 +88,8 @@ install: build
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
 devel: install
-	quiver q0 --init-only --verbose --impl cpp
-	quiver --quiet --init-only q0 --impl python
+	quiver q0 --init-only --verbose --arrow cpp
+	quiver --quiet --init-only q0 --arrow python
 	quiver-arrow send //localhost:12345/a/b/c --init-only
 	quiver-bench --init-only
 	quiver-launch q0 --init-only

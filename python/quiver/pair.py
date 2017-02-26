@@ -74,8 +74,8 @@ class QuiverPairCommand(Command):
 
         self.parser.add_argument("url", metavar="URL",
                                  help="The location of a message queue")
-        self.parser.add_argument("--output", metavar="DIRECTORY",
-                                 help="Save output files to DIRECTORY")
+        self.parser.add_argument("--output", metavar="DIR",
+                                 help="Save output files to DIR")
         self.parser.add_argument("--arrow", metavar="IMPL",
                                  help="Use IMPL to send and receive")
         self.parser.add_argument("--sender", metavar="IMPL",
@@ -104,15 +104,15 @@ class QuiverPairCommand(Command):
         self.init_common_tool_attributes()
 
     def init_impl_attributes(self):
-        self.arrow_impl = lookup_arrow_impl(self.args.arrow, self.args.arrow)
+        self.arrow_impl = self.get_arrow_impl_name(self.args.arrow, self.args.arrow)
 
         if self.arrow_impl is None:
-            self.arrow_impl = lookup_arrow_impl(self.args.impl, self.args.impl)
+            self.arrow_impl = self.get_arrow_impl_name(self.args.impl, self.args.impl)
 
         self.sender_impl = self.arrow_impl
 
         if self.sender_impl is None:
-            self.sender_impl = lookup_arrow_impl(self.args.sender, self.args.sender)
+            self.sender_impl = self.get_arrow_impl_name(self.args.sender, self.args.sender)
 
         if self.sender_impl is None:
             self.sender_impl = "qpid-proton-python"
@@ -120,7 +120,7 @@ class QuiverPairCommand(Command):
         self.receiver_impl = self.arrow_impl
 
         if self.receiver_impl is None:
-            self.receiver_impl = lookup_arrow_impl(self.args.receiver, self.args.receiver)
+            self.receiver_impl = self.get_arrow_impl_name(self.args.receiver, self.args.receiver)
 
         if self.receiver_impl is None:
             self.receiver_impl = "qpid-proton-python"
