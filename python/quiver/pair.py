@@ -23,7 +23,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
-import argparse as _argparse
 import json as _json
 import os as _os
 import plano as _plano
@@ -83,8 +82,8 @@ class QuiverPairCommand(Command):
                                  help="Use IMPL to send")
         self.parser.add_argument("--receiver", metavar="IMPL",
                                  help="Use IMPL to receive")
-        self.parser.add_argument("--impl", metavar="NAME",
-                                 help=_argparse.SUPPRESS)
+        self.parser.add_argument("--impl", metavar="IMPL",
+                                 help="An alias for --arrow")
         self.parser.add_argument("--peer-to-peer", action="store_true",
                                  help="Test peer-to-peer mode")
 
@@ -294,17 +293,19 @@ class QuiverPairCommand(Command):
         start_time = sender["results"]["first_send_time"]
         end_time = receiver["results"]["last_receive_time"]
         duration = (end_time - start_time) / 1000
+        rate = None
 
-        _print_numeric_field("Duration", duration, "s", "{:,.1f}")
+        if duration > 0:
+            rate = receiver["results"]["message_count"] / duration
 
         # XXX Sender and receiver CPU, RSS
 
+        _print_numeric_field("Duration", duration, "s", "{:,.1f}")
         v = sender["results"]["message_rate"]
         _print_numeric_field("Sender rate", v, "messages/s")
         v = receiver["results"]["message_rate"]
         _print_numeric_field("Receiver rate", v, "messages/s")
-        v = receiver["results"]["message_count"] / duration
-        _print_numeric_field("End-to-end rate", v, "messages/s")
+        _print_numeric_field("End-to-end rate", rate, "messages/s")
         v = receiver["results"]["latency_average"]
         _print_numeric_field("Average latency", v, "ms", "{:,.1f}")
         v = receiver["results"]["latency_quartiles"]

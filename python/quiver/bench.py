@@ -35,15 +35,16 @@ from .common import *
 from .common import _install_sigterm_handler
 
 _description = """
-XXX
+Benchmark message sender, receiver, and server combinations.
 
 'quiver-bench' is one of the Quiver tools for testing the performance
 of message servers and APIs.
-
 """
 
 _epilog = """
-XXX
+The --senders, --receivers, and --servers arguments take a comma-
+separated list of implementation names.  See `quiver-arrow --help` and
+`quiver-server --help` to see the list of available implementations.
 """
 
 class QuiverBenchCommand(Command):
@@ -66,12 +67,22 @@ class QuiverBenchCommand(Command):
                                  help="Test only client-server mode")
         self.parser.add_argument("--peer-to-peer", action="store_true",
                                  help="Test only peer-to-peer mode")
+        self.parser.add_argument("--matching-pairs", action="store_true",
+                                 help="Test only matching senders and receivers")
 
         self.add_common_test_arguments()
         self.add_common_tool_arguments()
 
     def init(self):
         super(QuiverBenchCommand, self).init()
+
+        prefix = _plano.program_name()
+        datestamp = _time.strftime('%Y-%m-%d', _time.localtime())
+
+        self.output_dir = "{}-{}".format(prefix, datestamp)
+
+        _plano.remove(self.output_dir)
+        _plano.make_dir(self.output_dir)
 
         self.client_server = True
         self.peer_to_peer = True
@@ -82,29 +93,30 @@ class QuiverBenchCommand(Command):
         if self.args.peer_to_peer:
             self.client_server = False
 
-        prefix = _plano.program_name()
-        datestamp = _time.strftime('%Y-%m-%d', _time.localtime())
-
-        self.output_dir = "{}-{}".format(prefix, datestamp)
-
-        _plano.remove(self.output_dir)
-        _plano.make_dir(self.output_dir)
-
-        self.failures = list()
+        self.matching_pairs = self.args.matching_pairs
 
         self.init_impl_attributes()
         self.init_common_test_attributes()
         self.init_common_tool_attributes()
+
+        self.failures = list()
 
     def init_impl_attributes(self):
         self.sender_impls = list(ARROW_IMPLS)
         self.receiver_impls = list(ARROW_IMPLS)
         self.server_impls = list(SERVER_IMPLS)
 
+        # XXX filter!
+        # XXX check for impl availability
+
     def run(self):
         if self.client_server:
             for sender_impl in self.sender_impls:
                 for receiver_impl in self.receiver_impls:
+                    if self.matching_pairs:
+                        if sender_impl != receiver_impl:
+                            continue
+
                     for server_impl in self.server_impls:
                         if "activemq-artemis-jms" in (sender_impl, receiver_impl):
                             if server_impl != "activemq-artemis":
@@ -122,6 +134,10 @@ class QuiverBenchCommand(Command):
                     continue
 
                 for receiver_impl in self.receiver_impls:
+                    if self.matching_pairs:
+                        if sender_impl != receiver_impl:
+                            continue
+
                     if receiver_impl not in PEER_TO_PEER_ARROW_IMPLS:
                         continue
 
@@ -135,18 +151,18 @@ class QuiverBenchCommand(Command):
     def run_test(self, sender_impl, receiver_impl, server_impl):
         if server_impl is None:
             summary = "{} -> {} ".format(sender_impl, receiver_impl)
-            test_dir = _join(self.output_dir, sender_impl, receiver_impl, "peer-to-peer")
+            test_dir = _plano.join(self.output_dir, sender_impl, receiver_impl, "peer-to-peer")
         else:
             summary = "{} -> {} -> {} ".format(sender_impl, server_impl, receiver_impl)
-            test_dir = _join(self.output_dir, sender_impl, receiver_impl, server_impl)
+            test_dir = _plano.join(self.output_dir, sender_impl, receiver_impl, server_impl)
 
         print("{:.<113} ".format(summary), end="")
 
         _plano.flush()
 
-        test_data_dir = _join(test_dir, "data")
-        test_output_file = _join(test_dir, "output.txt")
-        test_status_file = _join(test_dir, "status.txt")
+        test_data_dir = _plano.join(test_dir, "data")
+        test_output_file = _plano.join(test_dir, "output.txt")
+        test_status_file = _plano.join(test_dir, "status.txt")
 
         test_command = [
             "quiver", "//127.0.0.1/q0",
@@ -165,7 +181,7 @@ class QuiverBenchCommand(Command):
         test_command = " ".join(test_command)
 
         server = None
-        server_output_file = _join(test_dir, "server-output.txt")
+        server_output_file = _plano.join(test_dir, "server-output.txt")
         server_ready_file = _plano.make_temp_file()
 
         server_command = [
@@ -234,8 +250,5 @@ class QuiverBenchCommand(Command):
                     if server is not None:
                         _plano.stop_process(server)
 
-
 class _Timeout(Exception):
     pass
-
-_join = _plano.join

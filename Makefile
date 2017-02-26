@@ -97,6 +97,8 @@ devel: install
 
 .PHONY: test
 test: devel
+	quiver --peer-to-peer //127.0.0.1/q0 -m 1 --verbose
+# quiver-bench --matching-pairs --client-server -m 1
 
 build/bin/%: bin/%.in
 	scripts/configure-file -a quiver_home=${QUIVER_HOME} $< $@
