@@ -23,20 +23,21 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
-import collections as collections
 import os
 import sys
-import uuid as uuid
-
-from argparse import ArgumentParser
-from proton import *
-from proton.handlers import *
-from proton.reactor import *
 
 home = os.path.normpath("@quiver_home@")
 sys.path.insert(0, os.path.join(home, "python"))
 
+import collections as collections
+import uuid as uuid
+
+from argparse import ArgumentParser
 from plano import *
+from proton import *
+from proton.handlers import *
+from proton.reactor import *
+from quiver.common import *
 
 class Queue(object):
     def __init__(self, address):

@@ -31,7 +31,7 @@ from qpid_messaging import *
 home_dir = os.path.normpath("@quiver_home@")
 sys.path.insert(0, os.path.join(home_dir, "python"))
 
-from quiver import *
+from quiver.common import *
 
 link_options = "{link: {durable: False, reliability: at-least-once}}"
 

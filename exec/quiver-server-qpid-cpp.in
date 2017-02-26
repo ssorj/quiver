@@ -30,6 +30,7 @@ home_dir = os.path.normpath("@quiver_home@")
 sys.path.insert(0, os.path.join(home_dir, "python"))
 
 from plano import *
+from quiver.common import *
 
 def main():
     assert which("qpidd") is not None

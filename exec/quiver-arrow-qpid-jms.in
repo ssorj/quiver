@@ -29,7 +29,7 @@ import sys
 home_dir = os.path.normpath("@quiver_home@")
 sys.path.insert(0, os.path.join(home_dir, "python"))
 
-from quiver import *
+from quiver.common import *
 
 def main():
     id_ = sys.argv[4]

@@ -92,6 +92,7 @@ devel: install
 	quiver q0 --init-only --verbose --impl cpp
 	quiver --quiet --init-only q0 --impl python
 	quiver-arrow send //localhost:12345/a/b/c --init-only
+	quiver-bench --init-only
 	quiver-launch q0 --init-only
 	quiver-server q0 --init-only
 

@@ -24,7 +24,7 @@ import sys
 home_dir = os.path.normpath("@quiver_home@")
 sys.path.insert(0, os.path.join(home_dir, "python"))
 
-from quiver import *
+from quiver.arrow import QuiverArrowCommand
 
 if __name__ == "__main__":
     command = QuiverArrowCommand(home_dir)
