@@ -66,12 +66,9 @@ class QuiverBenchCommand(Command):
                                  help="Test only client-server mode")
         self.parser.add_argument("--peer-to-peer", action="store_true",
                                  help="Test only peer-to-peer mode")
-        
-        self.add_common_test_arguments()
 
+        self.add_common_test_arguments()
         self.add_common_tool_arguments()
-        
-        self.start_time = None # XXX
 
     def init(self):
         super(QuiverBenchCommand, self).init()
@@ -94,7 +91,7 @@ class QuiverBenchCommand(Command):
         _plano.make_dir(self.output_dir)
 
         self.failures = list()
-        
+
         self.init_impl_attributes()
         self.init_common_test_attributes()
         self.init_common_tool_attributes()
@@ -161,10 +158,12 @@ class QuiverBenchCommand(Command):
             "--credit", self.args.credit,
             "--timeout", self.args.timeout,
         ]
-        
+
         if server_impl is None:
             test_command.append("--peer-to-peer")
-            
+
+        test_command = " ".join(test_command)
+
         server = None
         server_output_file = _join(test_dir, "server-output.txt")
         server_ready_file = _plano.make_temp_file()
@@ -175,7 +174,9 @@ class QuiverBenchCommand(Command):
             "--ready-file", server_ready_file,
             "--verbose",
         ]
-        
+
+        server_command = " ".join(server_command)
+
         _plano.make_dir(test_dir)
 
         with open(server_output_file, "w") as sf:
@@ -188,13 +189,15 @@ class QuiverBenchCommand(Command):
                             if _plano.read(server_ready_file) == "ready\n":
                                 break
 
-                            sleep(1)
+                            _plano.sleep(1)
                         else:
                             raise _Timeout("Timed out waiting for server to be ready")
 
                     _plano.call(test_command, stdout=tf, stderr=tf)
 
                     _plano.write(test_status_file, "PASSED")
+
+                    print("PASSED")
                 except KeyboardInterrupt:
                     raise
                 except (_plano.CalledProcessError, _Timeout) as e:
@@ -202,32 +205,35 @@ class QuiverBenchCommand(Command):
 
                     _plano.write(test_status_file, "FAILED: {}".format(str(e)))
 
-                    # XXX Record the result in this format
-
                     print("FAILED")
-                    print("--- Error message ---")
-                    print("> {}".format(str(e)))
-                    print("--- Test command ---")
-                    print("> {}".format(test_command))
-                    print("--- Test output ---")
 
-                    for line in _plano.read_lines(test_output_file):
-                        print("> {}".format(line), end="")
+                    if self.verbose:
+                        # XXX Record the result in this format
 
-                    if server_impl is not None:
-                        print("--- Server command ---")
-                        print("> {}".format(server_command))
-                        print("--- Server output ---")
+                        print("--- Error message ---")
+                        print("> {}".format(str(e)))
+                        print("--- Test command ---")
+                        print("> {}".format(test_command))
+                        print("--- Test output ---")
 
-                        for line in _plano.read_lines(server_output_file):
+                        for line in _plano.read_lines(test_output_file):
                             print("> {}".format(line), end="")
+
+                        if server_impl is not None:
+                            print("--- Server command ---")
+                            print("> {}".format(server_command))
+                            print("--- Server output ---")
+
+                            for line in _plano.read_lines(server_output_file):
+                                print("> {}".format(line), end="")
                 except:
                     _traceback.print_exc()
                 finally:
+                    _plano.flush()
+
                     if server is not None:
                         _plano.stop_process(server)
 
-        _plano.flush()
 
 class _Timeout(Exception):
     pass

@@ -23,8 +23,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
-import os as _os
+import plano as _plano
 import shlex as _shlex
+import subprocess as _subprocess
 
 from .common import *
 from .common import _install_sigterm_handler
@@ -79,7 +80,7 @@ class QuiverServerCommand(Command):
 
         self.impl_file = "{}/exec/quiver-server-{}".format(self.home_dir, self.impl)
 
-        if not _os.path.exists(self.impl_file):
+        if not _plano.exists(self.impl_file):
             raise CommandError("No implementation at '{}'", self.impl_file)
 
         if self.ready_file is None:
@@ -105,7 +106,7 @@ class QuiverServerCommand(Command):
         self.vprint("Process {} (server) started", proc.pid)
 
         while proc.poll() is None:
-            _time.sleep(1)
+            _plano.sleep(1)
 
         if proc.returncode == 0:
             self.vprint("Process {} (server) exited normally", proc.pid)
