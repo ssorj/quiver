@@ -66,9 +66,11 @@ class QuiverBenchCommand(Command):
                                  help="Test only servers in IMPLS",
                                  default="all")
         self.parser.add_argument("--exclude-senders", metavar="IMPLS",
-                                 help="Do not test senders in IMPLS")
+                                 help="Do not test senders in IMPLS",
+                                 default="none")
         self.parser.add_argument("--exclude-receivers", metavar="IMPLS",
-                                 help="Do not test receivers in IMPLS")
+                                 help="Do not test receivers in IMPLS",
+                                 default="none")
         self.parser.add_argument("--exclude-servers", metavar="IMPLS",
                                  help="Do not test servers in IMPLS",
                                  default="builtin")
@@ -127,14 +129,14 @@ class QuiverBenchCommand(Command):
         if self.args.include_servers != "all":
             server_impls = self.parse_server_impls(self.args.include_servers)
 
-        if self.args.exclude_senders != None:
-            sender_impls -= self.parse_arrow_impls(self.args.exlude_senders)
+        if self.args.exclude_senders != "none":
+            sender_impls -= self.parse_arrow_impls(self.args.exclude_senders)
 
-        if self.args.exclude_receivers != None:
-            receiver_impls -= self.parse_arrow_impls(self.args.exlude_receivers)
+        if self.args.exclude_receivers != "none":
+            receiver_impls -= self.parse_arrow_impls(self.args.exclude_receivers)
 
-        if self.args.exclude_servers != None:
-            server_impls -= self.parse_server_impls(self.args.exlude_servers)
+        if self.args.exclude_servers != "none":
+            server_impls -= self.parse_server_impls(self.args.exclude_servers)
 
         for impl in list(sender_impls):
             file = self.get_arrow_impl_file(impl)
