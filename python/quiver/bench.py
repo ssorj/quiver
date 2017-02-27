@@ -70,7 +70,8 @@ class QuiverBenchCommand(Command):
         self.parser.add_argument("--exclude-receivers", metavar="IMPLS",
                                  help="Do not test receivers in IMPLS")
         self.parser.add_argument("--exclude-servers", metavar="IMPLS",
-                                 help="Do not test servers in IMPLS")
+                                 help="Do not test servers in IMPLS",
+                                 default="builtin")
         self.parser.add_argument("--client-server", action="store_true",
                                  help="Test only client-server mode")
         self.parser.add_argument("--peer-to-peer", action="store_true",
@@ -127,13 +128,13 @@ class QuiverBenchCommand(Command):
             server_impls = self.parse_server_impls(self.args.include_servers)
 
         if self.args.exclude_senders != None:
-            sender_impls = sender_impls - self.parse_arrow_impls(self.args.exlude_senders)
+            sender_impls -= self.parse_arrow_impls(self.args.exlude_senders)
 
         if self.args.exclude_receivers != None:
-            receiver_impls = receiver_impls - self.parse_arrow_impls(self.args.exlude_receivers)
+            receiver_impls -= self.parse_arrow_impls(self.args.exlude_receivers)
 
         if self.args.exclude_servers != None:
-            server_impls = server_impls - self.parse_server_impls(self.args.exlude_servers)
+            server_impls -= self.parse_server_impls(self.args.exlude_servers)
 
         for impl in list(sender_impls):
             file = self.get_arrow_impl_file(impl)
