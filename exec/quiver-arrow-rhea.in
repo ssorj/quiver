@@ -115,7 +115,9 @@ container.on("sendable", function(context) {
 
         var message = {
             id: id,
-            SendTime: stime,
+            application_properties: {
+                SendTime: stime
+            },
             body: body,
         };
 
@@ -148,7 +150,7 @@ container.on("message", function(context) {
 
     var message = context.message;
     var rtime = new Date().getTime();
-    var stime = message.SendTime;
+    var stime = message.application_properties.SendTime;
 
     log(message.id + "," + stime + "," + rtime + "\n");
 
