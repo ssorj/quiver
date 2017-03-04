@@ -21,8 +21,16 @@
 from plano import *
 
 def main():
-    call("quiver-bench -m 1 --matching-pairs --include-servers builtin --exclude-servers none")
+    # call("quiver-bench -m 1 --matching-pairs --include-servers builtin --exclude-servers none")
 
+    port = random_port()
+    server = start_process("quiver-server //127.0.0.1:{}/q0 --verbose", port)
+
+    try:
+        call("quiver-launch //127.0.0.1:{}/q0 --sender-count 2 --sender-options '-m 1k' --receiver-count 2 --receiver-options '-m 1k' --verbose", port)
+    finally:
+        stop_process(server)
+    
 try:
     main()
 except KeyboardInterrupt:

@@ -41,9 +41,6 @@ try:
 except ImportError:
     from urlparse import urlparse as _urlparse
 
-# XXX Not global like this
-_plano.set_message_threshold("error")
-
 ARROW_IMPLS = [
     "activemq-artemis-jms",
     "activemq-jms",
@@ -113,6 +110,14 @@ class Command(object):
         assert self.args is None
 
         self.args = self.parser.parse_args()
+
+        _plano.set_message_threshold("warn")
+
+        if self.quiet:
+            _plano.set_message_threshold("error")
+
+        if self.verbose:
+            _plano.set_message_threshold("notice")
 
     def add_common_test_arguments(self):
         self.parser.add_argument("-m", "--messages", metavar="COUNT",

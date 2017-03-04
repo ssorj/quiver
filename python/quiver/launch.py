@@ -58,6 +58,13 @@ class QuiverLaunchCommand(Command):
         super(QuiverLaunchCommand, self).init()
         
         _plano.set_message_output(_sys.stdout)
+        _plano.set_message_threshold("notice")
+
+        if self.quiet:
+            _plano.set_message_threshold("warn")
+
+        if self.verbose:
+            _plano.set_message_threshold("debug")
         
         self.sender_count = self.args.sender_count
         self.sender_impl = self.args.sender_impl
@@ -73,10 +80,10 @@ class QuiverLaunchCommand(Command):
     def run(self):
         exit_code = 0
 
-        sender_command = ["quiver-arrow", "send", self.url, "--impl", self.sender_impl]
+        sender_command = ["quiver-arrow", "send", self.url, "--impl", self.sender_impl, "--verbose"]
         sender_command += self.sender_options
 
-        receiver_command = ["quiver-arrow", "receive", self.url, "--impl", self.receiver_impl]
+        receiver_command = ["quiver-arrow", "receive", self.url, "--impl", self.receiver_impl, "--verbose"]
         receiver_command += self.receiver_options
 
         senders = list()
@@ -88,7 +95,7 @@ class QuiverLaunchCommand(Command):
 
         _plano.wait_for_port(self.port)
 
-        for i in range(args.senders):
+        for i in range(self.sender_count):
             sender = _plano.start_process(sender_command)
             senders.append(sender)
 
