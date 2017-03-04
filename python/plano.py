@@ -324,10 +324,10 @@ def unique_id(length=16):
 def copy(from_path, to_path):
     notice("Copying '{0}' to '{1}'", from_path, to_path)
 
-    to_dir = parent_dir(to_path)
-
-    if to_dir:
-        make_dir(to_dir)
+    if is_dir(to_path):
+        to_path = join(to_path, file_name(from_path))
+    else:
+        make_dir(parent_dir(to_path))
 
     if is_dir(from_path):
         _copytree(from_path, to_path, symlinks=True)
@@ -338,6 +338,11 @@ def copy(from_path, to_path):
 
 def move(from_path, to_path):
     notice("Moving '{0}' to '{1}'", from_path, to_path)
+
+    if is_dir(to_path):
+        to_path = join(to_path, file_name(from_path))
+    else:
+        make_dir(parent_dir(to_path))
 
     _shutil.move(from_path, to_path)
 
