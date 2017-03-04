@@ -217,6 +217,9 @@ class QuiverBenchCommand(Command):
         for failure in self.failures:
             print(failure) # Need summary
 
+        if len(self.failures) > 0:
+            _plano.exit(1)
+
     def run_test(self, sender_impl, receiver_impl, server_impl):
         if server_impl is None:
             summary = "{} -> {} ".format(sender_impl, receiver_impl)

@@ -119,6 +119,15 @@ class QuiverArrowCommand(Command):
         self.channel_mode = "active"
         self.prelude = _shlex.split(self.args.prelude)
 
+        if self.operation == "send":
+            self.role = "sender"
+            self.transfers_parse_func = _parse_send
+        elif self.operation == "receive":
+            self.role = "receiver"
+            self.transfers_parse_func = _parse_receive
+        else:
+            raise Exception()
+
         self.impl_file = self.get_arrow_impl_file(self.impl)
 
         if not _plano.exists(self.impl_file):
@@ -134,9 +143,13 @@ class QuiverArrowCommand(Command):
             self.channel_mode = "passive"
 
         self.init_url_attributes()
-        self.init_output_files()
         self.init_common_test_attributes()
         self.init_common_tool_attributes()
+        self.init_output_dir()
+
+        self.snapshots_file = _join(self.output_dir, "{}-snapshots.csv".format(self.role))
+        self.summary_file = _join(self.output_dir, "{}-summary.json".format(self.role))
+        self.transfers_file = _join(self.output_dir, "{}-transfers.csv".format(self.role))
 
         self.start_time = None
         self.timeout_checkpoint = None
@@ -150,22 +163,6 @@ class QuiverArrowCommand(Command):
         self.latency_average = None
         self.latency_quartiles = None
         self.latency_nines = None
-
-    def init_output_files(self):
-        self.init_output_dir()
-
-        if self.operation == "send":
-            self.snapshots_file = _join(self.output_dir, "sender-snapshots.csv")
-            self.summary_file = _join(self.output_dir, "sender-summary.json")
-            self.transfers_file = _join(self.output_dir, "sender-transfers.csv")
-            self.transfers_parse_func = _parse_send
-        elif self.operation == "receive":
-            self.snapshots_file = _join(self.output_dir, "receiver-snapshots.csv")
-            self.summary_file = _join(self.output_dir, "receiver-summary.json")
-            self.transfers_file = _join(self.output_dir, "receiver-transfers.csv")
-            self.transfers_parse_func = _parse_receive
-        else:
-            raise Exception()
 
     def run(self):
         args = self.prelude + [
@@ -196,7 +193,7 @@ class QuiverArrowCommand(Command):
                 raise
 
             if proc.returncode != 0:
-                raise CommandError("Process {} ({}) exited with code {}", proc.pid, self.operation, proc.returncode)
+                raise CommandError("{} exited with code {}", self.role, proc.returncode)
 
         if _os.path.getsize(self.transfers_file) == 0:
             raise CommandError("No transfers")
@@ -239,7 +236,7 @@ class QuiverArrowCommand(Command):
         since = (snap.timestamp - checkpoint.timestamp) / 1000
 
         if snap.count == checkpoint.count and since > self.timeout:
-            raise CommandError("{} timed out", self.operation.capitalize())
+            raise CommandError("{} timed out", self.role)
 
         if snap.count > checkpoint.count:
             self.timeout_checkpoint = snap
