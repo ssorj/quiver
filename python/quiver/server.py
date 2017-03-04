@@ -28,7 +28,6 @@ import shlex as _shlex
 import subprocess as _subprocess
 
 from .common import *
-from .common import _install_sigterm_handler
 
 _description = """
 Start a message server with the given queue.
@@ -99,16 +98,4 @@ class QuiverServerCommand(Command):
 
         assert None not in args, args
 
-        proc = _subprocess.Popen(args)
-
-        _install_sigterm_handler(proc)
-
-        _plano.notice("Process {} (server) started", proc.pid)
-
-        while proc.poll() is None:
-            _plano.sleep(1)
-
-        if proc.returncode == 0:
-            _plano.notice("Process {} (server) exited normally", proc.pid)
-        else:
-            raise CommandError("Process {} (server) exited with code {}", proc.pid, proc.returncode)
+        _plano.call(args)

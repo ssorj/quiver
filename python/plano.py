@@ -532,16 +532,16 @@ def _command_string(command):
 
     return " ".join(elems)
 
-def terminate_child_processes():
+def default_sigterm_handler(signum, frame):
     for proc in _child_processes:
         if proc.poll() is None:
             proc.terminate()
 
-def _sigterm_handler(signum, frame):
-    terminate_child_processes()
+    _remove_temp_dir()
+
     exit(-(_signal.SIGTERM))
 
-_signal.signal(_signal.SIGTERM, _sigterm_handler)
+_signal.signal(_signal.SIGTERM, default_sigterm_handler)
 
 def start_process(command, *args, **kwargs):
     if _is_string(command):

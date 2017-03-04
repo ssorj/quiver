@@ -33,7 +33,6 @@ import subprocess as _subprocess
 import time as _time
 
 from .common import *
-from .common import _install_sigterm_handler
 
 _description = """
 Send or receive a set number of messages as fast as possible using a
@@ -188,22 +187,16 @@ class QuiverArrowCommand(Command):
         with open(self.transfers_file, "wb") as fout:
             _plano.notice("Calling '{}'", " ".join(args))
 
-            proc = _subprocess.Popen(args, stdout=fout)
-
-            _install_sigterm_handler(proc)
+            proc = _plano.start_process(args, stdout=fout)
 
             try:
-                _plano.notice("Process {} ({}) started", proc.pid, self.operation)
                 self.monitor_subprocess(proc)
             except:
-                proc.terminate()
+                _plano.stop_process(proc)
                 raise
 
-            if proc.returncode == 0:
-                _plano.notice("Process {} ({}) exited normally", proc.pid, self.operation)
-            else:
-                raise CommandError("Process {} ({}) exited with code {}",
-                                  proc.pid, self.operation, proc.returncode)
+            if proc.returncode != 0:
+                raise CommandError("Process {} ({}) exited with code {}", proc.pid, self.operation, proc.returncode)
 
         if _os.path.getsize(self.transfers_file) == 0:
             raise CommandError("No transfers")

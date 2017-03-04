@@ -32,7 +32,6 @@ import time as _time
 import traceback as _traceback
 
 from .common import *
-from .common import _install_sigterm_handler
 
 _description = """
 Benchmark message sender, receiver, and server combinations.

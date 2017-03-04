@@ -32,7 +32,6 @@ import time as _time
 
 from .arrow import _StatusSnapshot
 from .common import *
-from .common import _install_sigterm_handler
 
 _description = """
 Start a sender-receiver pair for a particular messaging address.
@@ -149,7 +148,7 @@ class QuiverPairCommand(Command):
 
         self.start_time = now()
 
-        receiver = _subprocess.Popen(receiver_args)
+        receiver = _plano.start_process(receiver_args)
 
         if self.peer_to_peer:
             port = self.port
@@ -159,19 +158,17 @@ class QuiverPairCommand(Command):
 
             _plano.wait_for_port(port, host=self.host)
 
-        sender = _subprocess.Popen(sender_args)
-
-        _install_sigterm_handler(sender, receiver)
+        sender = _plano.start_process(sender_args)
 
         try:
             if not self.quiet:
                 self.print_status(sender, receiver)
 
-            sender.wait()
-            receiver.wait()
+            _plano.wait_for_process(sender)
+            _plano.wait_for_process(receiver)
         except:
-            sender.terminate()
-            receiver.terminate()
+            _plano.stop_process(sender)
+            _plano.stop_process(receiver)
 
             raise
 

@@ -20,4 +20,4 @@
 
 from plano import *
 
-call("quiver-bench -m 1 --matching-pairs --include-servers builtin --exclude-servers none --output {}", make_temp_dir())
+call("quiver-bench -m 1 --matching-pairs --include-servers builtin --exclude-servers none --verbose --output {}", make_temp_dir())

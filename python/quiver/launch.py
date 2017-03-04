@@ -31,7 +31,6 @@ import sys as _sys
 import time as _time
 
 from .common import *
-from .common import _install_sigterm_handler
 
 _description = "XXX"
 _epilog = "XXX"

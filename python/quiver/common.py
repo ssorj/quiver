@@ -239,12 +239,3 @@ class _Formatter(_argparse.ArgumentDefaultsHelpFormatter,
 
 def now():
     return long(_time.time() * 1000)
-
-def _install_sigterm_handler(*children):
-    def signal_handler(signum, frame):
-        for child in children:
-            child.terminate()
-
-        _sys.exit(0)
-
-    _signal.signal(_signal.SIGTERM, signal_handler)
