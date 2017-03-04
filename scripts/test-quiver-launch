@@ -24,6 +24,6 @@ port = random_port()
 server = start_process("quiver-server //127.0.0.1:{}/q0 --verbose", port)
 
 try:
-    call("quiver //127.0.0.1:{}/q0 -m 10k", port)
+    call("quiver-launch //127.0.0.1:{}/q0 --sender-count 2 --sender-options '-m 1' --receiver-count 2 --receiver-options '-m 1' --verbose", port)
 finally:
     stop_process(server)

@@ -98,6 +98,8 @@ devel: install
 .PHONY: test
 test: devel
 	scripts/test-quiver
+	scripts/test-quiver-bench
+	scripts/test-quiver-launch
 
 build/bin/%: bin/%.in
 	scripts/configure-file -a quiver_home=${QUIVER_HOME} $< $@

@@ -233,32 +233,12 @@ class Command(object):
     def get_server_impl_file(self, name):
         return _plano.join(self.home_dir, "exec", "quiver-server-{}".format(name))
 
-    def vprint(self, message, *args, **kwargs):
-        if not self.verbose:
-            return
-
-        _print(message, *args, **kwargs)
-
 class _Formatter(_argparse.ArgumentDefaultsHelpFormatter,
                  _argparse.RawDescriptionHelpFormatter):
     pass
 
 def now():
     return long(_time.time() * 1000)
-
-def eprint(message, *args, **kwargs):
-    if isinstance(message, Exception):
-        message = str(message)
-
-    kwargs["file"] = _sys.stderr
-
-    _print(message, *args, **kwargs)
-
-def _print(message, *args, **kwargs):
-    message = "{}: {}".format(_plano.program_name(), message)
-    message = message.format(*args)
-
-    print(message, **kwargs)
 
 def _install_sigterm_handler(*children):
     def signal_handler(signum, frame):

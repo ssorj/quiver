@@ -103,12 +103,12 @@ class QuiverServerCommand(Command):
 
         _install_sigterm_handler(proc)
 
-        self.vprint("Process {} (server) started", proc.pid)
+        _plano.notice("Process {} (server) started", proc.pid)
 
         while proc.poll() is None:
             _plano.sleep(1)
 
         if proc.returncode == 0:
-            self.vprint("Process {} (server) exited normally", proc.pid)
+            _plano.notice("Process {} (server) exited normally", proc.pid)
         else:
             raise CommandError("Process {} (server) exited with code {}", proc.pid, proc.returncode)

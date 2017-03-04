@@ -142,21 +142,21 @@ class QuiverBenchCommand(Command):
             file = self.get_arrow_impl_file(impl)
 
             if not _plano.exists(file):
-                eprint("No implementation at '{}'; skipping it", file)
+                _plano.warn("No implementation at '{}'; skipping it", file)
                 sender_impls.remove(impl)
 
         for impl in list(receiver_impls):
             file = self.get_arrow_impl_file(impl)
 
             if not _plano.exists(file):
-                eprint("No implementation at '{}'; skipping it", file)
+                _plano.warn("No implementation at '{}'; skipping it", file)
                 receiver_impls.remove(impl)
 
         for impl in list(server_impls):
             file = self.get_server_impl_file(impl)
 
             if not _plano.exists(file):
-                eprint("No implementation at '{}'; skipping it", file)
+                _plano.warn("No implementation at '{}'; skipping it", file)
                 server_impls.remove(impl)
 
         self.sender_impls = sorted(sender_impls)

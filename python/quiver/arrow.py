@@ -186,21 +186,21 @@ class QuiverArrowCommand(Command):
         assert None not in args, args
 
         with open(self.transfers_file, "wb") as fout:
-            self.vprint("Calling '{}'", " ".join(args))
+            _plano.notice("Calling '{}'", " ".join(args))
 
             proc = _subprocess.Popen(args, stdout=fout)
 
             _install_sigterm_handler(proc)
 
             try:
-                self.vprint("Process {} ({}) started", proc.pid, self.operation)
+                _plano.notice("Process {} ({}) started", proc.pid, self.operation)
                 self.monitor_subprocess(proc)
             except:
                 proc.terminate()
                 raise
 
             if proc.returncode == 0:
-                self.vprint("Process {} ({}) exited normally", proc.pid, self.operation)
+                _plano.notice("Process {} ({}) exited normally", proc.pid, self.operation)
             else:
                 raise CommandError("Process {} ({}) exited with code {}",
                                   proc.pid, self.operation, proc.returncode)
@@ -259,7 +259,7 @@ class QuiverArrowCommand(Command):
                 try:
                     transfer = self.transfers_parse_func(line)
                 except Exception as e:
-                    eprint("Failed to parse line '{}': {}", line, e)
+                    _plano.error("Failed to parse line '{}': {}", line, e)
                     continue
 
                 transfers.append(transfer)
@@ -387,7 +387,7 @@ class _StatusSnapshot(object):
             try:
                 record = self.command.transfers_parse_func(line)
             except Exception as e:
-                eprint("Failed to parse line '{}': {}", line, e)
+                _plano.error("Failed to parse line '{}': {}", line, e)
                 continue
 
             transfers.append(record)
