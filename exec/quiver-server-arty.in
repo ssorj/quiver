@@ -1,0 +1,90 @@
+#!/usr/bin/python
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
+
+import os
+import signal
+import sys
+
+home_dir = os.path.normpath("@quiver_home@")
+sys.path.insert(0, os.path.join(home_dir, "python"))
+
+from plano import *
+from quiver.common import *
+
+config_template = """
+<?xml version='1.0'?>
+<configuration xmlns="urn:activemq" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd">
+  <core xmlns="urn:activemq:core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq:core ">
+    <acceptors>
+      <acceptor name="artemis">tcp://{}:{}?protocols=AMQP,CORE,OPENWIRE</acceptor>
+    </acceptors>
+    <addresses>
+      <address name="{}">
+        <anycast>
+          <queue name="{}">
+            <durable>false</durable>
+          </queue>
+        </anycast>
+      </address>
+    </addresses>
+    <security-settings>
+      <security-setting match="#">
+        <permission type="consume" roles="admin"/>
+        <permission type="browse" roles="admin"/>
+        <permission type="send" roles="admin"/>
+      </security-setting>
+    </security-settings>
+  </core>
+</configuration>
+"""
+
+def main():
+    assert which("artemis") is not None
+
+    host = sys.argv[1]
+    port = sys.argv[2]
+    path = sys.argv[3]
+    ready_file = sys.argv[4]
+
+    if port == "-":
+        port = 61616
+    
+    config = config_template.format(host, port, path, path).lstrip()
+    config_file = write(make_temp_file(), config)
+        
+    server = start_process("artemis run --broker {}", config_file)
+
+    wait_for_port(port)
+
+    if ready_file != "-":
+        write(ready_file, "ready\n")
+
+    while True:
+        sleep(1)
+
+try:
+    main()
+except KeyboardInterrupt:
+    pass

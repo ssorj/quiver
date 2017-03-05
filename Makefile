@@ -39,6 +39,7 @@ TARGETS := \
 	build/exec/quiver-arrow-vertx-proton \
 	build/exec/quiver-server-activemq \
 	build/exec/quiver-server-activemq-artemis \
+	build/exec/quiver-server-arty \
 	build/exec/quiver-server-builtin \
 	build/exec/quiver-server-qpid-cpp \
 	build/exec/quiver-server-qpid-dispatch \

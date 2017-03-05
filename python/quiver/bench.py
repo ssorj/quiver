@@ -238,7 +238,7 @@ class QuiverBenchCommand(Command):
         test_status_file = _plano.join(test_dir, "status.txt")
 
         test_command = [
-            "quiver", "//127.0.0.1/q0",
+            "quiver", "//127.0.0.1:56720/q0",
             "--sender", sender_impl,
             "--receiver", receiver_impl,
             "--output", test_data_dir,
@@ -260,7 +260,7 @@ class QuiverBenchCommand(Command):
             server_ready_file = _plano.make_temp_file()
 
             server_command = [
-                "quiver-server", "//127.0.0.1/q0",
+                "quiver-server", "//127.0.0.1:56720/q0",
                 "--impl", server_impl,
                 "--ready-file", server_ready_file,
                 "--verbose",
