@@ -7,19 +7,19 @@ on mechanics.  By the same token, implementation outputs are
 intentionally left raw so `quiver` and `quiver-arrow` can do the work
 of presenting the results.
 
-An implementation terminates when it has sent or received its expected
-number of messages.  Each implementation invocation uses a single
-connection to a single queue, meaning that a sending and a receiving
+An arrow implementation terminates when it has sent or received its
+expected number of messages.  Each invocation uses a single connection
+to a single queue, meaning that a sending and a receiving
 implementation together constitute a pair of communicating endpoints.
 
 ## Files
 
 Implementations live under `exec/` in the source tree, with a name
-starting with `arrow-`.  Any build or install logic should be placed
-in the project `Makefile`.
+starting with `quiver-arrow-`.  Any build or install logic should be
+placed in the project `Makefile`.
 
-New implementation names should be added to the `_impls_by_name` map
-in `python/quiver.py` so they are available to the user.
+New implementation names should be added to the `ARROW_IMPLS` list in
+`python/quiver/common.py` so they are available to the user.
 
 ## Input
 

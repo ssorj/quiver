@@ -61,7 +61,7 @@ transmission of messages.
 | Qpid Messaging C++    | libqpidmessaging2-dev | qpid-cpp-client-devel
 | Qpid Messaging Python | python-qpid-messaging | python-qpid-messaging
 | Qpid Proton C         | libqpid-proton8-dev   | qpid-proton-c-devel
-| Qpid Proton C++       | -                     | -
+| Qpid Proton C++       | -                     | qpid-proton-cpp-devel
 | Qpid Proton Python    | python-qpid-proton    | python-qpid-proton
 | XZ                    | xz-utils              | xz
 
@@ -78,10 +78,10 @@ If you don't have `dnf`, use the repo files at
 
 ### Installing from source
 
-By default, installs from source go to `$HOME/.local`.  Make sure
-`$HOME/.local/bin` is in your path.
+By default, installs from source go to `/usr/local`.  Make sure
+`/usr/local/bin` is in your path.
 
-    $ cd quiver
+    $ cd quiver/
     $ make install
 
 ## Development
@@ -268,8 +268,7 @@ number of messages are all sent or received.
 
 ### Running Quiver peer-to-peer
 
-    $ quiver-arrow --server --passive receive q0 &
-    $ quiver-arrow send q0
+    $ quiver --peer-to-peer --sender qpid-jms --receiver qpid-proton-python
 
 ## Implementations
 
