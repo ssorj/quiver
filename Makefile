@@ -115,13 +115,13 @@ build/exec/%: exec/%.cpp
 build/java/quiver-vertx-proton.jar: java/quiver-vertx-proton/pom.xml $(shell find java/quiver-vertx-proton/src -type f)
 	@mkdir -p build/java
 	cd java/quiver-vertx-proton && mvn clean package
-	cp java/quiver-vertx-proton/target/quiver-vertx-proton-${VERSION}-jar-with-dependencies.jar $@
+	cp java/quiver-vertx-proton/target/quiver-vertx-proton-1.0.0-SNAPSHOT-jar-with-dependencies.jar $@
 
 build/java/%.jar: java/pom.xml java/quiver-jms-driver/pom.xml $(shell find java/quiver-jms-driver/src -type f)
 	@mkdir -p build/java
 	cd java/quiver-jms-driver && mvn install
 	cd java && mvn clean package
-	cp java/$*/target/$*-${VERSION}-jar-with-dependencies.jar $@
+	cp java/$*/target/$*-1.0.0-SNAPSHOT-jar-with-dependencies.jar $@
 
 .PHONY: update-rhea
 update-rhea:
