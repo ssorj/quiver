@@ -48,12 +48,13 @@ listener {{
 """
 
 def main():
-    assert which("qdrouterd") is not None
+    if which("qdrouterd") is None:
+        exit("The 'qdouterd' command is not on the path")
 
-    host = sys.argv[1]
-    port = sys.argv[2]
-    path = sys.argv[3]
-    ready_file = sys.argv[4]
+    host = ARGS[1]
+    port = ARGS[2]
+    path = ARGS[3]
+    ready_file = ARGS[4]
 
     if port == "-":
         port = 5672

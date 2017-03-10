@@ -61,12 +61,13 @@ config_template = """
 """
 
 def main():
-    assert which("artemis") is not None
+    if which("artemis") is None:
+        exit("The 'artemis' command is not on the path")
 
-    host = sys.argv[1]
-    port = sys.argv[2]
-    path = sys.argv[3]
-    ready_file = sys.argv[4]
+    host = ARGS[1]
+    port = ARGS[2]
+    path = ARGS[3]
+    ready_file = ARGS[4]
 
     if port == "-":
         port = 61616

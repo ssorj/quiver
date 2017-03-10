@@ -18,34 +18,39 @@
 # under the License.
 #
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import with_statement
-
-import os
-import sys
-
-home = os.path.normpath("@quiver_home@")
-sys.path.insert(0, os.path.join(home, "python"))
-
-import collections as collections
-import uuid as uuid
-
 from plano import *
-from quiver.server import BuiltinBroker
+
+def test_impl(impl):
+    port = random_port()
+    ready_file = make_temp_file()
+    server = start_process("quiver-server //127.0.0.1:{}/q0 --impl {} --ready-file {}", port, impl, ready_file)
+
+    for i in range(30):
+        if read(ready_file) == "ready\n":
+            break
+
+        sleep(1)
+
+    try:
+        call("quiver //127.0.0.1:{}/q0 -m 1", port)
+    finally:
+        stop_process(server)
 
 def main():
-    host = ARGS[1]
-    port = ARGS[2]
-    path = ARGS[3]
-    ready_file = ARGS[4]
+    test_impl("builtin")
 
-    if port == "-":
-        port = 5672
+    # XXX Needs port assignability
+    #if which("activemq"):
+    #    test_impl("activemq")
 
-    broker = BuiltinBroker(host, port, path, ready_file)
-    broker.run()
+    if which("artemis"):
+        test_impl("arty")
+
+    if which("qpidd"):
+        test_impl("qpid-cpp")
+
+    if which("qdrouterd"):
+        test_impl("qpid-dispatch")
 
 if __name__ == "__main__":
     try:

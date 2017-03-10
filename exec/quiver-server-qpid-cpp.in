@@ -33,13 +33,16 @@ from plano import *
 from quiver.common import *
 
 def main():
-    assert which("qpidd") is not None
-    assert which("qpid-config") is not None
+    if which("qpidd") is None:
+        exit("The 'qpidd' command is not on the path")
 
-    host = sys.argv[1]
-    port = sys.argv[2]
-    path = sys.argv[3]
-    ready_file = sys.argv[4]
+    if which("qpidd") is None:
+        exit("The 'qpid-config' command is not on the path")
+
+    host = ARGS[1]
+    port = ARGS[2]
+    path = ARGS[3]
+    ready_file = ARGS[4]
 
     if port == "-":
         port = 5672

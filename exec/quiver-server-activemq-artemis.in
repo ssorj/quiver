@@ -34,13 +34,16 @@ from plano import *
 from quiver.common import *
 
 def main():
-    assert which("artemis") is not None
-    assert which("artemis-service") is not None
-
-    host = sys.argv[1]
-    port = sys.argv[2]
-    path = sys.argv[3]
-    ready_file = sys.argv[4]
+    if which("artemis") is None:
+        exit("The 'artemis' command is not on the path")
+    
+    if which("artemis-service") is None:
+        exit("The 'artemis-service' command is not on the path")
+    
+    host = ARGS[1]
+    port = ARGS[2]
+    path = ARGS[3]
+    ready_file = ARGS[4]
 
     assert host in ("localhost", "127.0.0.1")
     assert port == "-"

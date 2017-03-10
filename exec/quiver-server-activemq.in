@@ -34,12 +34,13 @@ from plano import *
 from quiver.common import *
 
 def main():
-    assert which("activemq") is not None
+    if which("activemq") is None:
+        exit("The 'activemq' command is not on the path")
 
-    host = sys.argv[1]
-    port = sys.argv[2]
-    path = sys.argv[3]
-    ready_file = sys.argv[4]
+    host = ARGS[1]
+    port = ARGS[2]
+    path = ARGS[3]
+    ready_file = ARGS[4]
 
     assert host in ("localhost", "127.0.0.1")
     assert port == "-"
