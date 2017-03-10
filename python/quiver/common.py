@@ -165,7 +165,8 @@ class Command(object):
         self.path = url.path
 
         if self.host is None:
-            self.host = "localhost"
+            # XXX Should be "localhost" - a workaround for a proton issue
+            self.host = "127.0.0.1"
 
         if self.port is None:
             self.port = "-"
