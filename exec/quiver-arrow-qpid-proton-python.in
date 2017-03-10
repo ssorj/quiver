@@ -31,10 +31,11 @@ from proton import Message
 from proton.handlers import MessagingHandler
 from proton.reactor import Container
 
-home_dir = os.path.normpath("@quiver_home@")
-sys.path.insert(0, os.path.join(home_dir, "python"))
+home = os.path.normpath("@quiver_home@")
+sys.path.insert(0, os.path.join(home, "python"))
 
-from quiver.common import *
+from plano import *
+from quiver.common import now
 
 class Handler(MessagingHandler):
     def __init__(self, **kwargs):
@@ -151,23 +152,23 @@ class Handler(MessagingHandler):
                 raise Exception()
 
 def main():
-    credit_window = int(sys.argv[10])
+    credit_window = int(ARGS[10])
 
     handler = Handler(prefetch=credit_window)
-    handler.connection_mode = sys.argv[1]
-    handler.channel_mode = sys.argv[2]
-    handler.operation = sys.argv[3]
-    handler.host = sys.argv[5]
-    handler.port = sys.argv[6]
-    handler.path = sys.argv[7]
-    handler.messages = int(sys.argv[8])
-    handler.body_size = int(sys.argv[9])
+    handler.connection_mode = ARGS[1]
+    handler.channel_mode = ARGS[2]
+    handler.operation = ARGS[3]
+    handler.host = ARGS[5]
+    handler.port = ARGS[6]
+    handler.path = ARGS[7]
+    handler.messages = int(ARGS[8])
+    handler.body_size = int(ARGS[9])
 
     if handler.port == "-":
         handler.port = "5672"
 
     container = Container(handler)
-    container.container_id = sys.argv[4]
+    container.container_id = ARGS[4]
 
     container.run()
 

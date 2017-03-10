@@ -28,10 +28,11 @@ import sys
 
 from qpid_messaging import *
 
-home_dir = os.path.normpath("@quiver_home@")
-sys.path.insert(0, os.path.join(home_dir, "python"))
+home = os.path.normpath("@quiver_home@")
+sys.path.insert(0, os.path.join(home, "python"))
 
-from quiver.common import *
+from plano import *
+from quiver.common import now
 
 link_options = "{link: {durable: False, reliability: at-least-once}}"
 
@@ -121,23 +122,23 @@ class Client(object):
             self.received +=1
 
 def main():
-    if sys.argv[1] != "client":
+    if ARGS[1] != "client":
         eprint("This impl supports client mode only")
         sys.exit(1)
 
-    if sys.argv[2] != "active":
+    if ARGS[2] != "active":
         eprint("This impl supports active mode only")
         sys.exit(1)
 
     client = Client()
-    client.operation = sys.argv[3]
-    client.id_ = sys.argv[4]
-    client.host = sys.argv[5]
-    client.port = sys.argv[6]
-    client.path = sys.argv[7]
-    client.messages = int(sys.argv[8])
-    client.body_size = int(sys.argv[9])
-    client.credit_window = int(sys.argv[10])
+    client.operation = ARGS[3]
+    client.id_ = ARGS[4]
+    client.host = ARGS[5]
+    client.port = ARGS[6]
+    client.path = ARGS[7]
+    client.messages = int(ARGS[8])
+    client.body_size = int(ARGS[9])
+    client.credit_window = int(ARGS[10])
 
     if client.port == "-":
         client.port = "5672"

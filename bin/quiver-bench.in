@@ -21,11 +21,11 @@
 import os
 import sys
 
-home_dir = os.path.normpath("@quiver_home@")
-sys.path.insert(0, os.path.join(home_dir, "python"))
+home = os.path.normpath("@quiver_home@")
+sys.path.insert(0, os.path.join(home, "python"))
 
 from quiver.bench import QuiverBenchCommand
 
 if __name__ == "__main__":
-    command = QuiverBenchCommand(home_dir)
+    command = QuiverBenchCommand(home)
     command.main()

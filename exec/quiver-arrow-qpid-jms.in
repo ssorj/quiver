@@ -26,21 +26,21 @@ from __future__ import with_statement
 import os
 import sys
 
-home_dir = os.path.normpath("@quiver_home@")
-sys.path.insert(0, os.path.join(home_dir, "python"))
+home = os.path.normpath("@quiver_home@")
+sys.path.insert(0, os.path.join(home, "python"))
 
-from quiver.common import *
+from plano import *
 
 def main():
-    id_ = sys.argv[4]
-    host = sys.argv[5]
-    port = sys.argv[6]
-    credit_window = sys.argv[10]
+    id_ = ARGS[4]
+    host = ARGS[5]
+    port = ARGS[6]
+    credit_window = ARGS[10]
 
     if port == "-":
         port = "5672"
     
-    jar_file = os.path.join(home_dir, "java", "quiver-qpid-jms.jar")
+    jar_file = join(home, "java", "quiver-qpid-jms.jar")
 
     params = (
         "jms.clientID={}".format(id_),
@@ -61,9 +61,12 @@ def main():
         "net.ssorj.quiver.QuiverArrowJms",
     ]
 
-    args += sys.argv[1:]
+    args += ARGS[1:]
 
     os.execl(*args)
     
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
