@@ -82,7 +82,7 @@ By default, installs from source go to `/usr/local`.  Make sure
 `/usr/local/bin` is in your path.
 
     $ cd quiver/
-    $ make install
+    $ sudo make install
 
 ## Development
 
