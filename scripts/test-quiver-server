@@ -44,7 +44,7 @@ def main():
     #    test_impl("activemq")
 
     if which("artemis"):
-        test_impl("arty")
+        test_impl("activemq-artemis")
 
     if which("qpidd"):
         test_impl("qpid-cpp")

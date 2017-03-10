@@ -33,59 +33,57 @@ sys.path.insert(0, os.path.join(home_dir, "python"))
 from plano import *
 from quiver.common import *
 
+config_template = """
+<?xml version='1.0'?>
+<configuration xmlns="urn:activemq" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd">
+  <core xmlns="urn:activemq:core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq:core ">
+    <acceptors>
+      <acceptor name="artemis">tcp://{}:{}?protocols=AMQP,CORE,OPENWIRE</acceptor>
+    </acceptors>
+    <addresses>
+      <address name="{}">
+        <anycast>
+          <queue name="{}">
+            <durable>false</durable>
+          </queue>
+        </anycast>
+      </address>
+    </addresses>
+    <security-settings>
+      <security-setting match="#">
+        <permission type="consume" roles="admin"/>
+        <permission type="browse" roles="admin"/>
+        <permission type="send" roles="admin"/>
+      </security-setting>
+    </security-settings>
+  </core>
+</configuration>
+"""
+
 def main():
     if which("artemis") is None:
         exit("The 'artemis' command is not on the path")
-    
-    if which("artemis-service") is None:
-        exit("The 'artemis-service' command is not on the path")
-    
+
     host = ARGS[1]
     port = ARGS[2]
     path = ARGS[3]
     ready_file = ARGS[4]
 
-    assert host in ("localhost", "127.0.0.1")
-    assert port == "-"
+    if port == "-":
+        port = 61616
 
-    wait_for_server_to_stop()
+    config = config_template.format(host, port, path, path).lstrip()
+    config_file = write(make_temp_file(), config)
 
-    server = call("artemis-service start")
+    server = start_process("artemis run --broker {}", config_file)
 
-    def signal_handler(signum, frame):
-        call("artemis-service stop")
-        wait_for_server_to_stop()
-        exit()
-
-    signal.signal(signal.SIGTERM, signal_handler)
-
-    wait_for_port(61616)
-    wait_for_port(5672)
-
-    # Ignore failures
-    call_for_exit_code("artemis queue delete --name {}", path)
-    call_for_exit_code("artemis address delete --name {}", path)
-
-    call("artemis queue create --name {} --no-durable --auto-create-address --address {} --anycast --preserve-on-no-consumers", path, path)
+    wait_for_port(port)
 
     if ready_file != "-":
         write(ready_file, "ready\n")
 
     while True:
         sleep(1)
-
-def wait_for_server_to_stop():
-    for i in range(10):
-        if not server_is_running():
-            return
-
-        sleep(1)
-
-    fail("The one already running isn't stopping")
-
-def server_is_running():
-    with open(os.devnull, "w") as f:
-        return call_for_exit_code("artemis-service status", shell=True, stdout=f) == 0
 
 try:
     main()
