@@ -20,10 +20,17 @@
 
 from plano import *
 
-port = random_port()
-server = start_process("quiver-server //127.0.0.1:{}/q0 --verbose", port)
+def main():
+    port = random_port()
+    server = start_process("quiver-server //127.0.0.1:{}/q0 --verbose", port)
 
-try:
-    call("quiver //127.0.0.1:{}/q0 -m 10k --verbose", port)
-finally:
-    stop_process(server)
+    try:
+        call("quiver //127.0.0.1:{}/q0 -m 10k --verbose", port)
+    finally:
+        stop_process(server)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

@@ -101,6 +101,7 @@ test: devel
 	scripts/test-quiver
 	scripts/test-quiver-bench
 	scripts/test-quiver-launch
+	scripts/test-quiver-server
 
 build/bin/%: bin/%.in
 	scripts/configure-file -a quiver_home=${QUIVER_HOME} $< $@

@@ -20,4 +20,35 @@
 
 from plano import *
 
-call("quiver-bench -m 1 --matching-pairs --include-servers builtin --exclude-servers none --verbose --output {}", make_temp_dir())
+def test_config(peer_to_peer=False):
+    temp_dir = make_temp_dir()
+
+    args = [
+        "quiver-bench",
+        "-m", "1",
+        "--include-servers", "builtin",
+        "--exclude-servers", "none",
+        "--matching-pairs",
+        "--verbose",
+        "--output", temp_dir,
+    ]
+
+    if peer_to_peer:
+        args += ["--peer-to-peer"]
+
+        # XXX Trouble with this one
+        args += ["--exclude-receivers", "qpid-proton-cpp"]
+    else:
+        args += ["--client-server"]
+
+    call(args)
+
+def main():
+    test_config(peer_to_peer=False)
+    test_config(peer_to_peer=True)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
