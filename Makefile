@@ -55,6 +55,7 @@ ifdef QPID_PROTON_CPP_ENABLED
 endif
 
 export PATH := ${PWD}/install/bin:${PATH}
+export PYTHONPATH := ${PWD}/python
 export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
 
 .PHONY: default
