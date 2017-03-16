@@ -43,7 +43,7 @@ def main():
     ready_file = ARGS[4]
 
     assert host in ("localhost", "127.0.0.1")
-    assert port == "-"
+    assert port in ("5672", "61616")
 
     wait_for_server_to_stop()
 
