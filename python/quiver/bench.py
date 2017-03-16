@@ -233,12 +233,17 @@ class QuiverBenchCommand(Command):
         _plano.flush()
         _plano.make_dir(test_dir)
 
+        port = _plano.random_port()
+
+        if server_impl == "activemq":
+            port = 61616
+
         test_data_dir = _plano.join(test_dir, "data")
         test_output_file = _plano.join(test_dir, "output.txt")
         test_status_file = _plano.join(test_dir, "status.txt")
 
         test_command = [
-            "quiver", "//127.0.0.1:56720/q0",
+            "quiver", "//127.0.0.1:{}/q0".format(port),
             "--sender", sender_impl,
             "--receiver", receiver_impl,
             "--output", test_data_dir,
@@ -260,7 +265,7 @@ class QuiverBenchCommand(Command):
             server_ready_file = _plano.make_temp_file()
 
             server_command = [
-                "quiver-server", "//127.0.0.1:56720/q0",
+                "quiver-server", "//127.0.0.1:{}/q0".format(port),
                 "--impl", server_impl,
                 "--ready-file", server_ready_file,
                 "--verbose",
