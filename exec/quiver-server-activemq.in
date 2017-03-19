@@ -58,8 +58,7 @@ def main():
 
     signal.signal(signal.SIGTERM, signal_handler)
 
-    wait_for_port(61616)
-    wait_for_port(5672)
+    wait_for_port(port)
 
     if ready_file != "-":
         write(ready_file, "ready\n")

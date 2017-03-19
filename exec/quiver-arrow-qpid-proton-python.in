@@ -164,9 +164,6 @@ def main():
     handler.messages = int(ARGS[8])
     handler.body_size = int(ARGS[9])
 
-    if handler.port == "-":
-        handler.port = "5672"
-
     container = Container(handler)
     container.container_id = ARGS[4]
 

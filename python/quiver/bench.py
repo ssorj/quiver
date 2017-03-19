@@ -112,6 +112,8 @@ class QuiverBenchCommand(Command):
         self.init_common_test_attributes()
         self.init_common_tool_attributes()
 
+        _plano.set_message_threshold("warn")
+
         self.failures = list()
 
     def init_impl_attributes(self):
@@ -236,7 +238,10 @@ class QuiverBenchCommand(Command):
         port = _plano.random_port()
 
         if server_impl == "activemq":
-            port = 61616
+            if sender_impl == "activemq-jms" and receiver_impl == "activemq-jms":
+                port = 61616
+            else:
+                port = 5672
 
         test_data_dir = _plano.join(test_dir, "data")
         test_output_file = _plano.join(test_dir, "output.txt")

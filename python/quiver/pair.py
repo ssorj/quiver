@@ -151,12 +151,7 @@ class QuiverPairCommand(Command):
         receiver = _plano.start_process(receiver_args)
 
         if self.peer_to_peer:
-            port = self.port
-
-            if port == "-":
-                port = 5672
-
-            _plano.wait_for_port(port, host=self.host)
+            _plano.wait_for_port(self.port, host=self.host)
 
         sender = _plano.start_process(sender_args)
 

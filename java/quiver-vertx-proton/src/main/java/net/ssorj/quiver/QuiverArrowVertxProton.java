@@ -45,8 +45,6 @@ import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
 
 public class QuiverArrowVertxProton {
-    private static final int DEFAULT_AMQP_PORT = 5672;
-
     private static final String CLIENT = "client";
     private static final String ACTIVE = "active";
     private static final String RECEIVE = "receive";
@@ -93,13 +91,7 @@ public class QuiverArrowVertxProton {
             throw new java.lang.IllegalStateException("Unknown operation: " + operation);
         }
 
-        final int portNumber;
-        
-        if (port.equals("-")) {
-            portNumber = DEFAULT_AMQP_PORT;
-        } else {
-            portNumber = Integer.parseInt(port);
-        }
+        final int portNumber = Integer.parseInt(port);
         
         CountDownLatch completionLatch = new CountDownLatch(1);
         Vertx vertx = Vertx.vertx();

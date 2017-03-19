@@ -37,9 +37,6 @@ def main():
     port = ARGS[6]
     credit_window = ARGS[10]
 
-    if port == "-":
-        port = "61616"
-
     jar_file = join(home, "java", "quiver-activemq-artemis-jms.jar")
 
     params = (

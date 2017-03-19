@@ -168,10 +168,6 @@ int main(int argc, char** argv) {
     h.body_size = std::atoi(argv[9]);
     h.credit_window = std::atoi(argv[10]);
 
-    if (h.port == "-") {
-        h.port = "5672";
-    }
-
     try {
         proton::default_container(h, h.id).run();
     } catch (const std::exception& e) {

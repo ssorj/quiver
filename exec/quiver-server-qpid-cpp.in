@@ -44,9 +44,6 @@ def main():
     path = ARGS[3]
     ready_file = ARGS[4]
 
-    if port == "-":
-        port = 5672
-
     data_dir = make_temp_dir()
 
     server = start_process("qpidd --interface {} --port {} --auth no --default-queue-limit 0 --data-dir {}",

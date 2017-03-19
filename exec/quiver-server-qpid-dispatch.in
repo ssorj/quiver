@@ -56,9 +56,6 @@ def main():
     path = ARGS[3]
     ready_file = ARGS[4]
 
-    if port == "-":
-        port = 5672
-
     config = config_template.format(host, port)
     config_file = write(make_temp_file(), config)
 

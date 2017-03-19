@@ -40,10 +40,6 @@ If an implementation does not support a particular `connection-mode`
 or `channel-mode`, for instance `server`, it should raise an error at
 start time.
 
-If the user doesn't supply an explicit `port`, the wrapper will pass a
-hyphen (`-`) for that parameter.  The implementation must determine
-what default port value to use.
-
 Each unit of `credit-window` represents one message (not one byte).
 
 ## Output

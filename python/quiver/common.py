@@ -113,12 +113,6 @@ class Command(object):
 
         _plano.set_message_threshold("warn")
 
-        if self.quiet:
-            _plano.set_message_threshold("error")
-
-        if self.verbose:
-            _plano.set_message_threshold("notice")
-
     def add_common_test_arguments(self):
         self.parser.add_argument("-m", "--messages", metavar="COUNT",
                                  help="Send or receive COUNT messages",
@@ -152,6 +146,12 @@ class Command(object):
         self.quiet = self.args.quiet
         self.verbose = self.args.verbose
 
+        if self.quiet:
+            _plano.set_message_threshold("error")
+
+        if self.verbose:
+            _plano.set_message_threshold("notice")
+
     def init_url_attributes(self):
         self.url = self.args.url
 
@@ -169,7 +169,7 @@ class Command(object):
             self.host = "127.0.0.1"
 
         if self.port is None:
-            self.port = "-"
+            self.port = "5672"
 
         self.port = str(self.port)
 

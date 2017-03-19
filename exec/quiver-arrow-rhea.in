@@ -167,10 +167,6 @@ container.on("message", function(context) {
     }
 });
 
-if (port == "-") {
-    port = "5672";
-}
-
 if (connection_mode == "client") {
     container.connect({username: "anonymous", host: host, port: port});
 } else if (connection_mode == "server") {

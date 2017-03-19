@@ -164,10 +164,6 @@ int main(int argc, char** argv) {
     client.body_size = std::atoi(argv[9]);
     client.credit_window = std::atoi(argv[10]);
 
-    if (client.port == "-") {
-        client.port = "5672";
-    }
-    
     try {
         client.run();
     } catch (const std::exception& e) {

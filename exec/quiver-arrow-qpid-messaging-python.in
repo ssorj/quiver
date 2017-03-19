@@ -140,9 +140,6 @@ def main():
     client.body_size = int(ARGS[9])
     client.credit_window = int(ARGS[10])
 
-    if client.port == "-":
-        client.port = "5672"
-    
     client.run()
     
 if __name__ == "__main__":

@@ -41,9 +41,6 @@ def main():
     path = ARGS[3]
     ready_file = ARGS[4]
 
-    if port == "-":
-        port = 5672
-
     broker = BuiltinBroker(host, port, path, ready_file)
     broker.run()
 
