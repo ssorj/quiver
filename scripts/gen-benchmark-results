@@ -1,0 +1,228 @@
+#!/usr/bin/python
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import with_statement
+
+import argparse
+import json
+
+from pencil import *
+from plano import *
+
+_page_template = """
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head>
+    <title>Quiver Bench - @id@</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sortable/0.8.0/js/sortable.min.js"></script>
+    <script>
+      "use strict";
+      Sortable.init();
+    </script>
+    <style type="text/css">
+      @import url(https://fonts.googleapis.com/css?family=Roboto:300,400);
+      * {
+        margin: 1em 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      *:first-child {
+        margin-top: 0;
+      }
+      *:last-child {
+        margin-bottom: 0;
+      }
+      html, body {
+        margin: 0;
+      }
+      body {
+        font: 10pt/12.5pt Roboto, sans-serif;
+        font-weight: 400;
+        padding: 2em;
+      }
+      a {
+        text-decoration: none;
+        color: rgba(0, 0, 255, 0.8);
+      }
+      table {
+        border-collapse: collapse;
+        border-spacing: 0;
+        font-size: inherit;
+        width: 100%;
+      }
+      th, td {
+        padding: 0.2em 0.6em 0.2em 0;
+      }
+      #results th:nth-child(1n+5), #results td:nth-child(1n+5) {
+        text-align: right;
+      }
+      #results tbody tr:hover {
+        background: yellow;
+      }
+      table[data-sortable] th {
+        vertical-align: bottom;
+        font-weight: bold;
+      }
+      table[data-sortable] th, table[data-sortable] td {
+        text-align: left;
+      }
+      table[data-sortable] th:not([data-sortable="false"]) {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        -o-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        -webkit-touch-callout: none;
+        cursor: pointer;
+      }
+      table[data-sortable] th:after {
+        content: "";
+        visibility: hidden;
+        display: inline-block;
+        vertical-align: inherit;
+        height: 0;
+        width: 0;
+        border-width: 5px;
+        border-style: solid;
+        border-color: transparent;
+        margin-right: 1px;
+        margin-left: 10px;
+        float: right;
+      }
+      table[data-sortable] th[data-sorted="true"]:after {
+        visibility: visible;
+      }
+      table[data-sortable] th[data-sorted-direction="descending"]:after {
+        border-top-color: inherit;
+        margin-top: 8px;
+      }
+      table[data-sortable] th[data-sorted-direction="ascending"]:after {
+        border-bottom-color: inherit;
+        margin-top: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Quiver Bench - @id@</h1>
+
+    <table id="results" data-sortable="data-sortable">
+      <thead>
+        <tr>
+          <th>Sender</th>
+          <th>Receiver</th>
+          <th>Server</th>
+          <th>Status</th>
+          <th data-sortable-type="numeric">Throughput</th>
+          <th data-sortable-type="numeric">Avg latency</th>
+          <th data-sortable-type="numeric">Max latency</th>
+        </tr>
+      </thead>
+      <tbody>
+        @rows@
+      </tbody>
+    </table>
+  </body>
+</html>
+"""
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("results_dir", metavar="RESULTS-DIR")
+
+    args = parser.parse_args()
+
+    records = list()
+
+    for sender in list_dir(args.results_dir):
+        sender_dir = join(args.results_dir, sender)
+
+        for receiver in list_dir(sender_dir):
+            receiver_dir = join(sender_dir, receiver)
+
+            for server in list_dir(receiver_dir):
+                server_dir = join(receiver_dir, server)
+
+                status_file = join(server_dir, "status.txt")
+                data_dir = join(server_dir, "data")
+                summary_file = join(data_dir, "receiver-summary.json")
+
+                try:
+                    status = read(status_file)[:6]
+                except:
+                    continue
+
+                if status == "PASSED":
+                    with open(summary_file, "rb") as f:
+                        data = json.load(f)
+
+                    message_rate = data["results"]["message_rate"]
+                    latency_average = data["results"]["latency_average"]
+                    latency_max = data["results"]["latency_quartiles"][3]
+
+                    record = [
+                        xml_escape(sender),
+                        xml_escape(receiver),
+                        xml_escape(server),
+                        html_a(status, join(server_dir, "output.txt")),
+                        xml_escape("{:,}".format(message_rate)),
+                        xml_escape("{:,.1f}".format(latency_average)),
+                        xml_escape("{:,}".format(latency_max)),
+                    ]
+                else:
+                    record = [sender, receiver, server, html_a(status, join(server_dir, "output.txt")), None, None, None]
+
+                records.append(record)
+
+    rows = list()
+                
+    for record in records:
+        fields = list()
+
+        for field in record:
+            if field is None:
+                field = "-"
+            
+            fields.append("<td>{}</td>".format(field))
+
+        rows.append("<tr>{}</tr>".format("".join(fields)))
+
+    id = args.results_dir
+
+    if id.startswith("quiver-bench-"):
+        id = args.results_dir[len("quiver-bench-"):]
+
+    if id.endswith("/"):
+        id = id[:-1]
+
+    page = _page_template.strip()
+    page = page.replace("@id@", id)
+    page = page.replace("@rows@", "".join(rows))
+    
+    write("results.html", page)
+    
+try:
+    main()
+except KeyboardInterrupt:
+    pass
