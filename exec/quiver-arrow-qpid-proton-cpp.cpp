@@ -102,7 +102,7 @@ struct handler : public proton::messaging_handler {
     void on_sendable(proton::sender& s) override {
         assert (operation == "send");
 
-        while (s.credit() && sent < messages) {
+        while (s.credit() > 0 && sent < messages) {
             int id = sent + 1;
             long stime = now();
 
