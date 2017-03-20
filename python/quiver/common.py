@@ -59,12 +59,29 @@ PEER_TO_PEER_ARROW_IMPLS = [
     "rhea",
 ]
 
+OPENWIRE_ARROW_IMPLS = [
+    "activemq-jms",
+]
+
+CORE_PROTOCOL_ARROW_IMPLS = [
+    "activemq-artemis-jms",
+]
+
 SERVER_IMPLS = [
     "activemq",
     "activemq-artemis",
     "builtin",
     "qpid-cpp",
     "qpid-dispatch",
+]
+
+OPENWIRE_SERVER_IMPLS = [
+    "activemq",
+    "activemq-artemis",
+]
+
+CORE_PROTOCOL_SERVER_IMPLS = [
+    "activemq-artemis",
 ]
 
 _arrow_impl_aliases = {

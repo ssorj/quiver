@@ -77,8 +77,8 @@ class QuiverBenchCommand(Command):
                                  help="Test only client-server mode")
         self.parser.add_argument("--peer-to-peer", action="store_true",
                                  help="Test only peer-to-peer mode")
-        self.parser.add_argument("--matching-pairs", action="store_true",
-                                 help="Test only matching senders and receivers")
+        self.parser.add_argument("--mixed-pairs", action="store_true",
+                                 help="Test unmatched senders and receivers")
 
         self.add_common_test_arguments()
         self.add_common_tool_arguments()
@@ -106,7 +106,7 @@ class QuiverBenchCommand(Command):
         if self.args.peer_to_peer:
             self.client_server = False
 
-        self.matching_pairs = self.args.matching_pairs
+        self.mixed_pairs = self.args.mixed_pairs
 
         self.init_impl_attributes()
         self.init_common_test_attributes()
@@ -184,35 +184,54 @@ class QuiverBenchCommand(Command):
         if self.client_server:
             for sender_impl in self.sender_impls:
                 for receiver_impl in self.receiver_impls:
-                    if self.matching_pairs:
+                    if not self.mixed_pairs:
                         if sender_impl != receiver_impl:
                             continue
 
+                    if sender_impl in OPENWIRE_ARROW_IMPLS:
+                        if receiver_impl not in OPENWIRE_ARROW_IMPLS:
+                            continue
+
+                    if receiver_impl in OPENWIRE_ARROW_IMPLS:
+                        if sender_impl not in OPENWIRE_ARROW_IMPLS:
+                            continue
+
+                    if sender_impl in CORE_PROTOCOL_ARROW_IMPLS:
+                        if receiver_impl not in CORE_PROTOCOL_ARROW_IMPLS:
+                            continue
+
+                    if receiver_impl in CORE_PROTOCOL_ARROW_IMPLS:
+                        if sender_impl not in CORE_PROTOCOL_ARROW_IMPLS:
+                            continue
+
                     for server_impl in self.server_impls:
-                        if "activemq-artemis-jms" in (sender_impl, receiver_impl):
-                            if server_impl != "activemq-artemis":
+                        if sender_impl in OPENWIRE_ARROW_IMPLS:
+                            if server_impl not in OPENWIRE_SERVER_IMPLS:
                                 continue
 
-                        if "activemq-jms" in (sender_impl, receiver_impl):
-                            if server_impl not in ("activemq", "activemq-artemis"):
+                        if sender_impl in CORE_PROTOCOL_ARROW_IMPLS:
+                            if server_impl not in CORE_PROTOCOL_SERVER_IMPLS:
                                 continue
 
-                        self.run_test(sender_impl, receiver_impl, server_impl)
+                        self.run_test(sender_impl, server_impl, receiver_impl)
 
         if self.peer_to_peer:
             for sender_impl in self.sender_impls:
-                if sender_impl in ("activemq-jms", "activemq-artemis-jms"):
+                if sender_impl in OPENWIRE_ARROW_IMPLS:
+                    continue
+
+                if sender_impl in CORE_PROTOCOL_ARROW_IMPLS:
                     continue
 
                 for receiver_impl in self.receiver_impls:
-                    if self.matching_pairs:
+                    if not self.mixed_pairs:
                         if sender_impl != receiver_impl:
                             continue
 
                     if receiver_impl not in PEER_TO_PEER_ARROW_IMPLS:
                         continue
 
-                    self.run_test(sender_impl, receiver_impl, None)
+                    self.run_test(sender_impl, None, receiver_impl)
 
         print("Test failures: {}".format(len(self.failures)))
 
@@ -222,13 +241,13 @@ class QuiverBenchCommand(Command):
         if len(self.failures) > 0:
             _plano.exit(1)
 
-    def run_test(self, sender_impl, receiver_impl, server_impl):
+    def run_test(self, sender_impl, server_impl, receiver_impl):
         if server_impl is None:
             summary = "{} -> {} ".format(sender_impl, receiver_impl)
-            test_dir = _plano.join(self.output_dir, sender_impl, receiver_impl, "peer-to-peer")
+            test_dir = _plano.join(self.output_dir, sender_impl, "none", receiver_impl)
         else:
             summary = "{} -> {} -> {} ".format(sender_impl, server_impl, receiver_impl)
-            test_dir = _plano.join(self.output_dir, sender_impl, receiver_impl, server_impl)
+            test_dir = _plano.join(self.output_dir, sender_impl, server_impl, receiver_impl)
 
         print("{:.<113} ".format(summary), end="")
 

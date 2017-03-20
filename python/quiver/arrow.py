@@ -182,8 +182,6 @@ class QuiverArrowCommand(Command):
         assert None not in args, args
 
         with open(self.transfers_file, "wb") as fout:
-            _plano.notice("Calling '{}'", " ".join(args))
-
             proc = _plano.start_process(args, stdout=fout)
 
             try:
