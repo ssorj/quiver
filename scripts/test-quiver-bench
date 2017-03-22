@@ -28,7 +28,6 @@ def test_config(peer_to_peer=False):
         "-m", "1",
         "--include-servers", "builtin",
         "--exclude-servers", "none",
-        "--matching-pairs",
         "--verbose",
         "--output", temp_dir,
     ]

@@ -25,14 +25,62 @@ from __future__ import with_statement
 
 import argparse
 import json
+import string as _string
 
 from pencil import *
 from plano import *
 
-_page_template = """
+_common_css = """
+@import url(https://fonts.googleapis.com/css?family=Roboto:300,400,500);
+* {
+  margin: 1em 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+*:first-child {
+  margin-top: 0;
+}
+*:last-child {
+  margin-bottom: 0;
+}
+html, body {
+  margin: 0;
+}
+body {
+  font: 10pt/12.5pt Roboto, sans-serif;
+  font-weight: 300;
+  padding: 2em;
+}
+h1 {
+  font-weight: 300;
+  line-height: 1em;
+}
+h2 {
+  font-weight: 500;
+  font-size: 1.2em;
+}
+a {
+  text-decoration: none;
+  color: rgba(0, 0, 255, 0.8);
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: inherit;
+  width: 100%;
+}
+th, td {
+  padding: 0.3em 0.6em 0.2em 0;
+}
+th {
+  font-weight: 500;
+}
+"""
+
+_overview_template = _string.Template("""
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
   <head>
-    <title>Quiver Bench - @id@</title>
+    <title>Quiver Bench $id</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sortable/0.8.0/js/sortable.min.js"></script>
@@ -41,48 +89,15 @@ _page_template = """
       Sortable.init();
     </script>
     <style type="text/css">
-      @import url(https://fonts.googleapis.com/css?family=Roboto:300,400);
-      * {
-        margin: 1em 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      *:first-child {
-        margin-top: 0;
-      }
-      *:last-child {
-        margin-bottom: 0;
-      }
-      html, body {
-        margin: 0;
-      }
-      body {
-        font: 10pt/12.5pt Roboto, sans-serif;
-        font-weight: 400;
-        padding: 2em;
-      }
-      a {
-        text-decoration: none;
-        color: rgba(0, 0, 255, 0.8);
-      }
-      table {
-        border-collapse: collapse;
-        border-spacing: 0;
-        font-size: inherit;
-        width: 100%;
-      }
-      th, td {
-        padding: 0.2em 0.6em 0.2em 0;
-      }
+      $common_css
       #results th:nth-child(1n+5), #results td:nth-child(1n+5) {
         text-align: right;
       }
       #results tbody tr:hover {
-        background: yellow;
+        background: rgb(255, 255, 127);
       }
       table[data-sortable] th {
         vertical-align: bottom;
-        font-weight: bold;
       }
       table[data-sortable] th, table[data-sortable] td {
         text-align: left;
@@ -125,27 +140,75 @@ _page_template = """
     </style>
   </head>
   <body>
-    <h1>Quiver Bench - @id@</h1>
+    <h1>Quiver Bench $id</h1>
 
     <table id="results" data-sortable="data-sortable">
       <thead>
         <tr>
-          <th>Sender</th>
-          <th>Receiver</th>
+          <th data-sorted="true" data-sorted-direction="ascending">Sender</th>
           <th>Server</th>
+          <th>Receiver</th>
           <th>Status</th>
           <th data-sortable-type="numeric">Throughput</th>
-          <th data-sortable-type="numeric">Avg latency</th>
-          <th data-sortable-type="numeric">Max latency</th>
+          <th data-sortable-type="numeric">Median latency</th>
+          <th data-sortable-type="numeric">99.999% latency</th>
         </tr>
       </thead>
       <tbody>
-        @rows@
+        $rows
       </tbody>
     </table>
   </body>
 </html>
-"""
+""")
+
+_test_template = _string.Template("""
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+  <head>
+    <title>$title - Quiver Bench $id</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <style type="text/css">
+      $common_css
+      h1.subtitle {
+        font-size: 1.4em;
+        margin: -0.4em 0 1.8em 0;
+      }
+      pre {
+        padding: 1em;
+        background-color: rgb(239, 239, 239);
+        overflow-x: auto;
+        font-size: 0.95em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>$title</h1>
+
+    <h1 class="subtitle">Quiver Bench $id</h1>
+
+    <h2>Status</h2>
+
+    <pre>$status</pre>
+
+    <h2>Test command</h2>
+
+    <pre>$test_command</pre>
+
+    <h2>Test output</h2>
+
+    <pre>$test_output</pre>
+
+    <h2>Server command</h2>
+
+    <pre>$server_command</pre>
+
+    <h2>Server output</h2>
+
+    <pre>$server_output</pre>
+  </body>
+</html>
+""")
 
 def main():
     parser = argparse.ArgumentParser()
@@ -153,20 +216,33 @@ def main():
 
     args = parser.parse_args()
 
+    id = args.results_dir
+
+    if id.startswith("quiver-bench-"):
+        id = args.results_dir[len("quiver-bench-"):]
+
+    if id.endswith("/"):
+        id = id[:-1]
+
     records = list()
 
     for sender in list_dir(args.results_dir):
         sender_dir = join(args.results_dir, sender)
 
-        for receiver in list_dir(sender_dir):
-            receiver_dir = join(sender_dir, receiver)
+        if not is_dir(sender_dir):
+            continue
 
-            for server in list_dir(receiver_dir):
-                server_dir = join(receiver_dir, server)
+        for server in list_dir(sender_dir):
+            server_dir = join(sender_dir, server)
 
-                status_file = join(server_dir, "status.txt")
-                data_dir = join(server_dir, "data")
-                summary_file = join(data_dir, "receiver-summary.json")
+            if server == "none":
+                server = "-"
+
+            for receiver in list_dir(server_dir):
+                test_dir = join(server_dir, receiver)
+
+                status_file = join(test_dir, "pair", "status.txt")
+                summary_file = join(test_dir, "pair", "receiver-summary.json")
 
                 try:
                     status = read(status_file)[:6]
@@ -178,50 +254,78 @@ def main():
                         data = json.load(f)
 
                     message_rate = data["results"]["message_rate"]
-                    latency_average = data["results"]["latency_average"]
-                    latency_max = data["results"]["latency_quartiles"][3]
+                    latency_median = data["results"]["latency_quartiles"][1]
+                    latency_five_nines = data["results"]["latency_nines"][3]
+
+                    if message_rate is None:
+                        message_rate = 0
 
                     record = [
                         xml_escape(sender),
-                        xml_escape(receiver),
                         xml_escape(server),
-                        html_a(status, join(server_dir, "output.txt")),
+                        xml_escape(receiver),
+                        html_a(status, join("..", test_dir, "index.html"), target="quiver"),
                         xml_escape("{:,}".format(message_rate)),
-                        xml_escape("{:,.1f}".format(latency_average)),
-                        xml_escape("{:,}".format(latency_max)),
+                        xml_escape("{:,}".format(latency_median)),
+                        xml_escape("{:,}".format(latency_five_nines)),
                     ]
                 else:
-                    record = [sender, receiver, server, html_a(status, join(server_dir, "output.txt")), None, None, None]
+                    record = [
+                        xml_escape(sender),
+                        xml_escape(server),
+                        xml_escape(receiver),
+                        html_a(status, join("..", test_dir, "index.html"), target="quiver"),
+                        None,
+                        None,
+                        None
+                    ]
 
                 records.append(record)
 
+                command_file = join(test_dir, "pair", "command.txt")
+                output_file = join(test_dir, "pair", "output.txt")
+                server_command_file = join(test_dir, "server", "command.txt")
+                server_output_file = join(test_dir, "server", "output.txt")
+
+                command = read(command_file)
+                output = read(output_file)
+
+                server_command = "none"
+                server_output = "none"
+
+                if server == "-":
+                    title = "{} &#8594; {}".format(sender, receiver)
+                else:
+                    title = "{} &#8594; {} &#8594; {}".format(sender, server, receiver)
+
+                    server_command = read(server_command_file)
+                    server_output = read(server_output_file)
+
+                page = _test_template.safe_substitute(id=id, title=title, common_css=_common_css, status=status,
+                                                      test_command=command, test_output=output,
+                                                      server_command=server_command, server_output=server_output)
+
+                write(join(test_dir, "index.html"), page)
+
     rows = list()
-                
+
     for record in records:
         fields = list()
 
         for field in record:
             if field is None:
                 field = "-"
-            
+
             fields.append("<td>{}</td>".format(field))
 
         rows.append("<tr>{}</tr>".format("".join(fields)))
 
-    id = args.results_dir
+    rows = "\n".join(rows)
 
-    if id.startswith("quiver-bench-"):
-        id = args.results_dir[len("quiver-bench-"):]
+    page = _overview_template.safe_substitute(id=id, common_css=_common_css, rows=rows)
 
-    if id.endswith("/"):
-        id = id[:-1]
+    write(join(args.results_dir, "index.html"), page)
 
-    page = _page_template.strip()
-    page = page.replace("@id@", id)
-    page = page.replace("@rows@", "".join(rows))
-    
-    write("results.html", page)
-    
 try:
     main()
 except KeyboardInterrupt:

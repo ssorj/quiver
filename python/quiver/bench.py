@@ -242,19 +242,9 @@ class QuiverBenchCommand(Command):
             _plano.exit(1)
 
     def run_test(self, sender_impl, server_impl, receiver_impl):
-        if server_impl is None:
-            summary = "{} -> {} ".format(sender_impl, receiver_impl)
-            test_dir = _plano.join(self.output_dir, sender_impl, "none", receiver_impl)
-        else:
-            summary = "{} -> {} -> {} ".format(sender_impl, server_impl, receiver_impl)
-            test_dir = _plano.join(self.output_dir, sender_impl, server_impl, receiver_impl)
-
-        print("{:.<113} ".format(summary), end="")
-
-        _plano.flush()
-        _plano.make_dir(test_dir)
-
+        peer_to_peer = server_impl is None
         port = _plano.random_port()
+        server = None
 
         if server_impl == "activemq":
             if sender_impl == "activemq-jms" and receiver_impl == "activemq-jms":
@@ -262,95 +252,175 @@ class QuiverBenchCommand(Command):
             else:
                 port = 5672
 
-        test_data_dir = _plano.join(test_dir, "data")
-        test_output_file = _plano.join(test_dir, "output.txt")
-        test_status_file = _plano.join(test_dir, "status.txt")
+        if peer_to_peer:
+            summary = "{} -> {} ".format(sender_impl, receiver_impl)
+            server_name = "none"
+        else:
+            summary = "{} -> {} -> {} ".format(sender_impl, server_impl, receiver_impl)
+            server_name = server_impl
 
-        test_command = [
+        test_dir = _plano.join(self.output_dir, sender_impl, server_name, receiver_impl)
+        pair_dir = _plano.join(test_dir, "pair")
+        server_dir = _plano.join(test_dir, "server")
+
+        pair = _TestPair(pair_dir, sender_impl, receiver_impl, peer_to_peer)
+
+        if not peer_to_peer:
+            server = _TestServer(server_dir, server_impl)
+            _plano.make_dir(server.output_dir)
+
+        print("{:.<113} ".format(summary), end="")
+
+        _plano.flush()
+
+        if server is not None:
+            out = open(server.output_file, "w")
+
+            try:
+                server.start(port, out)
+            except _Timeout as e:
+                self.failures.append(str(e)) # XXX capture the combo
+
+                print("FAILED")
+
+                if self.verbose:
+                    if server is not None:
+                        server.print_summary()
+
+        try:
+            pair.run(port, self.args)
+
+            print("PASSED")
+        except KeyboardInterrupt:
+            raise
+        except _plano.CalledProcessError as e:
+            self.failures.append(str(e)) # XXX capture the combo
+
+            print("FAILED")
+
+            if self.verbose:
+                pair.print_summary()
+
+                if server is not None:
+                    server.print_summary()
+        except:
+            _traceback.print_exc()
+        finally:
+            _plano.flush()
+
+            if server is not None:
+                server.stop()
+                out.close()
+
+        self.report(pair, server)
+
+    def report(self, pair, server):
+        pass
+
+class _TestPair(object):
+    def __init__(self, output_dir, sender_impl, receiver_impl, peer_to_peer):
+        self.output_dir = output_dir
+        self.sender_impl = sender_impl
+        self.receiver_impl = receiver_impl
+        self.peer_to_peer = peer_to_peer
+
+        self.command_file = _plano.join(self.output_dir, "command.txt")
+        self.output_file = _plano.join(self.output_dir, "output.txt")
+        self.status_file = _plano.join(self.output_dir, "status.txt")
+
+    def run(self, port, args):
+        _plano.make_dir(self.output_dir)
+
+        command = [
             "quiver", "//127.0.0.1:{}/q0".format(port),
-            "--sender", sender_impl,
-            "--receiver", receiver_impl,
-            "--output", test_data_dir,
-            "--messages", self.args.messages,
-            "--body-size", self.args.body_size,
-            "--credit", self.args.credit,
-            "--timeout", self.args.timeout,
+            "--sender", self.sender_impl,
+            "--receiver", self.receiver_impl,
+            "--messages", args.messages,
+            "--body-size", args.body_size,
+            "--credit", args.credit,
+            "--timeout", args.timeout,
+            "--output", self.output_dir,
         ]
 
-        if server_impl is None:
-            test_command.append("--peer-to-peer")
+        if self.peer_to_peer:
+            command.append("--peer-to-peer")
 
-        test_command = " ".join(test_command)
+        _plano.write(self.command_file, "{}\n".format(" ".join(command)))
 
-        server = None
-        server_output_file = _plano.join(test_dir, "server-output.txt")
+        with open(self.output_file, "w") as f:
+            try:
+                _plano.call(command, stdout=f, stderr=f)
+            except:
+                _plano.write(self.status_file, "FAILED\n")
+                raise
 
-        if server_impl is not None:
-            server_ready_file = _plano.make_temp_file()
+        _plano.write(self.status_file, "PASSED\n")
 
-            server_command = [
-                "quiver-server", "//127.0.0.1:{}/q0".format(port),
-                "--impl", server_impl,
-                "--ready-file", server_ready_file,
-                "--verbose",
-            ]
+    def print_summary(self):
+        print("--- Test command ---")
+        print("> {}".format(_plano.read(self.command_file)))
+        print("--- Test output ---")
 
-            server_command = " ".join(server_command)
+        for line in _plano.read_lines(self.output_file):
+            print("> {}".format(line), end="")
 
-        with open(server_output_file, "w") as sf:
-            with open(test_output_file, "w") as tf:
-                try:
-                    if server_impl is not None:
-                        server = _plano.start_process(server_command, stdout=sf, stderr=sf)
+        print()
 
-                        for i in range(30):
-                            if _plano.read(server_ready_file) == "ready\n":
-                                break
+class _TestServer(object):
+    def __init__(self, output_dir, impl):
+        self.output_dir = output_dir
+        self.impl = impl
 
-                            _plano.sleep(1)
-                        else:
-                            raise _Timeout("Timed out waiting for server to be ready")
+        self.ready_file = _plano.make_temp_file()
+        self.command_file = _plano.join(self.output_dir, "command.txt")
+        self.output_file = _plano.join(self.output_dir, "output.txt")
+        self.status_file = _plano.join(self.output_dir, "status.txt")
 
-                    _plano.call(test_command, stdout=tf, stderr=tf)
+        self.proc = None
 
-                    _plano.write(test_status_file, "PASSED")
+    def start(self, port, out):
+        assert self.proc is None
 
-                    print("PASSED")
-                except KeyboardInterrupt:
-                    raise
-                except (_plano.CalledProcessError, _Timeout) as e:
-                    self.failures.append(str(e)) # XXX capture the combo
+        _plano.make_dir(self.output_dir)
 
-                    _plano.write(test_status_file, "FAILED: {}".format(str(e)))
+        command = [
+            "quiver-server", "//127.0.0.1:{}/q0".format(port),
+            "--impl", self.impl,
+            "--ready-file", self.ready_file,
+            "--verbose",
+        ]
 
-                    print("FAILED")
+        _plano.write(self.command_file, "{}\n".format(" ".join(command)))
 
-                    if self.verbose:
-                        # XXX Record the result in this format
+        self.proc = _plano.start_process(command, stdout=out, stderr=out)
 
-                        print("--- Error message ---")
-                        print("> {}".format(str(e)))
-                        print("--- Test command ---")
-                        print("> {}".format(test_command))
-                        print("--- Test output ---")
+        for i in range(30):
+            if _plano.read(self.ready_file) == "ready\n":
+                break
 
-                        for line in _plano.read_lines(test_output_file):
-                            print("> {}".format(line), end="")
+            _plano.sleep(1)
+        else:
+            raise _Timeout("Timed out waiting for server to be ready")
 
-                        if server_impl is not None:
-                            print("--- Server command ---")
-                            print("> {}".format(server_command))
-                            print("--- Server output ---")
+    def stop(self):
+        assert self.proc is not None
 
-                            for line in _plano.read_lines(server_output_file):
-                                print("> {}".format(line), end="")
-                except:
-                    _traceback.print_exc()
-                finally:
-                    _plano.flush()
+        _plano.stop_process(self.proc)
 
-                    if server is not None:
-                        _plano.stop_process(server)
+        if self.proc.returncode > 0:
+            _plano.write(self.status_file, "FAILED\n")
+        else:
+            _plano.write(self.status_file, "PASSED\n")
+
+    def print_summary(self):
+        print("--- Server command ---")
+        print("> {}".format(_plano.read(self.command_file)))
+        print("--- Server output ---")
+
+        for line in _plano.read_lines(self.output_file):
+            print("> {}".format(line), end="")
+
+        print()
 
 class _Timeout(Exception):
     pass
