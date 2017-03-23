@@ -177,6 +177,7 @@ class QuiverArrowCommand(Command):
             str(self.messages),
             str(self.body_size),
             str(self.credit_window),
+            str(self.transaction_size),
         ]
 
         assert None not in args, args

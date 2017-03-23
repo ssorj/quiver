@@ -140,6 +140,9 @@ class Command(object):
         self.parser.add_argument("--credit", metavar="COUNT",
                                  help="Sustain credit for COUNT incoming messages",
                                  default="1000")
+        self.parser.add_argument("--transaction-size", metavar="COUNT",
+                                 help="Transactionally transfer batches of COUNT messages",
+                                 default="0")
         self.parser.add_argument("--timeout", metavar="SECONDS",
                                  help="Fail after SECONDS without transfers",
                                  default="10")
@@ -156,6 +159,7 @@ class Command(object):
         self.messages = self.parse_int_with_unit(self.args.messages)
         self.body_size = self.parse_int_with_unit(self.args.body_size)
         self.credit_window = self.parse_int_with_unit(self.args.credit)
+        self.transaction_size = self.parse_int_with_unit(self.args.transaction_size)
         self.timeout = self.parse_int_with_unit(self.args.timeout)
 
     def init_common_tool_attributes(self):

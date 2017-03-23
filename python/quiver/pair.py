@@ -130,6 +130,7 @@ class QuiverPairCommand(Command):
             "--messages", self.args.messages,
             "--body-size", self.args.body_size,
             "--credit", self.args.credit,
+            "--transaction-size", self.args.transaction_size,
             "--timeout", self.args.timeout,
             "--output", self.output_dir,
         ]
