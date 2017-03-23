@@ -26,6 +26,9 @@ def main():
 
     try:
         call("quiver //127.0.0.1:{}/q0 -m 10k --verbose", port)
+
+        # XXX Fails with javax.jms.JMSException: the txn-id field is mandatory
+        #call("quiver //127.0.0.1:{}/q0 --arrow qpid-jms -m 1 --transaction-size 10 --verbose", port)
     finally:
         stop_process(server)
 

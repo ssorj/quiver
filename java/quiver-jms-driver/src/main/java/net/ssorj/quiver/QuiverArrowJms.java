@@ -40,6 +40,7 @@ public class QuiverArrowJms {
         String path = args[6];
         int messages = Integer.parseInt(args[7]);
         int bodySize = Integer.parseInt(args[8]);
+        int transactionSize = Integer.parseInt(args[10]);
 
         if (!connectionMode.equals("client")) {
             throw new RuntimeException("This impl supports client mode only");
@@ -60,7 +61,7 @@ public class QuiverArrowJms {
         ConnectionFactory factory = (ConnectionFactory) context.lookup("ConnectionFactory");
         Destination queue = (Destination) context.lookup("queueLookup");
 
-        Client client = new Client(factory, queue, operation, messages, bodySize);
+        Client client = new Client(factory, queue, operation, messages, bodySize, transactionSize);
 
         client.run();
     }
@@ -72,17 +73,19 @@ class Client {
     protected final String operation;
     protected final int messages;
     protected final int bodySize;
+    protected final int transactionSize;
 
     protected int sent;
     protected int received;
 
     Client(ConnectionFactory factory, Destination queue,
-           String operation, int messages, int bodySize) {
+           String operation, int messages, int bodySize, int transactionSize) {
         this.factory = factory;
         this.queue = queue;
         this.operation = operation;
         this.messages = messages;
         this.bodySize = bodySize;
+        this.transactionSize = transactionSize;
 
         this.sent = 0;
         this.received = 0;
@@ -93,7 +96,13 @@ class Client {
             Connection conn = this.factory.createConnection();
             conn.start();
 
-            Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Session session;
+
+            if (transactionSize > 0) {
+                session = conn.createSession(true, Session.SESSION_TRANSACTED);
+            } else {
+                session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            }
 
             if (this.operation.equals("send")) {
                 this.sendMessages(session);
@@ -101,6 +110,10 @@ class Client {
                 this.receiveMessages(session);
             } else {
                 throw new java.lang.IllegalStateException();
+            }
+
+            if (transactionSize > 0) {
+                session.commit();
             }
 
             conn.close();
@@ -134,6 +147,10 @@ class Client {
             out.printf("%s,%d\n", message.getJMSMessageID(), stime);
 
             this.sent += 1;
+
+            if (transactionSize > 0 && (sent % transactionSize) == 0) {
+                session.commit();
+            }
         }
 
         out.flush();
@@ -157,6 +174,10 @@ class Client {
             out.printf("%s,%d,%d\n", id, stime, rtime);
 
             this.received += 1;
+
+            if (transactionSize > 0 && (received % transactionSize) == 0) {
+                session.commit();
+            }
         }
 
         out.flush();

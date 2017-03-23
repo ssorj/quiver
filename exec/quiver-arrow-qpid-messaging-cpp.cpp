@@ -7,9 +7,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -53,6 +53,7 @@ struct Client {
     int messages;
     int body_size;
     int credit_window;
+    int transaction_size;
 
     int sent = 0;
     int received = 0;
@@ -71,16 +72,22 @@ void Client::run() {
         << "sasl_mechanisms: ANONYMOUS"
         << "}";
     std::string options = oss.str();
-    
+
     Connection conn(domain, options);
 
     // XXX This didn't have any effect
     //conn.setOption("container_id", id);
-    
+
     conn.open();
 
     try {
-        Session session = conn.createSession();
+        Session session;
+
+        if (transaction_size > 0) {
+            session = conn.createTransactionalSession();
+        } else {
+            session = conn.createSession();
+        }
 
         if (operation == "send") {
             sendMessages(session);
@@ -88,6 +95,10 @@ void Client::run() {
             receiveMessages(session);
         } else {
             throw std::exception();
+        }
+
+        if (transaction_size > 0) {
+            session.commit();
         }
     } catch (const std::exception& e) {
         conn.close();
@@ -100,19 +111,23 @@ void Client::sendMessages(Session& session) {
     sender.setCapacity(credit_window);
 
     std::string body(body_size, 'x');
-    
+
     while (sent < messages) {
         std::string id = std::to_string(sent + 1);
         long stime = now();
-        
+
         Message message(body);
         message.setMessageId(id);
         message.setProperty("SendTime", Variant(stime));
 
         sender.send(message);
         sent++;
-            
+
         std::cout << id << "," << stime << "\n";
+
+        if (transaction_size > 0 && (sent % transaction_size) == 0) {
+            session.commit();
+        }
     }
 }
 
@@ -136,13 +151,17 @@ void Client::receiveMessages(Session& session) {
         long rtime = now();
 
         std::cout << id << "," << stime << "," << rtime << "\n";
+
+        if (transaction_size > 0 && (received % transaction_size) == 0) {
+            session.commit();
+        }
     }
 }
 
 int main(int argc, char** argv) {
     std::string connection_mode = argv[1];
     std::string channel_mode = argv[2];
-    
+
     if (connection_mode != "client") {
         eprint("This impl supports client mode only");
         return 1;
@@ -152,7 +171,7 @@ int main(int argc, char** argv) {
         eprint("This impl supports active mode only");
         return 1;
     }
-    
+
     Client client;
 
     client.operation = argv[3];
@@ -163,6 +182,7 @@ int main(int argc, char** argv) {
     client.messages = std::atoi(argv[8]);
     client.body_size = std::atoi(argv[9]);
     client.credit_window = std::atoi(argv[10]);
+    client.transaction_size = std::atoi(argv[11]);
 
     try {
         client.run();

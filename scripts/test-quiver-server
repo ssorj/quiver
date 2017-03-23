@@ -43,14 +43,14 @@ def main():
     #if which("activemq"):
     #    test_impl("activemq")
 
-    if which("artemis"):
-        test_impl("activemq-artemis")
+    #if which("artemis"):
+    #    test_impl("activemq-artemis")
 
-    if which("qpidd"):
-        test_impl("qpid-cpp")
+    #if which("qpidd"):
+    #    test_impl("qpid-cpp")
 
-    if which("qdrouterd"):
-        test_impl("qpid-dispatch")
+    #if which("qdrouterd"):
+    #    test_impl("qpid-dispatch")
 
 if __name__ == "__main__":
     try:

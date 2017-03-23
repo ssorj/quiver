@@ -7,9 +7,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -46,6 +46,7 @@ class Client(object):
         self.messages = None
         self.body_size = None
         self.credit_window = None
+        self.transaction_size = None
 
         self.sent = 0
         self.received = 0
@@ -60,7 +61,8 @@ class Client(object):
         conn.open()
 
         try:
-            session = conn.session()
+            transactional = self.transaction_size > 0
+            session = conn.session(transactional=transactional)
 
             if self.operation == "send":
                 self.send_messages(session)
@@ -68,6 +70,9 @@ class Client(object):
                 self.receive_messages(session)
             else:
                 raise Exception()
+
+            if transactional:
+                session.commit()
         finally:
             conn.close()
 
@@ -83,22 +88,25 @@ class Client(object):
         sender.capacity = self.credit_window
 
         body = b"x" * self.body_size
-        
+
         while self.sent < self.messages:
             id_ = str(self.sent + 1)
             stime = now()
             record = "{},{}\n".format(id_, stime)
-            
+
             message = Message(body)
             message.id = id_
             message.properties[b"SendTime"] = stime
-            
+
             sender.send(message)
 
             sys.stdout.write(record)
-            
+
             self.sent +=1
-        
+
+            if self.transaction_size > 0 and (self.sent % self.transaction_size) == 0:
+                session.commit()
+
     def receive_messages(self, session):
         # XXX See above
         #address = "{}; {}".format(self.path, link_options)
@@ -109,7 +117,7 @@ class Client(object):
         while self.received < self.messages:
             if receiver.available() == 0:
                 continue
-        
+
             message = receiver.get()
             session.acknowledge()
 
@@ -118,17 +126,18 @@ class Client(object):
             record = "{},{},{}\n".format(message.id, stime, rtime)
 
             sys.stdout.write(record)
-            
+
             self.received +=1
+
+            if self.transaction_size > 0 and (self.received % self.transaction_size) == 0:
+                session.commit()
 
 def main():
     if ARGS[1] != "client":
-        eprint("This impl supports client mode only")
-        sys.exit(1)
+        exit("This impl supports client mode only")
 
     if ARGS[2] != "active":
-        eprint("This impl supports active mode only")
-        sys.exit(1)
+        exit("This impl supports active mode only")
 
     client = Client()
     client.operation = ARGS[3]
@@ -139,9 +148,10 @@ def main():
     client.messages = int(ARGS[8])
     client.body_size = int(ARGS[9])
     client.credit_window = int(ARGS[10])
+    client.transaction_size = int(ARGS[11])
 
     client.run()
-    
+
 if __name__ == "__main__":
     try:
         main()

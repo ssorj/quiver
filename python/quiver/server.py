@@ -163,7 +163,8 @@ class _BrokerHandler(_handlers.MessagingHandler):
         if event.link.is_receiver:
             address = event.link.remote_target.address
 
-            assert address is not None
+            # XXX Fails with qpid-jms
+            #assert address is not None
 
             event.link.target.address = address
 

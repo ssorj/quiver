@@ -155,6 +155,13 @@ struct handler : public proton::messaging_handler {
 };
 
 int main(int argc, char** argv) {
+    int transaction_size = std::atoi(argv[11]);
+
+    if (transaction_size > 0) {
+        eprint("This impl doesn't support transactions");
+        return 1;
+    }
+
     handler h;
 
     h.connection_mode = argv[1];

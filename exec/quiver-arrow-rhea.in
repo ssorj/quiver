@@ -35,6 +35,7 @@ var path = process.argv[8];
 var messages = process.argv[9];
 var body_size = process.argv[10];
 var credit_window = process.argv[11];
+var transaction_size = process.argv[12];
 
 var a = new Array(body_size);
 
@@ -166,6 +167,11 @@ container.on("message", function(context) {
         }
     }
 });
+
+if (transaction_size > 0) {
+    eprint("This impl doesn't support transactions");
+    process.exit(1);
+}
 
 if (connection_mode == "client") {
     container.connect({username: "anonymous", host: host, port: port});

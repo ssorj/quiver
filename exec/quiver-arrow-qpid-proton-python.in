@@ -152,6 +152,11 @@ class Handler(MessagingHandler):
                 raise Exception()
 
 def main():
+    transaction_size = int(ARGS[11])
+
+    if transaction_size > 0:
+        exit("This impl doesn't support transactions yet")
+
     credit_window = int(ARGS[10])
 
     handler = Handler(prefetch=credit_window)

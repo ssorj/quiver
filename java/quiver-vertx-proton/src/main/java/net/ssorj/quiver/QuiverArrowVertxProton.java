@@ -72,6 +72,7 @@ public class QuiverArrowVertxProton {
         int messages = Integer.parseInt(args[7]);
         int bodySize = Integer.parseInt(args[8]);
         int creditWindow = Integer.parseInt(args[9]);
+        int transactionSize = Integer.parseInt(args[10]);
 
         if (!CLIENT.equalsIgnoreCase(connectionMode)) {
             throw new RuntimeException("This impl currently supports client mode only");
@@ -79,6 +80,10 @@ public class QuiverArrowVertxProton {
 
         if (!ACTIVE.equalsIgnoreCase(channelMode)) {
             throw new RuntimeException("This impl currently supports active mode only");
+        }
+
+        if (transactionSize > 0) {
+            throw new RuntimeException("This impl doesn't support transactions");
         }
 
         final boolean sender;
