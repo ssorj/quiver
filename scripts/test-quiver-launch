@@ -22,28 +22,18 @@ from plano import *
 
 def run_test():
     port = random_port()
-    server = start_process("quiver-server //127.0.0.1:{}/q0", port)
+    server = start_process("quiver-server --quiet //127.0.0.1:{}/q0", port)
 
     try:
         wait_for_port(port)
-
-        args = [
-            "quiver-launch",
-            "//127.0.0.1:{}/q0".format(port),
-            "--sender-count", "1",
-            "--sender-options", "-m 1",
-            "--receiver-count", "1",
-            "--receiver-options", "-m 1",
-            "--verbose",
-        ]
-
-        call(args)
+        call_and_print_on_error("quiver-launch //127.0.0.1:{}/q0 --count 1 --options \"-m 1\" --verbose", port)
     finally:
         stop_process(server)
 
 def main():
     call_and_print_on_error("quiver-launch --help")
     call_and_print_on_error("quiver-launch q0 --init-only")
+    call_and_print_on_error("quiver-launch --sender-options=\"-m 1\" --receiver-options=\"-m 1 --server --passive\" //127.0.0.1:{}/q0", random_port())
 
     run_test()
 

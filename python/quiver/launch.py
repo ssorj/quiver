@@ -32,30 +32,31 @@ import time as _time
 
 from .common import *
 
-_description = "XXX"
-_epilog = "XXX"
+_description = "Spawn multiple message senders and receivers"
 
 class QuiverLaunchCommand(Command):
     def __init__(self, home_dir):
         super(QuiverLaunchCommand, self).__init__(home_dir)
 
         self.parser.description = _description.lstrip()
-        self.parser.epilog = _epilog.lstrip()
-        
+
         self.parser.add_argument("url", metavar="URL",
                                  help="The location of a message queue")
-        self.parser.add_argument("--sender-count", metavar="COUNT", default=1, type=int)
-        self.parser.add_argument("--sender-impl", metavar="IMPL", default="qpid-proton-python")
-        self.parser.add_argument("--sender-options", metavar="OPTIONS", default="")
-        self.parser.add_argument("--receiver-count", metavar="COUNT", default=1, type=int)
-        self.parser.add_argument("--receiver-impl", metavar="IMPL", default="qpid-proton-python")
-        self.parser.add_argument("--receiver-options", metavar="OPTIONS", default="")
+        self.parser.add_argument("--count", metavar="COUNT", default=1, type=int)
+        self.parser.add_argument("--impl", metavar="IMPL", default="qpid-proton-python")
+        self.parser.add_argument("--options", metavar="OPTIONS", default="")
+        self.parser.add_argument("--sender-count", metavar="COUNT", type=int)
+        self.parser.add_argument("--sender-impl", metavar="IMPL")
+        self.parser.add_argument("--sender-options", metavar="OPTIONS")
+        self.parser.add_argument("--receiver-count", metavar="COUNT", type=int)
+        self.parser.add_argument("--receiver-impl", metavar="IMPL")
+        self.parser.add_argument("--receiver-options", metavar="OPTIONS")
 
         self.add_common_tool_arguments()
-        
+
     def init(self):
         super(QuiverLaunchCommand, self).init()
-        
+
         _plano.set_message_output(_sys.stdout)
         _plano.set_message_threshold("notice")
 
@@ -64,14 +65,22 @@ class QuiverLaunchCommand(Command):
 
         if self.verbose:
             _plano.set_message_threshold("debug")
-        
-        self.sender_count = self.args.sender_count
-        self.sender_impl = self.args.sender_impl
-        self.sender_options = _shlex.split(self.args.sender_options)
 
-        self.receiver_count = self.args.receiver_count
-        self.receiver_impl = self.args.receiver_impl
-        self.receiver_options = _shlex.split(self.args.receiver_options)
+        def nvl(value, fallback):
+            if value is None:
+                return fallback
+
+            return value
+
+        self.sender_count = nvl(self.args.sender_count, self.args.count)
+        self.sender_impl = nvl(self.args.sender_impl, self.args.impl)
+        self.sender_options = nvl(self.args.sender_options, self.args.options)
+        self.sender_options = _shlex.split(self.sender_options)
+
+        self.receiver_count = nvl(self.args.receiver_count, self.args.count)
+        self.receiver_impl = nvl(self.args.receiver_impl, self.args.impl)
+        self.receiver_options = nvl(self.args.receiver_options, self.args.options)
+        self.receiver_options = _shlex.split(self.receiver_options)
 
         self.init_url_attributes()
         self.init_common_tool_attributes()
