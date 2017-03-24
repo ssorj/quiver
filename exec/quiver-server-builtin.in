@@ -41,6 +41,8 @@ def main():
     path = ARGS[3]
     ready_file = ARGS[4]
 
+    set_message_threshold("warn")
+
     broker = BuiltinBroker(host, port, path, ready_file)
     broker.run()
 

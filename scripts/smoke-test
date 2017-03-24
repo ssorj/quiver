@@ -20,46 +20,15 @@
 
 from plano import *
 
-def run_test(impl):
-    port = random_port()
-    ready_file = make_temp_file()
-    output_file = make_temp_file()
-
-    try:
-        with open(output_file, "w") as out:
-            server = start_process("quiver-server //127.0.0.1:{}/q0 --impl {} --ready-file {}",
-                                   port, impl, ready_file, output=out)
-
-            try:
-                for i in range(30):
-                    if read(ready_file) == "ready\n":
-                        break
-
-                    sleep(1)
-
-                call_and_print_on_error("quiver //127.0.0.1:{}/q0 -m 1", port)
-            finally:
-                stop_process(server)
-    except:
-        notice("Server output: {}", output_file)
-        raise
-
 def main():
-    call_and_print_on_error("quiver-server --help")
+    set_message_threshold("warn")
+    
+    call_and_print_on_error("quiver q0 --init-only --verbose --arrow cpp")
+    call_and_print_on_error("quiver --quiet --init-only q0 --arrow python")
+    call_and_print_on_error("quiver-arrow send //localhost:12345/a/b/c --init-only")
+    call_and_print_on_error("quiver-bench --init-only")
+    call_and_print_on_error("quiver-launch q0 --init-only")
     call_and_print_on_error("quiver-server q0 --init-only")
-
-    run_test("builtin")
-
-    if which("artemis"):
-        run_test("activemq-artemis")
-
-    if which("qpidd"):
-        run_test("qpid-cpp")
-
-    if which("qdrouterd"):
-        run_test("qpid-dispatch")
-
-    notice("PASSED")
 
 if __name__ == "__main__":
     try:

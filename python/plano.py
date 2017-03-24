@@ -45,6 +45,16 @@ from subprocess import CalledProcessError
 
 # See documentation at http://www.ssorj.net/projects/plano.html
 
+LINE_SEP = _os.linesep
+PATH_SEP = _os.sep
+PATH_VAR_SEP = _os.pathsep
+ENV = _os.environ
+ARGS = _sys.argv
+
+STD_ERR = _sys.stderr
+STD_OUT = _sys.stdout
+NULL_DEV = _os.devnull
+
 _message_levels = (
     "debug",
     "notice",
@@ -57,7 +67,7 @@ _notice = _message_levels.index("notice")
 _warn = _message_levels.index("warn")
 _error = _message_levels.index("error")
 
-_message_output = _sys.stderr
+_message_output = STD_ERR
 _message_threshold = _notice
 
 def set_message_output(writeable):
@@ -138,9 +148,12 @@ def _format_message(category, message, args):
 
     return message
 
+def eprint(*args, **kwargs):
+    print(*args, file=STD_ERR, **kwargs)
+
 def flush():
-    _sys.stdout.flush()
-    _sys.stderr.flush()
+    STD_OUT.flush()
+    STD_ERR.flush()
 
 absolute_path = _os.path.abspath
 normalize_path = _os.path.normpath
@@ -156,12 +169,6 @@ split_extension = _os.path.splitext
 
 current_dir = _os.getcwd
 sleep = _time.sleep
-
-LINE_SEP = _os.linesep
-PATH_SEP = _os.sep
-PATH_VAR_SEP = _os.pathsep
-ENV = _os.environ
-ARGS = _sys.argv
 
 def home_dir(user=""):
     return _os.path.expanduser("~{0}".format(user))
@@ -508,6 +515,17 @@ def call_for_output(command, *args, **kwargs):
 
     return output
 
+def call_and_print_on_error(command, *args, **kwargs):
+    output_file = make_temp_file()
+
+    try:
+        with open(output_file, "w") as out:
+            kwargs["output"] = out
+            call(command, *args, **kwargs)
+    except CalledProcessError:
+        eprint(read(output_file), end="")
+        raise
+
 _child_processes = list()
 
 class _Process(_subprocess.Popen):
@@ -561,6 +579,12 @@ def start_process(command, *args, **kwargs):
         raise Exception()
 
     notice("Calling '{0}'", command_string)
+
+    if "output" in kwargs:
+        out = kwargs.pop("output")
+
+        kwargs["stdout"] = out
+        kwargs["stderr"] = out
 
     if "shell" in kwargs and kwargs["shell"]:
         proc = _Process(command_string, **kwargs)

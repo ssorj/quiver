@@ -20,12 +20,13 @@
 
 from plano import *
 
-def test_config(peer_to_peer=False):
+def run_test(peer_to_peer=False):
     temp_dir = make_temp_dir()
 
     args = [
         "quiver-bench",
         "-m", "1",
+        "--exclude-senders", "qpid-messaging-python",
         "--include-servers", "builtin",
         "--exclude-servers", "none",
         "--verbose",
@@ -43,8 +44,13 @@ def test_config(peer_to_peer=False):
     call(args)
 
 def main():
-    test_config(peer_to_peer=False)
-    test_config(peer_to_peer=True)
+    call_and_print_on_error("quiver-bench --help")
+    call_and_print_on_error("quiver-bench --init-only")
+
+    run_test(peer_to_peer=False)
+    run_test(peer_to_peer=True)
+
+    notice("PASSED")
 
 if __name__ == "__main__":
     try:

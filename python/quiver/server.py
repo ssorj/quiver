@@ -77,9 +77,6 @@ class QuiverServerCommand(Command):
         self.impl = self.get_server_impl_name(self.args.impl, self.args.impl)
         self.ready_file = self.args.ready_file
         self.prelude = _shlex.split(self.args.prelude)
-        self.init_only = self.args.init_only
-        self.quiet = self.args.quiet
-        self.verbose = self.args.verbose
 
         self.impl_file = self.get_server_impl_file(self.impl)
 
@@ -90,6 +87,7 @@ class QuiverServerCommand(Command):
             self.ready_file = "-"
 
         self.init_url_attributes()
+        self.init_common_tool_attributes()
 
     def run(self):
         args = self.prelude + [

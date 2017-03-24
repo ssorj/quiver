@@ -20,17 +20,32 @@
 
 from plano import *
 
-def main():
+def run_test(args, intermediated=True):
     port = random_port()
-    server = start_process("quiver-server //127.0.0.1:{}/q0 --verbose", port)
+
+    if intermediated:
+        server = start_process("quiver-server --quiet //127.0.0.1:{}/q0", port)
 
     try:
-        call("quiver //127.0.0.1:{}/q0 -m 10k --verbose", port)
-
-        # XXX Fails with javax.jms.JMSException: the txn-id field is mandatory
-        #call("quiver //127.0.0.1:{}/q0 --arrow qpid-jms -m 1 --transaction-size 10 --verbose", port)
+        call_and_print_on_error("quiver //127.0.0.1:{}/q0 {}", port, args)
     finally:
-        stop_process(server)
+        if intermediated:
+            stop_process(server)
+
+def main():
+    call_and_print_on_error("quiver --help")
+    call_and_print_on_error("quiver q0 --init-only")
+
+    run_test("-m 10k --verbose")
+    run_test("--arrow qpid-jms -m 1")
+    run_test("--arrow vertx-proton -m 1")
+    run_test("--arrow rhea -m 1 --peer-to-peer", intermediated=False)
+    run_test("--arrow qpid-proton-python -m 1 --peer-to-peer", intermediated=False)
+
+    # XXX Fails with javax.jms.JMSException: the txn-id field is mandatory
+    #run_test("--arrow qpid-jms -m 1 --transaction-size 10 --verbose")
+
+    notice("PASSED")
 
 if __name__ == "__main__":
     try:
