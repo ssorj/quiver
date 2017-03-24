@@ -1,0 +1,71 @@
+#!/usr/bin/python
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+from importlib import import_module
+from plano import *
+
+def check_executable(executable, missing, fedora_package):
+    if which(executable) is None:
+        missing.append(fedora_package)
+
+def check_header(header, missing, fedora_package):
+    source_file = make_temp_file(extension=".cpp")
+    output_file = make_temp_file()
+    source = "#include <{}>\n int main() {{ return 1; }}\n".format(header)
+    
+    write(source_file, source)
+
+    try:
+        with open(NULL_DEV, "w") as out:
+            call("gcc {} -o {}", source_file, output_file, output=out)
+    except CalledProcessError:
+        missing.append(fedora_package)
+
+def check_python_module(module, missing, fedora_package):
+    try:
+        import_module(module)
+    except ImportError:
+        missing.append(fedora_package)
+
+def main():
+    set_message_threshold("warn")
+    
+    missing = list()
+
+    check_executable("g++", missing, "gcc-c++")
+    check_executable("make", missing, "make")
+    check_executable("mvn", missing, "maven")
+    check_executable("node", missing, "nodejs")
+    check_executable("java", missing, "java-1.8.0-openjdk")
+
+    check_header("proton/message.hpp", missing, "qpid-proton-cpp-devel")
+    check_header("qpid/messaging/Message.h", missing, "qpid-cpp-client-devel")
+
+    check_python_module("numpy", missing, "numpy")
+    check_python_module("proton", missing, "python-qpid-proton")
+
+    if missing:
+        exit("I need the following Fedora packages: {}".format(" ".join(missing)))
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

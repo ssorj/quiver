@@ -301,9 +301,9 @@ def _remove_temp_dir():
 _atexit.register(_remove_temp_dir)
 
 # XXX Use _tempfile instead
-def make_temp_file():
+def make_temp_file(extension=""):
     key = unique_id(4)
-    file = join(_temp_dir, "_file_{0}".format(key))
+    file = join(_temp_dir, "_file_{0}{1}".format(key, extension))
 
     return append(file, "")
 
