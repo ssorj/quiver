@@ -55,7 +55,6 @@ transmission of messages.
 | Java 8 JDK            | openjdk-8-jdk         | java-1.8.0-openjdk-devel
 | Maven                 | maven                 | maven
 | Node.js               | nodejs*               | nodejs
-| Node.js debug         | ?                     | nodejs-debug
 | NumPy                 | python-numpy          | numpy
 | Python 2.7            | python                | python
 | Qpid Messaging C++    | libqpidmessaging2-dev | qpid-cpp-client-devel
@@ -248,13 +247,13 @@ number of messages are all sent or received.
     [Configure ActiveMQ for anonymous connections and AMQP]
     $ <instance-dir>/bin/activemq start
     $ quiver q0
-    
+
 ### Running Quiver with ActiveMQ Artemis
 
     $ <instance-dir>/bin/artemis run &
     $ <instance-dir>/bin/artemis destination create --name q0 --type core-queue
     $ quiver q0
-    
+
 ### Running Quiver with the Qpid C++ broker
 
     $ qpidd --auth no &

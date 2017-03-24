@@ -50,10 +50,11 @@ def main():
     missing = list()
 
     check_executable("g++", missing, "gcc-c++")
+    check_executable("java", missing, "java-1.8.0-openjdk-devel")
     check_executable("make", missing, "make")
     check_executable("mvn", missing, "maven")
     check_executable("node", missing, "nodejs")
-    check_executable("java", missing, "java-1.8.0-openjdk")
+    check_executable("xz", missing, "xz")
 
     check_header("proton/message.hpp", missing, "qpid-proton-cpp-devel")
     check_header("qpid/messaging/Message.h", missing, "qpid-cpp-client-devel")
