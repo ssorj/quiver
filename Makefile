@@ -98,6 +98,10 @@ test: devel
 	scripts/test-quiver-launch
 	scripts/test-quiver-server
 
+.PHONY: check-dependencies
+check-dependencies:
+	scripts/check-dependencies
+
 build/bin/%: bin/%.in
 	scripts/configure-file -a quiver_home=${QUIVER_HOME} $< $@
 
