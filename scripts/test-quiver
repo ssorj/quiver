@@ -33,7 +33,6 @@ def run_test(args, intermediated=True):
             stop_process(server)
 
 def main():
-    call_and_print_on_error("quiver --help")
     call_and_print_on_error("quiver q0 --init-only")
 
     run_test("-m 10k --verbose")

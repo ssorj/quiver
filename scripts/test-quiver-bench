@@ -44,7 +44,6 @@ def run_test(peer_to_peer=False):
     call(args)
 
 def main():
-    call_and_print_on_error("quiver-bench --help")
     call_and_print_on_error("quiver-bench --init-only --output {}", make_temp_dir())
 
     run_test(peer_to_peer=False)

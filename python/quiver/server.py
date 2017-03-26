@@ -33,6 +33,7 @@ import shlex as _shlex
 import subprocess as _subprocess
 
 from .common import *
+from .common import __version__
 
 _description = """
 Start a message server with the given queue.

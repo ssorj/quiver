@@ -33,6 +33,7 @@ import subprocess as _subprocess
 import time as _time
 
 from .common import *
+from .common import __version__
 
 _description = """
 Send or receive a set number of messages as fast as possible using a

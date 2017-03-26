@@ -45,7 +45,6 @@ def run_test(impl):
         raise
 
 def main():
-    call_and_print_on_error("quiver-server --help")
     call_and_print_on_error("quiver-server q0 --init-only")
     call_and_print_on_error("quiver-server --impl-version")
 

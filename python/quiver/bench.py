@@ -32,6 +32,7 @@ import time as _time
 import traceback as _traceback
 
 from .common import *
+from .common import __version__
 
 _description = """
 Benchmark message sender, receiver, and server combinations.

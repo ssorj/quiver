@@ -32,6 +32,7 @@ import time as _time
 
 from .arrow import _StatusSnapshot
 from .common import *
+from .common import __version__
 
 _description = """
 Start a sender-receiver pair for a particular messaging address.

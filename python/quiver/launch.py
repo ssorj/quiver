@@ -31,8 +31,14 @@ import sys as _sys
 import time as _time
 
 from .common import *
+from .common import __version__
 
-_description = "Spawn multiple message senders and receivers"
+_description = """
+Spawn multiple message senders and receivers.
+
+'quiver-launch' is one of the Quiver tools for testing the performance
+of message servers and APIs.
+"""
 
 class QuiverLaunchCommand(Command):
     def __init__(self, home_dir):

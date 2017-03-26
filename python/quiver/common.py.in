@@ -23,6 +23,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+__version__ = "@version@"
+
 import argparse as _argparse
 import json as _json
 import numpy as _numpy
@@ -141,19 +143,22 @@ class Command(object):
                                  help="Sustain credit for COUNT incoming messages",
                                  default="1000")
         self.parser.add_argument("--transaction-size", metavar="COUNT",
-                                 help="Transactionally transfer batches of COUNT messages",
+                                 help="If greater than 0, transfer batches of COUNT messages inside transactions",
                                  default="0")
         self.parser.add_argument("--timeout", metavar="SECONDS",
                                  help="Fail after SECONDS without transfers",
                                  default="10")
 
     def add_common_tool_arguments(self):
-        self.parser.add_argument("--init-only", action="store_true",
-                                 help="Initialize and immediately exit")
         self.parser.add_argument("--quiet", action="store_true",
                                  help="Print nothing to the console")
         self.parser.add_argument("--verbose", action="store_true",
                                  help="Print details to the console")
+        self.parser.add_argument("--init-only", action="store_true",
+                                 help="Initialize and exit")
+        self.parser.add_argument('--version', action='version',
+                                 help="Print the version and exit",
+                                 version="%(prog)s {}".format(__version__))
 
     def init_common_test_attributes(self):
         self.messages = self.parse_int_with_unit(self.args.messages)

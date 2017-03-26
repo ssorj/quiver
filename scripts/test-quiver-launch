@@ -31,7 +31,6 @@ def run_test():
         stop_process(server)
 
 def main():
-    call_and_print_on_error("quiver-launch --help")
     call_and_print_on_error("quiver-launch q0 --init-only")
     call_and_print_on_error("quiver-launch --sender-options=\"-m 1\" --receiver-options=\"-m 1 --server --passive\" //127.0.0.1:{}/q0", random_port())
 

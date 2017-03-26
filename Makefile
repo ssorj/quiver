@@ -45,7 +45,8 @@ TARGETS := \
 	build/java/quiver-activemq-artemis-jms.jar \
 	build/java/quiver-activemq-jms.jar \
 	build/java/quiver-qpid-jms.jar \
-	build/java/quiver-vertx-proton.jar
+	build/java/quiver-vertx-proton.jar \
+	build/python/quiver/common.py
 
 CCFLAGS := -Os -std=c++11 -lstdc++ -lqpid-proton -lqpidmessaging -lqpidtypes
 
@@ -81,6 +82,7 @@ build: ${TARGETS}
 .PHONY: install
 install: build
 	scripts/install-files --name \*.py python ${DESTDIR}${QUIVER_HOME}/python
+	scripts/install-files build/python ${DESTDIR}${QUIVER_HOME}/python
 	scripts/install-files javascript ${DESTDIR}${QUIVER_HOME}/javascript
 	scripts/install-files build/java ${DESTDIR}${QUIVER_HOME}/java
 	scripts/install-files build/exec ${DESTDIR}${QUIVER_HOME}/exec
@@ -122,6 +124,10 @@ build/java/%.jar: java/pom.xml java/quiver-jms-driver/pom.xml $(shell find java/
 	cd java/quiver-jms-driver && mvn install
 	cd java && mvn clean package
 	cp java/$*/target/$*-1.0.0-SNAPSHOT-jar-with-dependencies.jar $@
+
+build/python/%.py: python/%.py.in
+	@mkdir -p build/python
+	scripts/configure-file -a version=${VERSION} $< $@
 
 .PHONY: update-rhea
 update-rhea:
