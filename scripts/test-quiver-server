@@ -47,16 +47,20 @@ def run_test(impl):
 def main():
     call_and_print_on_error("quiver-server --help")
     call_and_print_on_error("quiver-server q0 --init-only")
+    call_and_print_on_error("quiver-server --impl-version")
 
     run_test("builtin")
 
     if which("artemis"):
+        call_and_print_on_error("quiver-server --impl activemq-artemis --impl-version")
         run_test("activemq-artemis")
 
     if which("qpidd"):
+        call_and_print_on_error("quiver-server --impl qpid-cpp --impl-version")
         run_test("qpid-cpp")
 
     if which("qdrouterd"):
+        call_and_print_on_error("quiver-server --impl qpid-dispatch --impl-version")
         run_test("qpid-dispatch")
 
     notice("PASSED")

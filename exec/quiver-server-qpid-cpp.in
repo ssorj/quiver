@@ -33,11 +33,17 @@ from plano import *
 from quiver.common import *
 
 def main():
+    set_message_threshold("warn")
+
     if which("qpidd") is None:
         exit("The 'qpidd' command is not on the path")
 
-    if which("qpidd") is None:
+    if which("qpid-config") is None:
         exit("The 'qpid-config' command is not on the path")
+
+    if len(ARGS) == 1:
+        call("qpidd --version")
+        exit()
 
     host = ARGS[1]
     port = ARGS[2]

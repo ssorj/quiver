@@ -34,8 +34,14 @@ from plano import *
 from quiver.common import *
 
 def main():
+    set_message_threshold("warn")
+
     if which("activemq") is None:
         exit("The 'activemq' command is not on the path")
+
+    if len(ARGS) == 1:
+        call("activemq --version", shell=True)
+        exit()
 
     host = ARGS[1]
     port = ARGS[2]

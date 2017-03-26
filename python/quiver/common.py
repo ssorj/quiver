@@ -113,7 +113,7 @@ class Command(object):
     def __init__(self, home_dir):
         self.home_dir = home_dir
 
-        self.parser = _argparse.ArgumentParser()
+        self.parser = _ArgumentParser()
         self.parser.formatter_class = _Formatter
 
         self.init_only = False
@@ -126,9 +126,9 @@ class Command(object):
         assert self.parser is not None
         assert self.args is None
 
-        self.args = self.parser.parse_args()
-
         _plano.set_message_threshold("warn")
+
+        self.args = self.parser.parse_args()
 
     def add_common_test_arguments(self):
         self.parser.add_argument("-m", "--messages", metavar="COUNT",
@@ -254,6 +254,11 @@ class Command(object):
 
     def get_server_impl_file(self, name):
         return _plano.join(self.home_dir, "exec", "quiver-server-{}".format(name))
+
+class _ArgumentParser(_argparse.ArgumentParser):
+    def error(self, message):
+        self.print_usage(_sys.stderr)
+        raise CommandError(message)
 
 class _Formatter(_argparse.ArgumentDefaultsHelpFormatter,
                  _argparse.RawDescriptionHelpFormatter):

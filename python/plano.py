@@ -157,6 +157,7 @@ def flush():
 
 absolute_path = _os.path.abspath
 normalize_path = _os.path.normpath
+real_path = _os.path.realpath
 exists = _os.path.exists
 is_absolute = _os.path.isabs
 is_dir = _os.path.isdir

@@ -36,12 +36,16 @@ from plano import *
 from quiver.server import BuiltinBroker
 
 def main():
+    set_message_threshold("warn")
+
+    if len(ARGS) == 1:
+        print("Quiver builtin message broker")
+        exit()
+
     host = ARGS[1]
     port = ARGS[2]
     path = ARGS[3]
     ready_file = ARGS[4]
-
-    set_message_threshold("warn")
 
     broker = BuiltinBroker(host, port, path, ready_file)
     broker.run()

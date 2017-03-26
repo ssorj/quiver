@@ -23,6 +23,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import argparse as _argparse
 import collections as _collections
 import plano as _plano
 import proton as _proton
@@ -64,6 +65,8 @@ class QuiverServerCommand(Command):
         self.parser.add_argument("--impl", metavar="NAME",
                                  help="Use NAME implementation",
                                  default="builtin")
+        self.parser.add_argument("--impl-version", action="store_true",
+                                 help="Print the impl version and exit")
         self.parser.add_argument("--ready-file", metavar="FILE",
                                  help="File used to indicate the server is ready")
         self.parser.add_argument("--prelude", metavar="PRELUDE", default="",
@@ -72,6 +75,19 @@ class QuiverServerCommand(Command):
         self.add_common_tool_arguments()
 
     def init(self):
+        _plano.set_message_threshold("warn")
+
+        if "--impl-version" in _plano.ARGS:
+            parser = _argparse.ArgumentParser()
+            parser.add_argument("--impl", default="builtin")
+
+            args, other = parser.parse_known_args(_plano.ARGS)
+            impl = self.get_server_impl_name(args.impl, args.impl)
+            impl_file = self.get_server_impl_file(impl)
+
+            _plano.call(impl_file)
+            _plano.exit(0)
+
         super(QuiverServerCommand, self).init()
 
         self.impl = self.get_server_impl_name(self.args.impl, self.args.impl)

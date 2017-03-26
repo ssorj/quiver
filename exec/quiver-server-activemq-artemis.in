@@ -61,8 +61,16 @@ config_template = """
 """
 
 def main():
+    set_message_threshold("warn")
+
     if which("artemis") is None:
         exit("The 'artemis' command is not on the path")
+
+    if len(ARGS) == 1:
+        executable = real_path(which("artemis"))
+        profile_file = join(parent_dir(parent_dir(executable)), "etc", "artemis.profile")
+        call("source {} && echo $ARTEMIS_HOME", profile_file, shell=True)
+        exit()
 
     host = ARGS[1]
     port = ARGS[2]
