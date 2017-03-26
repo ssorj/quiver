@@ -66,19 +66,19 @@ class QuiverServerCommand(Command):
         self.parser.add_argument("--impl", metavar="NAME",
                                  help="Use NAME implementation",
                                  default="builtin")
-        self.parser.add_argument("--impl-version", action="store_true",
-                                 help="Print the impl version and exit")
+        self.parser.add_argument("--impl-info", action="store_true",
+                                 help="Print implementation details and exit")
         self.parser.add_argument("--ready-file", metavar="FILE",
                                  help="File used to indicate the server is ready")
         self.parser.add_argument("--prelude", metavar="PRELUDE", default="",
-                                 help="Commands to precede the impl invocation")
+                                 help="Commands to precede the implementation invocation")
 
         self.add_common_tool_arguments()
 
     def init(self):
         _plano.set_message_threshold("warn")
 
-        if "--impl-version" in _plano.ARGS:
+        if "--impl-info" in _plano.ARGS:
             parser = _argparse.ArgumentParser()
             parser.add_argument("--impl", default="builtin")
 

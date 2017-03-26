@@ -60,6 +60,14 @@ config_template = """
 </configuration>
 """
 
+_info_script = """
+source {}
+echo ARTEMIS_HOME=$ARTEMIS_HOME
+echo ARTEMIS_INSTANCE=$ARTEMIS_INSTANCE
+echo JAVA_ARGS=\\\"$JAVA_ARGS\\\"
+java -version
+"""
+
 def main():
     set_message_threshold("warn")
 
@@ -69,7 +77,8 @@ def main():
     if len(ARGS) == 1:
         executable = real_path(which("artemis"))
         profile_file = join(parent_dir(parent_dir(executable)), "etc", "artemis.profile")
-        call("source {} && echo $ARTEMIS_HOME", profile_file, shell=True)
+        
+        call(_info_script, profile_file, shell=True)
         exit()
 
     host = ARGS[1]
