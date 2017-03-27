@@ -300,14 +300,27 @@ class QuiverPairCommand(Command):
         v = receiver["results"]["message_rate"]
         _print_numeric_field("Receiver rate", v, "messages/s")
         _print_numeric_field("End-to-end rate", rate, "messages/s")
+
+        print("Latency:")
+
         v = receiver["results"]["latency_average"]
-        _print_numeric_field("Average latency", v, "ms", "{:,.1f}")
-        v = receiver["results"]["latency_quartiles"]
-        v = ", ".join(map(str, v))
-        _print_numeric_field("Latency 25, 50, 75, 100%", v, "ms", None)
-        v = receiver["results"]["latency_nines"][:3]
-        v = ", ".join(map(str, v))
-        _print_numeric_field("Latency 99, 99.9, 99.99%", v, "ms", None)
+        _print_numeric_field("  Average", v, "ms", "{:,.1f}")
+        v = receiver["results"]["latency_quartiles"][0]
+        _print_numeric_field("  Min", v, "ms", "{:,.0f}")
+        v = receiver["results"]["latency_quartiles"][2]
+        _print_numeric_field("  50%", v, "ms", "{:,.0f}")
+        v = receiver["results"]["latency_nines"][0]
+        _print_numeric_field("  90%", v, "ms", "{:,.0f}")
+        v = receiver["results"]["latency_nines"][1]
+        _print_numeric_field("  99%", v, "ms", "{:,.0f}")
+        v = receiver["results"]["latency_nines"][2]
+        _print_numeric_field("  99.9%", v, "ms", "{:,.0f}")
+        v = receiver["results"]["latency_nines"][3]
+        _print_numeric_field("  99.99%", v, "ms", "{:,.0f}")
+        v = receiver["results"]["latency_nines"][4]
+        _print_numeric_field("  99.999%", v, "ms", "{:,.0f}")
+        v = receiver["results"]["latency_quartiles"][4]
+        _print_numeric_field("  Max", v, "ms", "{:,.0f}")
 
         print("-" * 80)
 

@@ -304,13 +304,13 @@ class QuiverArrowCommand(Command):
 
         latencies = _numpy.array(latencies, _numpy.int32)
 
-        q = 25, 50, 75, 100, 99, 99.9, 99.99, 99.999
+        q = 0, 25, 50, 75, 100, 90, 99, 99.9, 99.99, 99.999
         percentiles = _numpy.percentile(latencies, q)
         percentiles = map(int, percentiles)
 
         self.latency_average = _numpy.mean(latencies)
-        self.latency_quartiles = percentiles[:4]
-        self.latency_nines = percentiles[4:]
+        self.latency_quartiles = percentiles[:5]
+        self.latency_nines = percentiles[5:]
 
     def save_summary(self):
         props = {
