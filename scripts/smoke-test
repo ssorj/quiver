@@ -25,7 +25,7 @@ def main():
 
     call_and_print_on_error("quiver q0 --quiet --init-only")
     call_and_print_on_error("quiver-arrow send //localhost:12345/a/b/c --init-only")
-    call_and_print_on_error("quiver-bench --init-only")
+    call_and_print_on_error("quiver-bench --init-only --output {}", make_temp_dir())
     call_and_print_on_error("quiver-launch q0 --init-only")
     call_and_print_on_error("quiver-server q0 --init-only")
 
