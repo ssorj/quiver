@@ -27,7 +27,7 @@ import os
 import sys
 import uuid
 
-from proton import Message
+from proton import Message, VERSION, __file__ as proton_module_file
 from proton.handlers import MessagingHandler
 from proton.reactor import Container
 
@@ -152,6 +152,15 @@ class Handler(MessagingHandler):
                 raise Exception()
 
 def main():
+    set_message_threshold("warn")
+
+    if len(ARGS) == 1:
+        print("Qpid Proton Python {}.{}.{}".format(*VERSION))
+        print(proton_module_file)
+        print("Python {}".format(" ".join(sys.version.split())))
+
+        exit()
+
     transaction_size = int(ARGS[11])
 
     if transaction_size > 0:

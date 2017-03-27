@@ -32,7 +32,17 @@ sys.path.insert(0, os.path.join(home, "python"))
 from plano import *
 
 def main():
+    set_message_threshold("warn")
+
     jar_file = join(home, "java", "quiver-vertx-proton.jar")
+
+    if len(ARGS) == 1:
+        with working_dir(make_temp_dir()):
+            call("jar -xf {} META-INF", jar_file)
+            print(read(join("META-INF", "maven", "io.vertx", "vertx-proton", "pom.properties")), end="")
+
+        call("java -version")
+        exit()
 
     args = [
         "/usr/bin/env",

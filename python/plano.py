@@ -163,6 +163,7 @@ is_absolute = _os.path.isabs
 is_dir = _os.path.isdir
 is_file = _os.path.isfile
 is_link = _os.path.islink
+file_size = _os.path.getsize
 
 join = _os.path.join
 split = _os.path.split

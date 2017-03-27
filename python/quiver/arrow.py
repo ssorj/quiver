@@ -23,6 +23,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 from __future__ import with_statement
 
+import argparse as _argparse
 import json as _json
 import numpy as _numpy
 import os as _os
@@ -81,6 +82,8 @@ example usage:
   $ quiver-arrow send q0          # Start sending
 """
 
+_default_impl = "qpid-proton-python"
+
 class QuiverArrowCommand(Command):
     def __init__(self, home_dir):
         super(QuiverArrowCommand, self).__init__(home_dir)
@@ -97,7 +100,9 @@ class QuiverArrowCommand(Command):
                                  help="Save output files to DIR")
         self.parser.add_argument("--impl", metavar="NAME",
                                  help="Use NAME implementation",
-                                 default="qpid-proton-python")
+                                 default=_default_impl)
+        self.parser.add_argument("--impl-info", action="store_true",
+                                 help="Print implementation details and exit")
         self.parser.add_argument("--id", metavar="ID",
                                  help="Use ID as the client or server identity")
         self.parser.add_argument("--server", action="store_true",
@@ -111,6 +116,19 @@ class QuiverArrowCommand(Command):
         self.add_common_tool_arguments()
 
     def init(self):
+        _plano.set_message_threshold("notice")
+
+        if "--impl-info" in _plano.ARGS:
+            parser = _argparse.ArgumentParser()
+            parser.add_argument("--impl", default=_default_impl)
+
+            args, other = parser.parse_known_args(_plano.ARGS)
+            impl = self.get_arrow_impl_name(args.impl, args.impl)
+            impl_file = self.get_arrow_impl_file(impl)
+
+            _plano.call(impl_file)
+            _plano.exit(0)
+
         super(QuiverArrowCommand, self).init()
 
         self.operation = self.args.operation
@@ -195,7 +213,7 @@ class QuiverArrowCommand(Command):
             if proc.returncode != 0:
                 raise CommandError("{} exited with code {}", self.role, proc.returncode)
 
-        if _os.path.getsize(self.transfers_file) == 0:
+        if _plano.file_size(self.transfers_file) == 0:
             raise CommandError("No transfers")
 
         self.compute_results()

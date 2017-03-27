@@ -54,6 +54,8 @@ server implementations:
   qpid-dispatch [dispatch, qdrouterd]
 """
 
+_default_impl = "builtin"
+
 class QuiverServerCommand(Command):
     def __init__(self, home_dir):
         super(QuiverServerCommand, self).__init__(home_dir)
@@ -65,7 +67,7 @@ class QuiverServerCommand(Command):
                                  help="The location of a message queue")
         self.parser.add_argument("--impl", metavar="NAME",
                                  help="Use NAME implementation",
-                                 default="builtin")
+                                 default=_default_impl)
         self.parser.add_argument("--impl-info", action="store_true",
                                  help="Print implementation details and exit")
         self.parser.add_argument("--ready-file", metavar="FILE",
@@ -80,7 +82,7 @@ class QuiverServerCommand(Command):
 
         if "--impl-info" in _plano.ARGS:
             parser = _argparse.ArgumentParser()
-            parser.add_argument("--impl", default="builtin")
+            parser.add_argument("--impl", default=_default_impl)
 
             args, other = parser.parse_known_args(_plano.ARGS)
             impl = self.get_server_impl_name(args.impl, args.impl)

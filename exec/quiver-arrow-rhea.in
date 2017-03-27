@@ -21,6 +21,11 @@
 
 "use strict";
 
+if (process.argv.length === 2) {
+    process.stdout.write("Rhea XXX\n");
+    process.exit(0);
+}
+
 var rhea = require("@quiver_home@/javascript/node_modules/rhea");
 var types = require("@quiver_home@/javascript/node_modules/rhea/lib/types.js");
 

@@ -32,12 +32,22 @@ sys.path.insert(0, os.path.join(home, "python"))
 from plano import *
 
 def main():
+    set_message_threshold("warn")
+
+    jar_file = join(home, "java", "quiver-activemq-artemis-jms.jar")
+
+    if len(ARGS) == 1:
+        with working_dir(make_temp_dir()):
+            call("jar -xf {} META-INF", jar_file)
+            print(read(join("META-INF", "maven", "org.apache.activemq", "artemis-jms-client", "pom.properties")), end="")
+
+        call("java -version")
+        exit()
+
     id_ = ARGS[4]
     host = ARGS[5]
     port = ARGS[6]
     credit_window = ARGS[10]
-
-    jar_file = join(home, "java", "quiver-activemq-artemis-jms.jar")
 
     params = (
         "jms.clientID={}".format(id_),

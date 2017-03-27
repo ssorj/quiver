@@ -23,20 +23,7 @@ from plano import *
 def main():
     set_message_threshold("warn")
 
-    commands = [
-        "quiver",
-        "quiver-arrow",
-        "quiver-bench",
-        "quiver-launch",
-        "quiver-server",
-    ]
-
-    for command in commands:
-        call_and_print_on_error("{} --help", command)
-        call_and_print_on_error("{} --version", command)
-
-    call_and_print_on_error("quiver q0 --init-only --verbose --arrow cpp")
-    call_and_print_on_error("quiver --quiet --init-only q0 --arrow python")
+    call_and_print_on_error("quiver q0 --quiet --init-only")
     call_and_print_on_error("quiver-arrow send //localhost:12345/a/b/c --init-only")
     call_and_print_on_error("quiver-bench --init-only")
     call_and_print_on_error("quiver-launch q0 --init-only")

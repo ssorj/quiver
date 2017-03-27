@@ -32,6 +32,7 @@
 #include <proton/thread_safe.hpp>
 #include <proton/tracker.hpp>
 #include <proton/value.hpp>
+#include <proton/version.h>
 #include <proton/receiver_options.hpp>
 
 #include <assert.h>
@@ -155,6 +156,14 @@ struct handler : public proton::messaging_handler {
 };
 
 int main(int argc, char** argv) {
+    if (argc == 1) {
+        std::cout << "Qpid Proton C++ "
+                  << PN_VERSION_MAJOR << "."
+                  << PN_VERSION_MINOR << "."
+                  << PN_VERSION_POINT << std::endl;
+        return 0;
+    }
+
     int transaction_size = std::atoi(argv[11]);
 
     if (transaction_size > 0) {

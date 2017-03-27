@@ -27,6 +27,7 @@ import os
 import sys
 
 from qpid_messaging import *
+from qpid_messaging import __file__ as messaging_module_file
 
 home = os.path.normpath("@quiver_home@")
 sys.path.insert(0, os.path.join(home, "python"))
@@ -133,6 +134,15 @@ class Client(object):
                 session.commit()
 
 def main():
+    set_message_threshold("warn")
+
+    if len(ARGS) == 1:
+        print("Qpid Messaging Python XXX")
+        print(messaging_module_file)
+        print("Python {}".format(" ".join(sys.version.split())))
+
+        exit()
+
     if ARGS[1] != "client":
         exit("This impl supports client mode only")
 

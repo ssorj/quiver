@@ -159,6 +159,11 @@ void Client::receiveMessages(Session& session) {
 }
 
 int main(int argc, char** argv) {
+    if (argc == 1) {
+        std::cout << "Qpid Messaging C++ XXX" << std::endl;
+        return 0;
+    }
+
     std::string connection_mode = argv[1];
     std::string channel_mode = argv[2];
 

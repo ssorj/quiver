@@ -7,9 +7,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -32,12 +32,22 @@ sys.path.insert(0, os.path.join(home, "python"))
 from plano import *
 
 def main():
+    set_message_threshold("warn")
+
+    jar_file = join(home, "java", "quiver-activemq-jms.jar")
+
+    if len(ARGS) == 1:
+        with working_dir(make_temp_dir()):
+            call("jar -xf {} META-INF", jar_file)
+            print(read(join("META-INF", "maven", "org.apache.activemq", "activemq-client", "pom.properties")), end="")
+
+        call("java -version")
+        exit()
+
     id_ = ARGS[4]
     host = ARGS[5]
     port = ARGS[6]
     credit_window = ARGS[10]
-    
-    jar_file = join(home, "java", "quiver-activemq-jms.jar")
 
     params = (
         "jms.clientID={}".format(id_),
@@ -60,7 +70,7 @@ def main():
     args += ARGS[1:]
 
     os.execl(*args)
-    
+
 if __name__ == "__main__":
     try:
         main()

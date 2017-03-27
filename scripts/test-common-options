@@ -18,39 +18,22 @@
 # under the License.
 #
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import with_statement
-
-import os
-import sys
-
-home = os.path.normpath("@quiver_home@")
-sys.path.insert(0, os.path.join(home, "python"))
-
-import collections as collections
-import uuid as uuid
-
 from plano import *
-from quiver.server import BuiltinBroker, __version__
 
 def main():
-    set_message_threshold("warn")
+    commands = [
+        "quiver",
+        "quiver-arrow",
+        "quiver-bench",
+        "quiver-launch",
+        "quiver-server",
+    ]
 
-    if len(ARGS) == 1:
-        print("Quiver's builtin message broker {}".format(__version__))
-        print(__file__)
-        print("Python {}".format(" ".join(sys.version.split())))
-        exit()
+    for command in commands:
+        call_and_print_on_error("{} --help", command)
+        call_and_print_on_error("{} --version", command)
 
-    host = ARGS[1]
-    port = ARGS[2]
-    path = ARGS[3]
-    ready_file = ARGS[4]
-
-    broker = BuiltinBroker(host, port, path, ready_file)
-    broker.run()
+    notice("PASSED")
 
 if __name__ == "__main__":
     try:
