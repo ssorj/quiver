@@ -35,6 +35,7 @@ import time as _time
 
 from .common import *
 from .common import __version__
+from .common import _urlparse
 
 _description = """
 Send or receive a set number of messages as fast as possible using a
@@ -165,6 +166,10 @@ class QuiverArrowCommand(Command):
         self.init_common_test_attributes()
         self.init_common_tool_attributes()
         self.init_output_dir()
+
+        if _urlparse(self.url).port is None:
+            if self.impl in ("activemq-jms", "activemq-artemis-jms"):
+                self.port = "61616"
 
         self.snapshots_file = _join(self.output_dir, "{}-snapshots.csv".format(self.role))
         self.summary_file = _join(self.output_dir, "{}-summary.json".format(self.role))
