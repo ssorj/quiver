@@ -335,6 +335,7 @@ class QuiverArrowCommand(Command):
                 "messages": self.messages,
                 "body_size": self.body_size,
                 "credit_window": self.credit_window,
+                "transaction_size": self.transaction_size,
                 "timeout": self.timeout,
             },
             "results": {
