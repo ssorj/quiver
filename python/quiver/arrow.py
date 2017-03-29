@@ -117,7 +117,7 @@ class QuiverArrowCommand(Command):
         self.add_common_tool_arguments()
 
     def init(self):
-        _plano.set_message_threshold("notice")
+        _plano.set_message_threshold("warn")
 
         if "--impl-info" in _plano.ARGS:
             parser = _argparse.ArgumentParser()
@@ -207,7 +207,12 @@ class QuiverArrowCommand(Command):
         assert None not in args, args
 
         with open(self.transfers_file, "wb") as fout:
-            proc = _plano.start_process(args, stdout=fout)
+            env = _plano.ENV
+
+            if self.verbose:
+                env["QUIVER_VERBOSE"] = "1"
+
+            proc = _plano.start_process(args, stdout=fout, env=env)
 
             try:
                 self.monitor_subprocess(proc)
