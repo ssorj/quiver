@@ -48,12 +48,11 @@ TARGETS := \
 	build/java/quiver-vertx-proton.jar \
 	build/python/quiver/common.py
 
-CCFLAGS := -Os -std=c++11 -lstdc++ -lqpid-proton -lqpidmessaging -lqpidtypes
-
 ifdef QPID_PROTON_CPP_ENABLED
 	TARGETS += build/exec/quiver-arrow-qpid-proton-cpp
-	CCFLAGS += -lqpid-proton-cpp
 endif
+
+CCFLAGS := -Os -std=c++11 -lstdc++
 
 export PATH := ${PWD}/install/bin:${PATH}
 export PYTHONPATH := ${PWD}/install/lib/quiver/python
@@ -112,9 +111,13 @@ build/bin/%: bin/%.in
 build/exec/%: exec/%.in
 	scripts/configure-file -a quiver_home=${QUIVER_HOME} $< $@
 
-build/exec/%: exec/%.cpp
+build/exec/quiver-arrow-qpid-proton-cpp: exec/quiver-arrow-qpid-proton-cpp.cpp
 	@mkdir -p build/exec
-	g++ $< -o $@ ${CCFLAGS}
+	g++ $< -o $@ ${CCFLAGS} -lqpid-proton -lqpid-proton-cpp
+
+build/exec/quiver-arrow-qpid-messaging-cpp: exec/quiver-arrow-qpid-messaging-cpp.cpp
+	@mkdir -p build/exec
+	g++ $< -o $@ ${CCFLAGS} -lqpidmessaging -lqpidtypes
 
 build/java/quiver-vertx-proton.jar: java/quiver-vertx-proton/pom.xml $(shell find java/quiver-vertx-proton/src -type f)
 	@mkdir -p build/java
