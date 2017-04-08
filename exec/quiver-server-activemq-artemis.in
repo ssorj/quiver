@@ -34,10 +34,9 @@ from plano import *
 from quiver.common import *
 
 config_template = """
-<?xml version='1.0'?>
+<?xml version="1.0"?>
 <configuration xmlns="urn:activemq" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd">
-  <core xmlns="urn:activemq:core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq:core ">
-    <global-max-size>100Mb</global-max-size>
+  <core xmlns="urn:activemq:core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq:core">
     <acceptors>
       <acceptor name="artemis">tcp://{}:{}?protocols=AMQP,CORE,OPENWIRE</acceptor>
     </acceptors>
