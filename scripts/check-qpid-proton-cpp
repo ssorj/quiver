@@ -19,28 +19,18 @@
 #
 
 from plano import *
-from quiver.common import ARROW_IMPLS
 
 def main():
-    call_and_print_on_error("quiver-arrow send q0 --init-only")
-    call_and_print_on_error("quiver-arrow --init-only receive //localhost:5672/q0")
-
-    for impl in ARROW_IMPLS:
-        if impl == "qpid-proton-cpp":
-            try:
-                check_header("proton/message.hpp")
-            except CalledProcessError:
-                continue
-
-        call_and_print_on_error("quiver-arrow --impl {} --impl-info", impl)
-
-    notice("PASSED")
+    try:
+        check_header("proton/message.hpp")
+    except CalledProcessError:
+        exit(1)
 
 def check_header(header):
     source_file = make_temp_file(extension=".cpp")
     output_file = make_temp_file()
     source = "#include <{}>\n int main() {{ return 1; }}\n".format(header)
-
+    
     write(source_file, source)
 
     with open(NULL_DEV, "w") as out:

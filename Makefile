@@ -48,7 +48,7 @@ TARGETS := \
 	build/java/quiver-vertx-proton.jar \
 	build/python/quiver/common.py
 
-ifdef QPID_PROTON_CPP_ENABLED
+ifeq ($(shell scripts/check-qpid-proton-cpp &> /dev/null; echo $$?),0)
 	TARGETS += build/exec/quiver-arrow-qpid-proton-cpp
 endif
 

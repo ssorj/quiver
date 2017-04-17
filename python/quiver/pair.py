@@ -43,10 +43,10 @@ message servers and APIs.
 
 _epilog = """
 URLs:
-  [//DOMAIN/]PATH                 The default domain is 'localhost'
-  //example.net/jobs
-  //10.0.0.10:5672/jobs/alpha
-  //localhost/q0
+  [amqp://DOMAIN/]PATH            The default domain is 'localhost'
+  amqp://example.net/jobs
+  amqp://10.0.0.10:5672/jobs/alpha
+  amqp://localhost/q0
   q0
 
 implementations:
