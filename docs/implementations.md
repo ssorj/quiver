@@ -35,6 +35,8 @@ Implementations must process the following positional arguments.
      [8] messages          Number of messages to transfer
      [9] body-size         Length of generated message body
     [10] credit-window     Size of credit window to maintain
+    [11] transaction-size  Size of transaction batches; 0 for no transactions
+    [12] flags             Comma-separated list of named tokens
 
 If an implementation does not support a particular `connection-mode`
 or `channel-mode`, for instance `server`, it should raise an error at
@@ -103,11 +105,15 @@ They must also set an application property named `SendTime` containing
 a `long` representing the send time in milliseconds.
 
 By convention, message bodies are filled with as many `x`s as
-indicated by the `boxy-size` parameter.  The `x` should be a single
+indicated by the `body-size` parameter.  The `x` must be a single
 byte, not a multi-byte Unicode character.
+
+<!--
+XXX
 
 Sent messages must be non-durable and configured for
 at-least-once-delivery (in JMS terms, non-persistent and
 auto-acknowledge).
+-->
 
 <!-- XXX acknowledgments -->

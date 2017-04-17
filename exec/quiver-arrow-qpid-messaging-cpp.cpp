@@ -25,9 +25,12 @@
 #include <qpid/messaging/Sender.h>
 #include <qpid/messaging/Session.h>
 
+#include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <sstream>
+#include <string>
+#include <vector>
 
 using namespace qpid::messaging;
 using namespace qpid::types;
@@ -44,6 +47,20 @@ void eprint(std::string message) {
     std::cerr << "quiver-arrow: error: " << message << std::endl;
 }
 
+std::vector<std::string> split(const std::string &s, char delim) {
+    std::stringstream ss;
+    std::string elem;
+    std::vector<std::string> elems;
+
+    ss.str(s);
+
+    while (std::getline(ss, elem, delim)) {
+        elems.push_back(elem);
+    }
+
+    return elems;
+}
+
 struct Client {
     std::string operation;
     std::string id;
@@ -54,6 +71,8 @@ struct Client {
     int body_size;
     int credit_window;
     int transaction_size;
+
+    bool durable;
 
     int sent = 0;
     int received = 0;
@@ -119,6 +138,10 @@ void Client::sendMessages(Session& session) {
         Message message(body);
         message.setMessageId(id);
         message.setProperty("SendTime", Variant(stime));
+
+        if (durable) {
+            message.setDurable(true);
+        }
 
         sender.send(message);
         sent++;
@@ -188,6 +211,10 @@ int main(int argc, char** argv) {
     client.body_size = std::atoi(argv[9]);
     client.credit_window = std::atoi(argv[10]);
     client.transaction_size = std::atoi(argv[11]);
+
+    std::vector<std::string> flags = split(argv[12], ',');
+
+    client.durable = std::any_of(flags.begin(), flags.end(), [](std::string &s) { return s == "durable"; });
 
     try {
         client.run();

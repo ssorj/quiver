@@ -50,6 +50,8 @@ class Handler(MessagingHandler):
         self.messages = None
         self.body_size = None
 
+        self.durable = False
+
         self.listener = None
         self.body = None
 
@@ -112,6 +114,9 @@ class Handler(MessagingHandler):
             message.id = id
             message.properties = dict() # XXX Obnoxious
             message.properties["SendTime"] = stime
+
+            if self.durable:
+                message.durable = True
 
             event.sender.send(message)
             self.sent += 1
@@ -177,6 +182,11 @@ def main():
     handler.path = ARGS[7]
     handler.messages = int(ARGS[8])
     handler.body_size = int(ARGS[9])
+
+    flags = ARGS[12].split(",")
+
+    if "durable" in flags:
+        handler.durable = True
 
     container = Container(handler)
     container.container_id = ARGS[4]

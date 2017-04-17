@@ -49,6 +49,8 @@ class Client(object):
         self.credit_window = None
         self.transaction_size = None
 
+        self.durable = False
+
         self.sent = 0
         self.received = 0
 
@@ -98,6 +100,9 @@ class Client(object):
             message = Message(body)
             message.id = id_
             message.properties[b"SendTime"] = stime
+
+            if self.durable:
+                message.durable = True
 
             sender.send(message)
 
@@ -159,6 +164,11 @@ def main():
     client.body_size = int(ARGS[9])
     client.credit_window = int(ARGS[10])
     client.transaction_size = int(ARGS[11])
+
+    flags = ARGS[12].split(",")
+
+    if "durable" in flags:
+        client.durable = True
 
     client.run()
 

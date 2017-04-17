@@ -171,6 +171,13 @@ class QuiverArrowCommand(Command):
             if self.impl in ("activemq-jms", "activemq-artemis-jms"):
                 self.port = "61616"
 
+        flags = list()
+
+        if self.durable:
+            flags.append("durable")
+
+        self.flags = ",".join(flags)
+
         self.snapshots_file = _join(self.output_dir, "{}-snapshots.csv".format(self.role))
         self.summary_file = _join(self.output_dir, "{}-summary.json".format(self.role))
         self.transfers_file = _join(self.output_dir, "{}-transfers.csv".format(self.role))
@@ -202,6 +209,7 @@ class QuiverArrowCommand(Command):
             str(self.body_size),
             str(self.credit_window),
             str(self.transaction_size),
+            self.flags,
         ]
 
         assert None not in args, args

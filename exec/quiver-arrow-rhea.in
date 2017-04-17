@@ -42,6 +42,10 @@ var body_size = process.argv[10];
 var credit_window = process.argv[11];
 var transaction_size = process.argv[12];
 
+var flags = process.argv[13].split(",");
+
+var durable = flags.indexOf("durable") > -1;
+
 var a = new Array(body_size);
 
 for (var i = 0; i < a.length; i++) {
@@ -124,6 +128,7 @@ container.on("sendable", function(context) {
             application_properties: {
                 SendTime: stime
             },
+            durable: durable,
             body: body,
         };
 

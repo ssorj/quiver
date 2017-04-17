@@ -136,6 +136,9 @@ class QuiverPairCommand(Command):
             "--output", self.output_dir,
         ]
 
+        if self.durable:
+            args += ["--durable"]
+
         if self.quiet:
             args += ["--quiet"]
 

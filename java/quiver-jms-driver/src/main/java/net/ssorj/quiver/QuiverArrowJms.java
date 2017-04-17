@@ -41,6 +41,7 @@ public class QuiverArrowJms {
         int messages = Integer.parseInt(args[7]);
         int bodySize = Integer.parseInt(args[8]);
         int transactionSize = Integer.parseInt(args[10]);
+        String[] flags = args[11].split(",");
 
         if (!connectionMode.equals("client")) {
             throw new RuntimeException("This impl supports client mode only");
@@ -61,7 +62,7 @@ public class QuiverArrowJms {
         ConnectionFactory factory = (ConnectionFactory) context.lookup("ConnectionFactory");
         Destination queue = (Destination) context.lookup("queueLookup");
 
-        Client client = new Client(factory, queue, operation, messages, bodySize, transactionSize);
+        Client client = new Client(factory, queue, operation, messages, bodySize, transactionSize, flags);
 
         client.run();
     }
@@ -75,11 +76,13 @@ class Client {
     protected final int bodySize;
     protected final int transactionSize;
 
+    protected final boolean durable;
+
     protected int sent;
     protected int received;
 
-    Client(ConnectionFactory factory, Destination queue,
-           String operation, int messages, int bodySize, int transactionSize) {
+    Client(ConnectionFactory factory, Destination queue, String operation,
+           int messages, int bodySize, int transactionSize, String[] flags) {
         this.factory = factory;
         this.queue = queue;
         this.operation = operation;
@@ -87,13 +90,15 @@ class Client {
         this.bodySize = bodySize;
         this.transactionSize = transactionSize;
 
+        this.durable = Arrays.asList(flags).contains("durable");
+
         this.sent = 0;
         this.received = 0;
     }
 
     void run() {
         try {
-            Connection conn = this.factory.createConnection();
+            Connection conn = factory.createConnection();
             conn.start();
 
             final Session session;
@@ -104,10 +109,10 @@ class Client {
                 session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
             }
 
-            if (this.operation.equals("send")) {
-                this.sendMessages(session);
-            } else if (this.operation.equals("receive")) {
-                this.receiveMessages(session);
+            if (operation.equals("send")) {
+                sendMessages(session);
+            } else if (operation.equals("receive")) {
+                receiveMessages(session);
             } else {
                 throw new java.lang.IllegalStateException();
             }
@@ -128,14 +133,20 @@ class Client {
 
     void sendMessages(Session session) throws JMSException {
         PrintWriter out = getOutputWriter();
-        MessageProducer producer = session.createProducer(this.queue);
-        producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+        MessageProducer producer = session.createProducer(queue);
+
+        if (durable) {
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
+        } else {
+            producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+        }
+
         producer.setDisableMessageTimestamp(true);
 
-        byte[] body = new byte[this.bodySize];
+        byte[] body = new byte[bodySize];
         Arrays.fill(body, (byte) 120);
 
-        while (this.sent < this.messages) {
+        while (sent < messages) {
             BytesMessage message = session.createBytesMessage();
             long stime = System.currentTimeMillis();
 
@@ -146,7 +157,7 @@ class Client {
 
             out.printf("%s,%d\n", message.getJMSMessageID(), stime);
 
-            this.sent += 1;
+            sent += 1;
 
             if (transactionSize > 0 && (sent % transactionSize) == 0) {
                 session.commit();
@@ -158,9 +169,9 @@ class Client {
 
     void receiveMessages(Session session) throws JMSException {
         PrintWriter out = getOutputWriter();
-        MessageConsumer consumer = session.createConsumer(this.queue);
+        MessageConsumer consumer = session.createConsumer(queue);
 
-        while (this.received < this.messages) {
+        while (received < messages) {
             BytesMessage message = (BytesMessage) consumer.receive();
 
             if (message == null) {
@@ -173,7 +184,7 @@ class Client {
 
             out.printf("%s,%d,%d\n", id, stime, rtime);
 
-            this.received += 1;
+            received += 1;
 
             if (transactionSize > 0 && (received % transactionSize) == 0) {
                 session.commit();

@@ -36,7 +36,7 @@ def main():
     call_and_print_on_error("quiver q0 --init-only")
 
     run_test("-m 10k --verbose")
-    run_test("--arrow qpid-jms -m 1")
+    run_test("--arrow qpid-jms -m 1 --durable")
     run_test("--arrow vertx-proton -m 1")
     run_test("--arrow rhea -m 1 --peer-to-peer", intermediated=False)
     run_test("--arrow qpid-proton-python -m 1 --peer-to-peer", intermediated=False)

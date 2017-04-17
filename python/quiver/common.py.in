@@ -143,8 +143,10 @@ class Command(object):
                                  help="Sustain credit for COUNT incoming messages",
                                  default="1000")
         self.parser.add_argument("--transaction-size", metavar="COUNT",
-                                 help="If greater than 0, transfer batches of COUNT messages inside transactions",
+                                 help="Transfer batches of COUNT messages inside transactions; 0 to disable",
                                  default="0")
+        self.parser.add_argument("--durable", action="store_true",
+                                 help="Require persistent store-and-forward transfers")
         self.parser.add_argument("--timeout", metavar="SECONDS",
                                  help="Fail after SECONDS without transfers",
                                  default="10")
@@ -165,6 +167,7 @@ class Command(object):
         self.body_size = self.parse_int_with_unit(self.args.body_size)
         self.credit_window = self.parse_int_with_unit(self.args.credit)
         self.transaction_size = self.parse_int_with_unit(self.args.transaction_size)
+        self.durable = self.args.durable
         self.timeout = self.parse_int_with_unit(self.args.timeout)
 
     def init_common_tool_attributes(self):

@@ -35,10 +35,13 @@
 #include <proton/version.h>
 #include <proton/receiver_options.hpp>
 
+#include <algorithm>
 #include <assert.h>
 #include <chrono>
 #include <iostream>
 #include <sstream>
+#include <string>
+#include <vector>
 
 long now() {
     return std::chrono::duration_cast<std::chrono::milliseconds>
@@ -47,6 +50,20 @@ long now() {
 
 void eprint(std::string message) {
     std::cerr << "quiver-arrow: error: " << message << std::endl;
+}
+
+std::vector<std::string> split(const std::string &s, char delim) {
+    std::stringstream ss;
+    std::string elem;
+    std::vector<std::string> elems;
+
+    ss.str(s);
+
+    while (std::getline(ss, elem, delim)) {
+        elems.push_back(elem);
+    }
+
+    return elems;
 }
 
 struct handler : public proton::messaging_handler {
@@ -60,6 +77,8 @@ struct handler : public proton::messaging_handler {
     int messages;
     int body_size;
     int credit_window;
+
+    bool durable;
 
     proton::listener listener;
     proton::binary body;
@@ -110,6 +129,10 @@ struct handler : public proton::messaging_handler {
             proton::message m(body);
             m.id(id);
             m.properties().put("SendTime", stime);
+
+            if (durable) {
+                m.durable(true);
+            }
 
             s.send(m);
             sent++;
@@ -183,6 +206,10 @@ int main(int argc, char** argv) {
     h.messages = std::atoi(argv[8]);
     h.body_size = std::atoi(argv[9]);
     h.credit_window = std::atoi(argv[10]);
+
+    std::vector<std::string> flags = split(argv[12], ',');
+
+    h.durable = std::any_of(flags.begin(), flags.end(), [](std::string &s) { return s == "durable"; });
 
     try {
         proton::default_container(h, h.id).run();

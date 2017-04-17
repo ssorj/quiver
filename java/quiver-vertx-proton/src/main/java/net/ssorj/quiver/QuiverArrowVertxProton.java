@@ -60,7 +60,7 @@ public class QuiverArrowVertxProton {
             System.exit(1);
         }
     }
-    
+
     public static void doMain(String[] args) throws Exception {
         String connectionMode = args[0];
         String channelMode = args[1];
@@ -73,6 +73,10 @@ public class QuiverArrowVertxProton {
         int bodySize = Integer.parseInt(args[8]);
         int creditWindow = Integer.parseInt(args[9]);
         int transactionSize = Integer.parseInt(args[10]);
+
+        String[] flags = args[11].split(",");
+
+        boolean durable = Arrays.asList(flags).contains("durable");
 
         if (!CLIENT.equalsIgnoreCase(connectionMode)) {
             throw new RuntimeException("This impl currently supports client mode only");
@@ -87,7 +91,7 @@ public class QuiverArrowVertxProton {
         }
 
         final boolean sender;
-        
+
         if (SEND.equalsIgnoreCase(operation)) {
             sender = true;
         } else if (RECEIVE.equalsIgnoreCase(operation)) {
@@ -97,18 +101,18 @@ public class QuiverArrowVertxProton {
         }
 
         final int portNumber = Integer.parseInt(port);
-        
+
         CountDownLatch completionLatch = new CountDownLatch(1);
         Vertx vertx = Vertx.vertx();
         ProtonClient client = ProtonClient.create(vertx);
-        
+
         client.connect(host, portNumber, res -> {
                 if (res.succeeded()) {
                     ProtonConnection connection = res.result();
                     connection.setContainer(id);
 
                     if (sender) {
-                        send(connection, path, messages, bodySize, completionLatch);
+                        send(connection, path, messages, bodySize, durable, completionLatch);
                     } else {
                         receive(connection, path, messages, creditWindow, completionLatch);
                     }
@@ -132,7 +136,7 @@ public class QuiverArrowVertxProton {
     }
 
     private static void send(ProtonConnection connection, String address,
-                             int messages, int bodySize, CountDownLatch latch) {
+                             int messages, int bodySize, boolean durable, CountDownLatch latch) {
         connection.open();
 
         byte[] body = new byte[bodySize];
@@ -140,7 +144,7 @@ public class QuiverArrowVertxProton {
         PrintWriter out = getOutputWriter();
         AtomicLong count = new AtomicLong(1);
         ProtonSender sender = connection.createSender(address);
-        
+
         sender.sendQueueDrainHandler(s -> {
                 while (!sender.sendQueueFull() && count.get() <= messages) {
                     Message msg = Message.Factory.create();
@@ -155,13 +159,17 @@ public class QuiverArrowVertxProton {
                     long stime = System.currentTimeMillis();
                     props.put("SendTime", stime);
 
+                    if (durable) {
+                        msg.setDurable(true);
+                    }
+
                     sender.send(msg);
 
                     out.printf("%s,%d\n", id, stime);
 
                     if (count.getAndIncrement() >= messages) {
                         out.flush();
-          
+
                         connection.closeHandler(x -> {
                                 latch.countDown();
                             });

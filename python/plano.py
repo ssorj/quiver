@@ -553,7 +553,7 @@ def _command_string(command):
     if _is_string(command):
         return command
 
-    elems = ["\"{0}\"".format(x) if " " in x else x for x in command]
+    elems = ["\"{0}\"".format(x) if " " in x or x == "" else x for x in command]
 
     return " ".join(elems)
 
