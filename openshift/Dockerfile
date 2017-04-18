@@ -1,8 +1,8 @@
-FROM fedora:25
+FROM fedora:24
 
 LABEL Name="quiver" \
     Vendor="ssorj/Justin Ross" \
-    Version="1.0.0" \
+    Version="1.0.1" \
     License="Apache License, Version 2.0"
 
 # Core dependancies
@@ -14,8 +14,17 @@ RUN dnf install -y qpid-proton-c-devel qpid-cpp-client-devel qpid-proton-cpp-dev
      dnf clean all
 
 # Quiver
-RUN curl https://copr.fedorainfracloud.org/coprs/jross/ssorj/repo/epel-7/jross-ssorj-epel-7.repo -o /etc/yum.repos.d/jross-ssorj-epel-7.repo && \
+RUN dnf install -y dnf-plugins-core && \
+     dnf copr enable -y jross/ssorj && \
      dnf install -y quiver && \
      dnf clean all
+
+ADD fix-permissions /fix-permissions
+
+# Fix folder permissions
+RUN chmod +x /fix-permissions && \
+     mkdir /.vertx && \
+     /fix-permissions /usr/lib/quiver && \
+     /fix-permissions /.vertx
 
 CMD ["quiver", "--help"]
