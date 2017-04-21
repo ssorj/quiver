@@ -42,11 +42,14 @@ TARGETS := \
 	build/exec/quiver-server-builtin \
 	build/exec/quiver-server-qpid-cpp \
 	build/exec/quiver-server-qpid-dispatch \
-	build/java/quiver-activemq-artemis-jms.jar \
+	build/python/quiver/common.py
+
+ifeq ($(shell which mvn &> /dev/null; echo $$?),0)
+TARGETS += \
 	build/java/quiver-activemq-jms.jar \
 	build/java/quiver-qpid-jms.jar \
-	build/java/quiver-vertx-proton.jar \
-	build/python/quiver/common.py
+	build/java/quiver-vertx-proton.jar
+endif
 
 ifeq ($(shell scripts/check-qpid-proton-cpp &> /dev/null; echo $$?),0)
 	TARGETS += build/exec/quiver-arrow-qpid-proton-cpp
