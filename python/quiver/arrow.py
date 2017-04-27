@@ -127,6 +127,9 @@ class QuiverArrowCommand(Command):
             impl = self.get_arrow_impl_name(args.impl, args.impl)
             impl_file = self.get_arrow_impl_file(impl)
 
+            if not _plano.exists(impl_file):
+                raise CommandError("No implementation at '{}'", impl_file)
+
             _plano.call(impl_file)
             _plano.exit(0)
 

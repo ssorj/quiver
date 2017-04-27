@@ -26,25 +26,15 @@ def main():
     call_and_print_on_error("quiver-arrow --init-only receive //localhost:5672/q0")
 
     for impl in ARROW_IMPLS:
-        if impl == "qpid-proton-cpp":
-            try:
-                check_header("proton/message.hpp")
-            except CalledProcessError:
-                continue
+        impl_file = join("install", "lib", "quiver", "exec", "quiver-arrow-{}".format(impl))
+
+        if not exists(impl_file):
+            warn("No implementation at '{}'; skipping it", impl_file)
+            continue
 
         call_and_print_on_error("quiver-arrow --impl {} --impl-info", impl)
 
     notice("PASSED")
-
-def check_header(header):
-    source_file = make_temp_file(extension=".cpp")
-    output_file = make_temp_file()
-    source = "#include <{}>\n int main() {{ return 1; }}\n".format(header)
-
-    write(source_file, source)
-
-    with open(NULL_DEV, "w") as out:
-        call("gcc {} -o {}", source_file, output_file, output=out)
 
 if __name__ == "__main__":
     try:

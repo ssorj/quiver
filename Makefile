@@ -29,14 +29,10 @@ TARGETS := \
 	build/bin/quiver-bench \
 	build/bin/quiver-launch \
 	build/bin/quiver-server \
-	build/exec/quiver-arrow-activemq-artemis-jms \
-	build/exec/quiver-arrow-activemq-jms \
-	build/exec/quiver-arrow-qpid-jms \
 	build/exec/quiver-arrow-qpid-messaging-cpp \
 	build/exec/quiver-arrow-qpid-messaging-python \
 	build/exec/quiver-arrow-qpid-proton-python \
 	build/exec/quiver-arrow-rhea \
-	build/exec/quiver-arrow-vertx-proton \
 	build/exec/quiver-server-activemq \
 	build/exec/quiver-server-activemq-artemis \
 	build/exec/quiver-server-builtin \
@@ -46,9 +42,11 @@ TARGETS := \
 
 ifeq ($(shell which mvn &> /dev/null; echo $$?),0)
 TARGETS += \
-	build/java/quiver-activemq-jms.jar \
-	build/java/quiver-qpid-jms.jar \
-	build/java/quiver-vertx-proton.jar
+	build/exec/quiver-arrow-activemq-artemis-jms \
+	build/exec/quiver-arrow-activemq-jms \
+	build/exec/quiver-arrow-qpid-jms \
+	build/exec/quiver-arrow-vertx-proton
+
 endif
 
 ifeq ($(shell scripts/check-qpid-proton-cpp &> /dev/null; echo $$?),0)
@@ -122,10 +120,20 @@ build/exec/quiver-arrow-qpid-messaging-cpp: exec/quiver-arrow-qpid-messaging-cpp
 	@mkdir -p build/exec
 	g++ $< -o $@ ${CCFLAGS} -lqpidmessaging -lqpidtypes
 
+# XXX Use a template for the java rules
+
+build/exec/quiver-arrow-vertx-proton: exec/quiver-arrow-vertx-proton.in build/java/quiver-vertx-proton.jar
+
 build/java/quiver-vertx-proton.jar: java/quiver-vertx-proton/pom.xml $(shell find java/quiver-vertx-proton/src -type f)
 	@mkdir -p build/java
 	cd java/quiver-vertx-proton && mvn clean package
 	cp java/quiver-vertx-proton/target/quiver-vertx-proton-1.0.0-SNAPSHOT-jar-with-dependencies.jar $@
+
+build/exec/quiver-arrow-activemq-jms: exec/quiver-arrow-activemq-jms.in build/java/quiver-activemq-jms.jar
+
+build/exec/quiver-arrow-activemq-artemis-jms: exec/quiver-arrow-activemq-artemis-jms.in build/java/quiver-activemq-artemis-jms.jar
+
+build/exec/quiver-arrow-qpid-jms: exec/quiver-arrow-qpid-jms.in build/java/quiver-qpid-jms.jar
 
 build/java/%.jar: java/pom.xml java/quiver-jms-driver/pom.xml $(shell find java/quiver-jms-driver/src -type f)
 	@mkdir -p build/java
