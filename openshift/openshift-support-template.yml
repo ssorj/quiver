@@ -16,6 +16,14 @@ objects:
   spec:
     tags:
     - annotations:
+        openshift.io/imported-from: fedora:24
+      from:
+        kind: DockerImage
+        name: fedora:24
+      generation: 2
+      importPolicy: {}
+      name: "24"
+    - annotations:
         openshift.io/imported-from: fedora:25
       from:
         kind: DockerImage
@@ -52,7 +60,7 @@ objects:
       dockerStrategy:
         from:
           kind: ImageStreamTag
-          name: fedora:25
+          name: fedora:24
       type: Docker
     triggers:
     - type: ConfigChange
