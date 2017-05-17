@@ -17,6 +17,10 @@
 # under the License.
 #
 
+export PATH := ${PWD}/install/bin:${PATH}
+export PYTHONPATH := ${PWD}/install/lib/quiver/python:${PWD}/python
+export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
+
 VERSION := $(shell cat VERSION.txt)
 
 DESTDIR := ""
@@ -46,18 +50,13 @@ TARGETS += \
 	build/exec/quiver-arrow-activemq-jms \
 	build/exec/quiver-arrow-qpid-jms \
 	build/exec/quiver-arrow-vertx-proton
-
 endif
 
 ifeq ($(shell scripts/check-qpid-proton-cpp &> /dev/null; echo $$?),0)
-	TARGETS += build/exec/quiver-arrow-qpid-proton-cpp
+TARGETS += build/exec/quiver-arrow-qpid-proton-cpp
 endif
 
 CCFLAGS := -Os -std=c++11 -lstdc++
-
-export PATH := ${PWD}/install/bin:${PATH}
-export PYTHONPATH := ${PWD}/install/lib/quiver/python
-export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
 
 .PHONY: default
 default: devel
