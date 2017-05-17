@@ -147,7 +147,8 @@ build/python/%.py: python/%.py.in
 
 .PHONY: update-rhea
 update-rhea:
-	rm -rf javascript/node_modules/rhea
+	rm -rf javascript
+	@mkdir -p javascript
 	npm install rhea --prefix javascript
 
 .PHONY: update-%
