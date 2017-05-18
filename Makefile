@@ -22,6 +22,8 @@ export PYTHONPATH := ${PWD}/install/lib/quiver/python:${PWD}/python
 export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
 
 VERSION := $(shell cat VERSION.txt)
+MAVEN_INSTALLED := $(shell which mvn 1> /dev/null 2>&1 && echo yes)
+PROTON_CPP_INSTALLED := $(shell scripts/check-qpid-proton-cpp 1> /dev/null 2>&1 && echo yes)
 
 DESTDIR := ""
 PREFIX := /usr/local
@@ -44,7 +46,7 @@ TARGETS := \
 	build/exec/quiver-server-qpid-dispatch \
 	build/python/quiver/common.py
 
-ifeq ($(shell which mvn &> /dev/null; echo $$?),0)
+ifeq (${MAVEN_INSTALLED},yes)
 TARGETS += \
 	build/exec/quiver-arrow-activemq-artemis-jms \
 	build/exec/quiver-arrow-activemq-jms \
@@ -52,7 +54,7 @@ TARGETS += \
 	build/exec/quiver-arrow-vertx-proton
 endif
 
-ifeq ($(shell scripts/check-qpid-proton-cpp &> /dev/null; echo $$?),0)
+ifeq (${PROTON_CPP_INSTALLED},yes)
 TARGETS += build/exec/quiver-arrow-qpid-proton-cpp
 endif
 
