@@ -57,7 +57,7 @@ transmission of messages.
 | Node.js               | nodejs*               | nodejs
 | NumPy                 | python-numpy          | numpy
 | Python 2.7            | python                | python
-| Qpid Messaging C++    | libqpidmessaging2-dev | qpid-cpp-client-devel
+| Qpid Messaging C++    | libqpidmessaging2-dev, libqpidtypes1-dev, libqpidcommon2-dev | qpid-cpp-client-devel
 | Qpid Messaging Python | python-qpid-messaging | python-qpid-messaging
 | Qpid Proton C         | libqpid-proton8-dev   | qpid-proton-c-devel
 | Qpid Proton C++       | -                     | qpid-proton-cpp-devel
