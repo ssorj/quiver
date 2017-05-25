@@ -27,7 +27,7 @@ PROTON_CPP_INSTALLED := $(shell scripts/check-qpid-proton-cpp 1> /dev/null 2>&1 
 
 DESTDIR := ""
 PREFIX := /usr/local
-QUIVER_HOME = ${PREFIX}/lib/quiver
+QUIVER_HOME := ${PREFIX}/lib/quiver
 
 TARGETS := \
 	build/bin/quiver \
@@ -55,7 +55,8 @@ TARGETS += \
 endif
 
 ifeq (${PROTON_CPP_INSTALLED},yes)
-TARGETS += build/exec/quiver-arrow-qpid-proton-cpp
+TARGETS += \
+	build/exec/quiver-arrow-qpid-proton-cpp
 endif
 
 CCFLAGS := -Os -std=c++11 -lstdc++
@@ -68,7 +69,7 @@ help:
 	@echo "build          Build the code"
 	@echo "install        Install the code"
 	@echo "clean          Clean up the source tree"
-	@echo "devel          Build, install, and run a basic test in this checkout"
+	@echo "devel          Build, install, and smoke test in this checkout"
 	@echo "test           Run the tests"
 
 .PHONY: clean
@@ -81,7 +82,10 @@ clean:
 build: ${TARGETS}
 
 .PHONY: install
-install: build
+install: clean build do-install
+
+.PHONY: do-install
+do-install:
 	scripts/install-files --name \*.py python ${DESTDIR}${QUIVER_HOME}/python
 	scripts/install-files build/python ${DESTDIR}${QUIVER_HOME}/python
 	scripts/install-files javascript ${DESTDIR}${QUIVER_HOME}/javascript
@@ -91,7 +95,8 @@ install: build
 
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
-devel: install
+devel: QUIVER_HOME := ${PREFIX}/lib/quiver
+devel: do-install
 	scripts/smoke-test
 
 .PHONY: test
