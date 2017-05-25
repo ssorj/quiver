@@ -96,7 +96,7 @@ do-install:
 .PHONY: devel
 devel: PREFIX := ${PWD}/install
 devel: QUIVER_HOME := ${PREFIX}/lib/quiver
-devel: do-install
+devel: build do-install
 	scripts/smoke-test
 
 .PHONY: test
