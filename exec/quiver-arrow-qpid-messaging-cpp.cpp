@@ -130,18 +130,17 @@ void Client::sendMessages(Session& session) {
     sender.setCapacity(credit_window);
 
     std::string body(body_size, 'x');
+    Message message(body);
+    if (durable) {
+        message.setDurable(true);
+    }
 
     while (sent < messages) {
         std::string id = std::to_string(sent + 1);
         long stime = now();
 
-        Message message(body);
         message.setMessageId(id);
         message.setProperty("SendTime", Variant(stime));
-
-        if (durable) {
-            message.setDurable(true);
-        }
 
         sender.send(message);
         sent++;
