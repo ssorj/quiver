@@ -121,19 +121,17 @@ struct handler : public proton::messaging_handler {
 
     void on_sendable(proton::sender& s) override {
         assert (operation == "send");
+        proton::message m(body);
+        if (durable) {
+            m.durable(true);
+        }
 
         while (s.credit() > 0 && sent < messages) {
             int id = sent + 1;
             long stime = now();
 
-            proton::message m(body);
             m.id(id);
             m.properties().put("SendTime", stime);
-
-            if (durable) {
-                m.durable(true);
-            }
-
             s.send(m);
             sent++;
 
