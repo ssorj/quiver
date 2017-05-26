@@ -21,20 +21,15 @@
 from plano import *
 
 def main():
-    try:
-        check_header("proton/message.hpp")
-    except CalledProcessError:
-        exit(1)
+    header = ARGS[1]
 
-def check_header(header):
     source_file = make_temp_file(extension=".cpp")
     output_file = make_temp_file()
     source = "#include <{}>\n int main() {{ return 1; }}\n".format(header)
-    
+
     write(source_file, source)
 
-    with open(NULL_DEV, "w") as out:
-        call("gcc {} -o {}", source_file, output_file, output=out)
+    call("g++ {} -o {}", source_file, output_file)
 
 if __name__ == "__main__":
     try:

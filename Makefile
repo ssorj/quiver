@@ -17,13 +17,16 @@
 # under the License.
 #
 
+.NOTPARALLEL:
+
 export PATH := ${PWD}/install/bin:${PATH}
 export PYTHONPATH := ${PWD}/install/lib/quiver/python:${PWD}/python
 export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
 
 VERSION := $(shell cat VERSION.txt)
 MAVEN_INSTALLED := $(shell which mvn 1> /dev/null 2>&1 && echo yes)
-PROTON_CPP_INSTALLED := $(shell scripts/check-qpid-proton-cpp 1> /dev/null 2>&1 && echo yes)
+QPID_MESSAGING_CPP_INSTALLED := $(shell PYTHONPATH=python scripts/check-cpp-header "qpid/messaging/Message.h" 1> /dev/null 2>&1 && echo yes)
+QPID_PROTON_CPP_INSTALLED := $(shell PYTHONPATH=python scripts/check-cpp-header "proton/message.hpp" 1> /dev/null 2>&1 && echo yes)
 
 DESTDIR := ""
 PREFIX := /usr/local
@@ -35,7 +38,6 @@ TARGETS := \
 	build/bin/quiver-bench \
 	build/bin/quiver-launch \
 	build/bin/quiver-server \
-	build/exec/quiver-arrow-qpid-messaging-cpp \
 	build/exec/quiver-arrow-qpid-messaging-python \
 	build/exec/quiver-arrow-qpid-proton-python \
 	build/exec/quiver-arrow-rhea \
@@ -54,7 +56,12 @@ TARGETS += \
 	build/exec/quiver-arrow-vertx-proton
 endif
 
-ifeq (${PROTON_CPP_INSTALLED},yes)
+ifeq (${QPID_MESSAGING_CPP_INSTALLED},yes)
+TARGETS += \
+	build/exec/quiver-arrow-qpid-messaging-cpp
+endif
+
+ifeq (${QPID_PROTON_CPP_INSTALLED},yes)
 TARGETS += \
 	build/exec/quiver-arrow-qpid-proton-cpp
 endif
