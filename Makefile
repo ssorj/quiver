@@ -26,6 +26,7 @@ export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
 VERSION := $(shell cat VERSION.txt)
 MAVEN_INSTALLED := $(shell which mvn 1> /dev/null 2>&1 && echo yes)
 QPID_MESSAGING_CPP_INSTALLED := $(shell PYTHONPATH=python scripts/check-cpp-header "qpid/messaging/Message.h" 1> /dev/null 2>&1 && echo yes)
+QPID_PROTON_C_INSTALLED := $(shell PYTHONPATH=python scripts/check-cpp-header "proton/proactor.h" 1> /dev/null 2>&1 && echo yes)
 QPID_PROTON_CPP_INSTALLED := $(shell PYTHONPATH=python scripts/check-cpp-header "proton/message.hpp" 1> /dev/null 2>&1 && echo yes)
 
 DESTDIR := ""
@@ -40,7 +41,6 @@ TARGETS := \
 	build/bin/quiver-server \
 	build/exec/quiver-arrow-qpid-messaging-python \
 	build/exec/quiver-arrow-qpid-proton-python \
-	build/exec/quiver-arrow-qpid-proton-c \
 	build/exec/quiver-arrow-rhea \
 	build/exec/quiver-server-activemq \
 	build/exec/quiver-server-activemq-artemis \
@@ -60,6 +60,11 @@ endif
 ifeq (${QPID_MESSAGING_CPP_INSTALLED},yes)
 TARGETS += \
 	build/exec/quiver-arrow-qpid-messaging-cpp
+endif
+
+ifeq (${QPID_PROTON_C_INSTALLED},yes)
+TARGETS += \
+	build/exec/quiver-arrow-qpid-proton-c
 endif
 
 ifeq (${QPID_PROTON_CPP_INSTALLED},yes)
