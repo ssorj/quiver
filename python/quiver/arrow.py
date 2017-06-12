@@ -64,6 +64,7 @@ implementations:
   qpid-messaging-cpp              Client mode only
   qpid-messaging-python           Client mode only
   qpid-proton-cpp [cpp]
+  qpid-proton-c [c]
   qpid-proton-python [python]
   rhea [javascript]
   vertx-proton [java]             Client mode only

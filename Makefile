@@ -20,7 +20,7 @@
 .NOTPARALLEL:
 
 export PATH := ${PWD}/install/bin:${PATH}
-export PYTHONPATH := ${PWD}/install/lib/quiver/python:${PWD}/python
+export PYTHONPATH := ${PWD}/install/lib/quiver/python:${PWD}/python:${PYTHONPATH}
 export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
 
 VERSION := $(shell cat VERSION.txt)
@@ -40,6 +40,7 @@ TARGETS := \
 	build/bin/quiver-server \
 	build/exec/quiver-arrow-qpid-messaging-python \
 	build/exec/quiver-arrow-qpid-proton-python \
+	build/exec/quiver-arrow-qpid-proton-c \
 	build/exec/quiver-arrow-rhea \
 	build/exec/quiver-server-activemq \
 	build/exec/quiver-server-activemq-artemis \
@@ -67,6 +68,7 @@ TARGETS += \
 endif
 
 CCFLAGS := -Os -std=c++11 -lstdc++
+CFLAGS  := -g -Os
 
 .PHONY: default
 default: devel
@@ -125,13 +127,17 @@ build/bin/%: bin/%.in
 build/exec/%: exec/%.in
 	scripts/configure-file -a quiver_home=${QUIVER_HOME} $< $@
 
+build/exec/quiver-arrow-qpid-proton-c: exec/quiver-arrow-qpid-proton-c.c
+	@mkdir -p build/exec
+	${CC} $< -o $@ ${CFLAGS} -lqpid-proton -lqpid-proton-proactor
+
 build/exec/quiver-arrow-qpid-proton-cpp: exec/quiver-arrow-qpid-proton-cpp.cpp
 	@mkdir -p build/exec
-	g++ $< -o $@ ${CCFLAGS} -lqpid-proton -lqpid-proton-cpp
+	${CXX} $< -o $@ ${CCFLAGS} -lqpid-proton -lqpid-proton-cpp
 
 build/exec/quiver-arrow-qpid-messaging-cpp: exec/quiver-arrow-qpid-messaging-cpp.cpp
 	@mkdir -p build/exec
-	g++ $< -o $@ ${CCFLAGS} -lqpidmessaging -lqpidtypes
+	${CXX} $< -o $@ ${CCFLAGS} -lqpidmessaging -lqpidtypes
 
 # XXX Use a template for the java rules
 
