@@ -20,12 +20,13 @@
 .NOTPARALLEL:
 
 export PATH := ${PWD}/install/bin:${PATH}
-export PYTHONPATH := ${PWD}/install/lib/quiver/python:${PWD}/python
+export PYTHONPATH := ${PWD}/install/lib/quiver/python:${PWD}/python:${PYTHONPATH}
 export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
 
 VERSION := $(shell cat VERSION.txt)
 MAVEN_INSTALLED := $(shell which mvn 1> /dev/null 2>&1 && echo yes)
 QPID_MESSAGING_CPP_INSTALLED := $(shell PYTHONPATH=python scripts/check-cpp-header "qpid/messaging/Message.h" 1> /dev/null 2>&1 && echo yes)
+QPID_PROTON_C_INSTALLED := $(shell PYTHONPATH=python scripts/check-cpp-header "proton/proactor.h" 1> /dev/null 2>&1 && echo yes)
 QPID_PROTON_CPP_INSTALLED := $(shell PYTHONPATH=python scripts/check-cpp-header "proton/message.hpp" 1> /dev/null 2>&1 && echo yes)
 
 DESTDIR := ""
@@ -61,12 +62,18 @@ TARGETS += \
 	build/exec/quiver-arrow-qpid-messaging-cpp
 endif
 
+ifeq (${QPID_PROTON_C_INSTALLED},yes)
+TARGETS += \
+	build/exec/quiver-arrow-qpid-proton-c
+endif
+
 ifeq (${QPID_PROTON_CPP_INSTALLED},yes)
 TARGETS += \
 	build/exec/quiver-arrow-qpid-proton-cpp
 endif
 
 CCFLAGS := -Os -std=c++11 -lstdc++
+CFLAGS  := -g -Os
 
 .PHONY: default
 default: devel
@@ -125,13 +132,17 @@ build/bin/%: bin/%.in
 build/exec/%: exec/%.in
 	scripts/configure-file -a quiver_home=${QUIVER_HOME} $< $@
 
+build/exec/quiver-arrow-qpid-proton-c: exec/quiver-arrow-qpid-proton-c.c
+	@mkdir -p build/exec
+	${CC} $< -o $@ ${CFLAGS} -lqpid-proton -lqpid-proton-proactor
+
 build/exec/quiver-arrow-qpid-proton-cpp: exec/quiver-arrow-qpid-proton-cpp.cpp
 	@mkdir -p build/exec
-	g++ $< -o $@ ${CCFLAGS} -lqpid-proton -lqpid-proton-cpp
+	${CXX} $< -o $@ ${CCFLAGS} -lqpid-proton -lqpid-proton-cpp
 
 build/exec/quiver-arrow-qpid-messaging-cpp: exec/quiver-arrow-qpid-messaging-cpp.cpp
 	@mkdir -p build/exec
-	g++ $< -o $@ ${CCFLAGS} -lqpidmessaging -lqpidtypes
+	${CXX} $< -o $@ ${CCFLAGS} -lqpidmessaging -lqpidtypes
 
 # XXX Use a template for the java rules
 

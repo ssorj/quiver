@@ -50,6 +50,7 @@ ARROW_IMPLS = [
     "qpid-messaging-cpp",
     "qpid-messaging-python",
     "qpid-proton-cpp",
+    "qpid-proton-c",
     "qpid-proton-python",
     "rhea",
     "vertx-proton",
@@ -57,6 +58,7 @@ ARROW_IMPLS = [
 
 PEER_TO_PEER_ARROW_IMPLS = [
     "qpid-proton-cpp",
+    "qpid-proton-c",
     "qpid-proton-python",
     "rhea",
 ]
@@ -88,6 +90,7 @@ CORE_PROTOCOL_SERVER_IMPLS = [
 
 _arrow_impl_aliases = {
     "artemis-jms": "activemq-artemis-jms",
+    "c": "qpid-proton-c",
     "cpp": "qpid-proton-cpp",
     "java": "vertx-proton",
     "javascript": "rhea",
