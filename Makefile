@@ -73,7 +73,7 @@ TARGETS += \
 endif
 
 CCFLAGS := -Os -std=c++11 -lstdc++
-CFLAGS  := -g -Os
+CFLAGS  := -Os
 
 .PHONY: default
 default: devel

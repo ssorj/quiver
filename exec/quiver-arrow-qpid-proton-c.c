@@ -291,9 +291,10 @@ static bool handle(struct arrow* a, pn_event_t* e) {
         break;
     }
     case PN_TRANSPORT_CLOSED:
-        /* TODO aconway 2017-06-12: ignoring transport errors from dummy connections used ot 
-           probe to see if we are listening. */
-        /* fail_if_condition(e, pn_transport_condition(pn_event_transport(e))); */
+        /* On server, ignore errors from dummy connections used to test if we are listening. */
+        if (!a->connection_mode != SERVER) {
+            fail_if_condition(e, pn_transport_condition(pn_event_transport(e)));
+        }
         break;
 
     case PN_CONNECTION_REMOTE_CLOSE:

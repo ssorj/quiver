@@ -34,6 +34,7 @@
 #include <proton/value.hpp>
 #include <proton/version.h>
 #include <proton/receiver_options.hpp>
+#include <proton/transport.hpp>
 
 #include <algorithm>
 #include <assert.h>
@@ -119,6 +120,10 @@ struct handler : public proton::messaging_handler {
         }
     }
 
+    void on_receiver_open(proton::receiver& r) override {
+        r.open(proton::receiver_options().credit_window(credit_window));
+    }
+
     void on_sendable(proton::sender& s) override {
         assert (operation == "send");
 
@@ -174,6 +179,13 @@ struct handler : public proton::messaging_handler {
             if (connection_mode == "server") {
                 listener.stop();
             }
+        }
+    }
+
+    void on_transport_error(proton::transport& t) override {
+        // On server ignore errors from dummy connections to see if we are listening.
+        if (connection_mode != "server") {
+            on_error(t.error());
         }
     }
 };
