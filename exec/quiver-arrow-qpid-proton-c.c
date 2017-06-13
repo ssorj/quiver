@@ -292,7 +292,7 @@ static bool handle(struct arrow* a, pn_event_t* e) {
     }
     case PN_TRANSPORT_CLOSED:
         /* On server, ignore errors from dummy connections used to test if we are listening. */
-        if (!a->connection_mode != SERVER) {
+        if (a->connection_mode != SERVER) {
             fail_if_condition(e, pn_transport_condition(pn_event_transport(e)));
         }
         break;
