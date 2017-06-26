@@ -31,6 +31,7 @@ import proton.handlers as _handlers
 import proton.reactor as _reactor
 import shlex as _shlex
 import subprocess as _subprocess
+import uuid as _uuid
 
 from .common import *
 from .common import __version__
@@ -166,7 +167,7 @@ class _BrokerHandler(_handlers.MessagingHandler):
 
         if event.link.is_sender:
             if event.link.remote_source.dynamic:
-                address = str(uuid.uuid4())
+                address = str(_uuid.uuid4())
             else:
                 address = event.link.remote_source.address
 
@@ -179,10 +180,6 @@ class _BrokerHandler(_handlers.MessagingHandler):
 
         if event.link.is_receiver:
             address = event.link.remote_target.address
-
-            # XXX Fails with qpid-jms
-            #assert address is not None
-
             event.link.target.address = address
 
     def on_link_closing(self, event):
@@ -221,8 +218,14 @@ class _BrokerHandler(_handlers.MessagingHandler):
         queue.forward_messages(event.link)
 
     def on_message(self, event):
-        queue = self.get_queue(event.link.target.address)
-        queue.store_message(event.message)
+        message = event.message
+        address = event.link.target.address
+
+        if address is None:
+            address = message.address
+
+        queue = self.get_queue(address)
+        queue.store_message(message)
 
         for link in queue.consumers:
             queue.forward_messages(link)
