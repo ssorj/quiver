@@ -128,6 +128,7 @@ static size_t encode_message(pn_message_t* m, pn_rwbytes_t *buf) {
     while ((err = pn_message_encode(m, buf->start, &size)) != 0) {
         if (err == PN_OVERFLOW) {
             ensure(buf, buf->size * 2);
+            size = buf->size;
         } else if (err != 0) {
             FAIL("error encoding message: %s %s", pn_code(err), pn_error_text(pn_message_error(m)));
         }
