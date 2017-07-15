@@ -39,6 +39,7 @@ TARGETS := \
 	build/bin/quiver-bench \
 	build/bin/quiver-launch \
 	build/bin/quiver-server \
+	build/bin/quiver-test \
 	build/exec/quiver-arrow-qpid-messaging-python \
 	build/exec/quiver-arrow-qpid-proton-python \
 	build/exec/quiver-arrow-rhea \
@@ -115,8 +116,7 @@ devel: build do-install
 
 .PHONY: test
 test: devel
-	scripts/test-common-options
-	scripts/test-quiver
+	quiver-test
 	scripts/test-quiver-arrow
 	scripts/test-quiver-bench
 	scripts/test-quiver-launch
