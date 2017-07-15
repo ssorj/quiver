@@ -118,7 +118,6 @@ devel: build do-install
 test: devel
 	quiver-test
 	scripts/test-quiver-bench
-	scripts/test-quiver-launch
 	scripts/test-quiver-server
 
 .PHONY: check-dependencies
