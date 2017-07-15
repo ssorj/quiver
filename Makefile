@@ -117,7 +117,6 @@ devel: build do-install
 .PHONY: test
 test: devel
 	quiver-test
-	scripts/test-quiver-arrow
 	scripts/test-quiver-bench
 	scripts/test-quiver-launch
 	scripts/test-quiver-server

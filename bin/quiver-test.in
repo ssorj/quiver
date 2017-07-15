@@ -27,4 +27,4 @@ sys.path.insert(0, os.path.join(home, "python"))
 from quiver.test import main
 
 if __name__ == "__main__":
-    main()
+    main(home)
