@@ -1,0 +1,49 @@
+%global _user ssorj
+%global _commit @commit@
+%global _short_commit %(c=%{_commit}; echo ${c:0:8})
+%global _timestamp %(date +"%Y%m%d")
+
+Name:           quiver
+Version:        0
+Release:        0.1.%{_timestamp}.%{_short_commit}%{?dist}
+Summary:        Tools to test the performance of message servers and APIs
+License:        ASL 2.0
+URL:            https://github.com/%{_user}/%{name}
+Source:         %{name}-SNAPSHOT.tar.gz
+Requires:       java-1.8.0-openjdk
+Requires:       nodejs
+Requires:       numpy
+Requires:       python
+Requires:       python-qpid-messaging
+Requires:       python-qpid-proton
+Requires:       qpid-cpp-client
+Requires:       qpid-proton-c
+Requires:       qpid-proton-cpp
+Requires:       xz
+BuildRequires:  gcc-c++
+BuildRequires:  java-1.8.0-openjdk-devel
+BuildRequires:  maven
+BuildRequires:  make
+BuildRequires:  python
+BuildRequires:  qpid-cpp-client-devel
+BuildRequires:  qpid-proton-c-devel
+BuildRequires:  qpid-proton-cpp-devel
+
+%description
+Tools to test the performance of message servers and APIs
+
+%prep
+%setup -qn %{name}-%{_commit}
+
+%build
+make build PREFIX=%{_prefix} QPID_PROTON_CPP_ENABLED=1
+
+%install
+make install DESTDIR=%{buildroot} PREFIX=%{_prefix}
+
+%files
+%doc README.md LICENSE.txt
+/usr/bin/*
+/usr/lib/quiver
+
+%changelog
