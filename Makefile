@@ -29,6 +29,11 @@ QPID_MESSAGING_CPP_INSTALLED := $(shell PYTHONPATH=python scripts/check-cpp-head
 QPID_PROTON_C_INSTALLED := $(shell PYTHONPATH=python scripts/check-cpp-header "proton/proactor.h" 1> /dev/null 2>&1 && echo yes)
 QPID_PROTON_CPP_INSTALLED := $(shell PYTHONPATH=python scripts/check-cpp-header "proton/message.hpp" 1> /dev/null 2>&1 && echo yes)
 
+# XXX Workaround for an Ubuntu packaging problem
+ifeq ($(shell lsb_release -is),Ubuntu)
+	QPID_PROTON_CPP_INSTALLED := no
+endif
+
 DESTDIR := ""
 PREFIX := /usr/local
 QUIVER_HOME := ${PREFIX}/lib/quiver
@@ -117,8 +122,24 @@ devel: build do-install
 .PHONY: test
 test: devel
 	quiver-test
-	scripts/test-quiver-bench
-	scripts/test-quiver-server
+
+.PHONY: big-test
+big-test: test test-ubuntu
+
+#.PHONY: test-centos
+#test-centos:
+#	sudo docker build -f scripts/test-centos.dockerfile -t quiver-test-centos .
+#	sudo docker run quiver-test-centos
+
+#.PHONY: test-fedora
+#test-fedora:
+#	sudo docker build -f scripts/test-fedora.dockerfile -t quiver-test-fedora .
+#	sudo docker run quiver-test-fedora
+
+.PHONY: test-ubuntu
+test-ubuntu:
+	sudo docker build -f scripts/test-ubuntu.dockerfile -t quiver-test-ubuntu .
+	sudo docker run quiver-test-ubuntu
 
 .PHONY: check-dependencies
 check-dependencies:

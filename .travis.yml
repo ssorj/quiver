@@ -1,0 +1,8 @@
+sudo: enabled
+dist: trusty
+
+services:
+ - docker
+
+script:
+ - make test-ubuntu

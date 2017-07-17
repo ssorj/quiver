@@ -17,11 +17,36 @@
 # under the License.
 #
 
+from __future__ import print_function
+
 import argparse
 import sys
 
 from plano import *
 from quiver.common import ARROW_IMPLS, SERVER_IMPLS
+
+class TestBroker(running_process):
+    def __init__(self, **kwargs):
+        port = random_port()
+
+        self.url = "//127.0.0.1:{}/q0".format(port)
+        self.ready_file = make_temp_file()
+
+        super(TestBroker, self).__init__("quiver-server {} --verbose --ready-file {}",
+                                         self.url, self.ready_file, **kwargs)
+
+    def __enter__(self):
+        super(TestBroker, self).__enter__()
+
+        self.proc.url = self.url
+
+        for i in range(30):
+            if read(self.ready_file) == "ready\n":
+                break
+
+            sleep(0.2)
+
+        return self.proc
 
 def test_common_options(out, *args):
     commands = [
@@ -54,18 +79,20 @@ def test_quiver_server(out, home):
         if impl == "activemq" and which("activemq") is None:
             continue
 
-        if impl == "artemis" and which("artemis") is None:
+        if impl == "activemq-artemis" and which("artemis") is None:
             continue
 
-        if impl == "qpidd" and which("qpidd") is None:
+        if impl == "qpid-cpp" and which("qpidd") is None:
             continue
 
-        if impl == "qdrouterd" and which("qdrouterd") is None:
+        if impl == "qpid-dispatch" and which("qdrouterd") is None:
             continue
 
         call("quiver-server --impl {} --impl-info", impl, output=out)
 
-        if impl == "activemq-artemis": continue # XXX Permissions problem
+        if impl == "activemq-artemis":
+            # XXX Permissions problem
+            continue
 
         port = random_port()
         url = "//127.0.0.1:{}/q0".format(port)
@@ -76,12 +103,13 @@ def test_quiver_server(out, home):
                 if read(ready_file) == "ready\n":
                     break
 
-                sleep(1)
+                sleep(0.2)
 
             call("quiver {} -m 1", url, output=out)
 
-def test_quiver_launch_client_server(out, url):
-    call("quiver-launch {} --count 2 --options \"-m 1\" --verbose", url, output=out)
+def test_quiver_launch_client_server(out):
+    with TestBroker(output=out) as b:
+        call("quiver-launch {} --count 2 --sender-options \"-m 1\" --receiver-options \"-m 1 --timeout 30\"", b.url, output=out)
 
 def test_quiver_launch_peer_to_peer(out):
     port = random_port()
@@ -89,12 +117,13 @@ def test_quiver_launch_peer_to_peer(out):
 
     call("quiver-launch --sender-options=\"-m 1\" --receiver-options=\"-m 1 --server --passive\" {}", url, output=out)
 
-def test_quiver_pair_client_server(out, url):
+def test_quiver_pair_client_server(out):
     # XXX full matrix
 
-    call("quiver {} --arrow qpid-proton-python -m 1", url, output=out)
-    call("quiver {} --arrow qpid-jms -m 1", url, output=out)
-    call("quiver {} --arrow vertx-proton -m 1", url, output=out)
+    with TestBroker(output=out) as b:
+        call("quiver {} --arrow qpid-proton-python -m 1", b.url, output=out)
+        call("quiver {} --arrow qpid-jms -m 1", b.url, output=out)
+        call("quiver {} --arrow vertx-proton -m 1", b.url, output=out)
 
 def test_quiver_pair_peer_to_peer(out):
     # XXX full matrix
@@ -120,8 +149,8 @@ def test_quiver_bench(out):
     call(args, output=out)
 
 def run_test(name, *args):
-    sys.stdout.write("{:.<73} ".format(name + " "))
-    sys.stdout.flush()
+    print("{:.<73} ".format(name + " "), end="")
+    flush()
 
     namespace = globals()
     function = namespace["test_{}".format(name)]
@@ -134,12 +163,18 @@ def run_test(name, *args):
     except CalledProcessError:
         print("FAILED")
 
+        flush()
+
         for line in read_lines(output_file):
             eprint("> {}".format(line), end="")
+
+        flush()
 
         return 1
 
     print("PASSED")
+
+    flush()
 
     return 0
 
@@ -147,34 +182,18 @@ def main(home):
     set_message_threshold("error")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("url", metavar="URL", nargs="?",
-                        help="An AMQP message address to test against")
-
     args = parser.parse_args()
 
     failures = 0
 
-    url = args.url
-    server = None
-
-    if url is None:
-        port = random_port()
-        url = "//127.0.0.1:{}/q0".format(port)
-        server = start_process("quiver-server --quiet {}", url)
-        wait_for_port(port)
-
-    try:
-        failures += run_test("common_options")
-        failures += run_test("quiver_arrow", home)
-        failures += run_test("quiver_server", home)
-        failures += run_test("quiver_launch_client_server", url)
-        failures += run_test("quiver_launch_peer_to_peer")
-        failures += run_test("quiver_pair_client_server", url)
-        failures += run_test("quiver_pair_peer_to_peer")
-        failures += run_test("quiver_bench")
-    finally:
-        if server is not None:
-            stop_process(server)
+    failures += run_test("common_options")
+    failures += run_test("quiver_arrow", home)
+    failures += run_test("quiver_server", home)
+    failures += run_test("quiver_launch_client_server")
+    failures += run_test("quiver_launch_peer_to_peer")
+    failures += run_test("quiver_pair_client_server")
+    failures += run_test("quiver_pair_peer_to_peer")
+    failures += run_test("quiver_bench")
 
     if failures == 0:
         print("All tests passed")
