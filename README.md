@@ -7,27 +7,32 @@ Tools for testing the performance of messaging clients and servers.
     [Start an AMQP server with a queue called 'q0']
     $ quiver q0
     ---------------------- Sender -----------------------  --------------------- Receiver ----------------------  --------
-       T [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]     T [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Lat [ms]
+    Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Lat [ms]
     -----------------------------------------------------  -----------------------------------------------------  --------
-         2.1         18,168       9,084       98     33.8       2.1         15,144       7,568      100     27.9       203
-         4.1         36,395       9,104       96     33.8       4.1         31,046       7,943      100     27.9       460
-         6.1         54,827       9,207       97     33.8       6.1         46,466       7,702      100     27.9       731
+         2.1         16,529       8,256       89     37.6       2.1         15,746       7,865       98     31.8       112
+         4.1         32,504       7,984       87     37.6       4.1         31,769       8,003       99     31.8       116
     [...]
-           -              -           -        -        -     124.2        974,277       7,541      100     27.9    17,075
-           -              -           -        -        -     126.2        989,959       7,833      100     27.9    17,520
-           -              -           -        -        -     128.2      1,000,000       5,015       60      0.0    17,695
+       122.2        988,135       8,476       90     38.2     122.2        987,384       8,534       99     31.8       109
+       124.2      1,000,000       5,927       65      0.0     124.2      1,000,000       6,302       75      0.0       111
     --------------------------------------------------------------------------------
     Subject: qpid-proton-python //localhost:5672/q0 (/tmp/quiver-9rWyTd)
     Messages:                                       1,000,000 messages
     Body size:                                            100 bytes
     Credit window:                                      1,000 messages
-    Duration:                                           127.3 s
-    Sender rate:                                        9,133 messages/s
-    Receiver rate:                                      7,859 messages/s
-    End-to-end rate:                                    7,857 messages/s
-    Average latency:                                  9,056.9 ms
-    Latency 25, 50, 75, 100%:        4375, 9187, 13578, 17777 ms
-    Latency 99, 99.9, 99.99%:             17623, 17750, 17770 ms
+    Duration:                                           123.6 s
+    Sender rate:                                        8,099 messages/s
+    Receiver rate:                                      8,096 messages/s
+    End-to-end rate:                                    8,092 messages/s
+    Latency:
+      Average:                                          115.1 ms
+      Min:                                                 63 ms
+      50%:                                                112 ms
+      90%:                                                126 ms
+      99%:                                                157 ms
+      99.9%:                                              196 ms
+      99.99%:                                             223 ms
+      99.999%:                                            227 ms
+      Max:                                                228 ms
     --------------------------------------------------------------------------------
 
 ## Overview
