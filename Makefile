@@ -124,17 +124,17 @@ test: devel
 	quiver-test
 
 .PHONY: big-test
-big-test: test test-ubuntu
+big-test: test test-centos test-fedora test-ubuntu
 
-#.PHONY: test-centos
-#test-centos:
-#	sudo docker build -f scripts/test-centos.dockerfile -t quiver-test-centos .
-#	sudo docker run quiver-test-centos
+.PHONY: test-centos
+test-centos:
+	sudo docker build -f scripts/test-centos.dockerfile -t quiver-test-centos .
+	sudo docker run quiver-test-centos
 
-#.PHONY: test-fedora
-#test-fedora:
-#	sudo docker build -f scripts/test-fedora.dockerfile -t quiver-test-fedora .
-#	sudo docker run quiver-test-fedora
+.PHONY: test-fedora
+test-fedora:
+	sudo docker build -f scripts/test-fedora.dockerfile -t quiver-test-fedora .
+	sudo docker run quiver-test-fedora
 
 .PHONY: test-ubuntu
 test-ubuntu:

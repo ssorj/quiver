@@ -5,4 +5,4 @@ services:
  - docker
 
 script:
- - make test-ubuntu
+ - make test-fedora test-ubuntu
