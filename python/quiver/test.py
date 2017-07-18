@@ -109,7 +109,7 @@ def test_quiver_server(out, home):
 
 def test_quiver_launch_client_server(out):
     with TestBroker(output=out) as b:
-        call("quiver-launch {} --count 2 --sender-options \"-m 1\" --receiver-options \"-m 1 --timeout 30\"", b.url, output=out)
+        call("quiver-launch {} --count 2 --sender-options \"-m 1\" --receiver-options \"-m 1 --timeout 60\"", b.url, output=out)
 
 def test_quiver_launch_peer_to_peer(out):
     port = random_port()
