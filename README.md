@@ -95,9 +95,9 @@ dependencies.  Use the following commands to get the right ones.
 After that you can install from source.
 
 To use the JavaScript implementation, you also need to symlink
-`/usr/bin/nodejs` to `/usr/bin/node`.
+`nodejs` to `node`.
 
-    $ cd /usr/bin && sudo ln -s nodejs node
+    $ cd /usr/local/bin && sudo ln -s ../../bin/nodejs node
 
 ### Installing from source
 
