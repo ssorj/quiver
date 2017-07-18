@@ -55,32 +55,49 @@ transmission of messages.
 
 ### Dependencies
 
-| Name                  | Debian package        | Fedora package
+| Name                  | Ubuntu packages       | Fedora packages
 | --------------------- | --------------------- | ---
 | GCC C++               | build-essential       | gcc-c++
 | GNU Make              | make                  | make
 | Java 8 JDK            | openjdk-8-jdk         | java-1.8.0-openjdk-devel
 | Maven                 | maven                 | maven
-| Node.js               | nodejs*               | nodejs
+| Node.js               | nodejs                | nodejs
 | NumPy                 | python-numpy          | numpy
 | Python 2.7            | python                | python
 | Qpid Messaging C++    | libqpidmessaging2-dev, libqpidtypes1-dev, libqpidcommon2-dev | qpid-cpp-client-devel
-| Qpid Messaging Python | python-qpid-messaging | python-qpid-messaging
+| Qpid Messaging Python | python-qpid-messaging, python-qpid | python-qpid-messaging
 | Qpid Proton C         | libqpid-proton8-dev   | qpid-proton-c-devel
 | Qpid Proton C++       | -                     | qpid-proton-cpp-devel
 | Qpid Proton Python    | python-qpid-proton    | python-qpid-proton
 | XZ                    | xz-utils              | xz
 
-\* On Debian you will also need to symlink `/usr/bin/nodejs` to
-`/usr/bin/node`.
-
-### Using Fedora packages
+### Installing on Fedora
 
     $ sudo dnf enable jross/ssorj
     $ sudo dnf install quiver
 
 If you don't have `dnf`, use the repo files at
 <https://copr.fedorainfracloud.org/coprs/jross/ssorj/>.
+
+### Installing on Ubuntu
+
+The primary Ubuntu repos don't have new enough versions of the Qpid
+dependencies.  Use the following commands to get the right ones.
+
+    $ apt-get -y install software-properties-common
+    $ add-apt-repository -y ppa:qpid/released
+    $ apt-get update
+    $ apt-get -y install build-essential make openjdk-8-jdk maven nodejs \
+        python-numpy python xz-utils libqpidmessaging2-dev libqpidtypes1-dev \
+        libqpidcommon2-dev libqpid-proton8-dev python-qpid python-qpid-messaging \
+        python-qpid-proton
+
+After that you can install from source.
+
+To use the JavaScript implementation, you also need to symlink
+`/usr/bin/nodejs` to `/usr/bin/node`.
+
+    $ cd /usr/bin && sudo ln -s nodejs node
 
 ### Installing from source
 
