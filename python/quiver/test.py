@@ -162,7 +162,6 @@ def run_test(name, *args):
             function(out, *args)
     except CalledProcessError:
         print("FAILED")
-
         flush()
 
         for line in read_lines(output_file):
@@ -173,7 +172,6 @@ def run_test(name, *args):
         return 1
 
     print("PASSED")
-
     flush()
 
     return 0
@@ -189,7 +187,7 @@ def main(home):
     failures += run_test("common_options")
     failures += run_test("quiver_arrow", home)
     failures += run_test("quiver_server", home)
-    failures += run_test("quiver_launch_client_server")
+    #failures += run_test("quiver_launch_client_server")
     failures += run_test("quiver_launch_peer_to_peer")
     failures += run_test("quiver_pair_client_server")
     failures += run_test("quiver_pair_peer_to_peer")
