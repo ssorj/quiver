@@ -77,7 +77,7 @@ class QuiverPairCommand(Command):
                                  help="The location of a message queue")
         self.parser.add_argument("--output", metavar="DIR",
                                  help="Save output files to DIR")
-        self.parser.add_argument("--arrow", metavar="IMPL",
+        self.parser.add_argument("--arrow", metavar="IMPL", default=DEFAULT_ARROW_IMPL,
                                  help="Use IMPL to send and receive")
         self.parser.add_argument("--sender", metavar="IMPL",
                                  help="Use IMPL to send")
@@ -96,35 +96,14 @@ class QuiverPairCommand(Command):
     def init(self):
         super(QuiverPairCommand, self).init()
 
+        self.sender_impl = require_impl(self.args.sender, self.args.arrow)
+        self.receiver_impl = require_impl(self.args.receiver, self.args.arrow)
         self.peer_to_peer = self.args.peer_to_peer
 
         self.init_url_attributes()
         self.init_output_dir()
-        self.init_impl_attributes()
         self.init_common_test_attributes()
         self.init_common_tool_attributes()
-
-    def init_impl_attributes(self):
-        arrow_impl = get_impl_name(self.args.arrow)
-
-        if arrow_impl is None:
-            arrow_impl = get_impl_name(self.args.impl, self.args.impl)
-
-        self.sender_impl = arrow_impl
-
-        if self.sender_impl is None:
-            self.sender_impl = get_impl_name(self.args.sender, self.args.sender)
-
-        if self.sender_impl is None:
-            self.sender_impl = DEFAULT_ARROW_IMPL
-
-        self.receiver_impl = arrow_impl
-
-        if self.receiver_impl is None:
-            self.receiver_impl = get_impl_name(self.args.receiver, self.args.receiver)
-
-        if self.receiver_impl is None:
-            self.receiver_impl = DEFAULT_ARROW_IMPL
 
     def run(self):
         args = [
@@ -146,8 +125,8 @@ class QuiverPairCommand(Command):
         if self.verbose:
             args += ["--verbose"]
 
-        sender_args = ["quiver-arrow", "send", "--impl", self.sender_impl] + args
-        receiver_args = ["quiver-arrow", "receive", "--impl", self.receiver_impl] + args
+        sender_args = ["quiver-arrow", "send", "--impl", self.sender_impl.name] + args
+        receiver_args = ["quiver-arrow", "receive", "--impl", self.receiver_impl.name] + args
 
         if self.peer_to_peer:
             receiver_args += ["--server", "--passive"]
