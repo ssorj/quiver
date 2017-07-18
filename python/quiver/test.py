@@ -23,7 +23,7 @@ import argparse
 import sys
 
 from plano import *
-from quiver.common import ARROW_IMPLS, SERVER_IMPLS
+from quiver.common import *
 
 class TestBroker(running_process):
     def __init__(self, **kwargs):
@@ -98,7 +98,7 @@ def test_quiver_server(out, home):
         url = "//127.0.0.1:{}/q0".format(port)
         ready_file = make_temp_file()
 
-        with running_process("quiver-server --impl {} --ready-file {} {}", impl, ready_file, url, output=out):
+        with running_process("quiver-server --impl {} --ready-file {} --verbose {}", impl, ready_file, url, output=out):
             for i in range(30):
                 if read(ready_file) == "ready\n":
                     break
@@ -109,21 +109,25 @@ def test_quiver_server(out, home):
 
 def test_quiver_launch_client_server(out):
     with TestBroker(output=out) as b:
-        call("quiver-launch {} --count 2 --sender-options \"-m 1\" --receiver-options \"-m 1 --timeout 60\"", b.url, output=out)
+        call("quiver-launch {} --count 2 --options \"-m 1\" --verbose", b.url, output=out)
 
 def test_quiver_launch_peer_to_peer(out):
     port = random_port()
     url = "//127.0.0.1:{}/q0".format(port)
 
-    call("quiver-launch --sender-options=\"-m 1\" --receiver-options=\"-m 1 --server --passive\" {}", url, output=out)
+    call("quiver-launch --sender-options=\"-m 1\" --receiver-options=\"-m 1 --server --passive\" --verbose {}", url, output=out)
 
 def test_quiver_pair_client_server(out):
     # XXX full matrix
 
     with TestBroker(output=out) as b:
-        call("quiver {} --arrow qpid-proton-python -m 1", b.url, output=out)
-        call("quiver {} --arrow qpid-jms -m 1", b.url, output=out)
-        call("quiver {} --arrow vertx-proton -m 1", b.url, output=out)
+        call("quiver {} --arrow qpid-proton-python -m 1 --verbose", b.url, output=out)
+
+        if impl_exists("qpid-jms"):
+            call("quiver {} --arrow qpid-jms -m 1 --verbose", b.url, output=out)
+
+        if impl_exists("vertx-proton"):
+            call("quiver {} --arrow vertx-proton -m 1 --verbose", b.url, output=out)
 
 def test_quiver_pair_peer_to_peer(out):
     # XXX full matrix
@@ -131,8 +135,8 @@ def test_quiver_pair_peer_to_peer(out):
     port = random_port()
     url = "//127.0.0.1:{}/q0".format(port)
 
-    call("quiver {} --arrow rhea -m 1 --peer-to-peer", url, output=out)
-    call("quiver {} --arrow qpid-proton-python -m 1 --peer-to-peer", url, output=out)
+    call("quiver {} --arrow rhea -m 1 --peer-to-peer --verbose", url, output=out)
+    call("quiver {} --arrow qpid-proton-python -m 1 --peer-to-peer --verbose", url, output=out)
 
 def test_quiver_bench(out):
     temp_dir = make_temp_dir()

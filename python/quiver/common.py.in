@@ -112,21 +112,9 @@ def require_impl(name, fallback=None):
 
     return impl
 
-def get_impl_name(name, fallback=None):
+def impl_exists(name):
     impl = get_impl(name)
-
-    if impl is None:
-        return fallback
-
-    return impl.name
-
-def get_impl_file(name):
-    impl = get_impl(name)
-
-    if impl is None:
-        return
-
-    return impl.file
+    return impl is not None and impl.exists
 
 ARROW_IMPLS = [x.name for x in _impls if x.kind == "arrow"]
 PEER_TO_PEER_ARROW_IMPLS = [x.name for x in _impls if x.kind == "arrow" and x.peer_to_peer]

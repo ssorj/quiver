@@ -123,22 +123,22 @@ class QuiverBenchCommand(Command):
         server_impls = set(SERVER_IMPLS)
 
         if self.args.include_senders != "all":
-            sender_impls = self.parse_arrow_impls(self.args.include_senders)
+            sender_impls = self.parse_impls(self.args.include_senders)
 
         if self.args.include_receivers != "all":
-            receiver_impls = self.parse_arrow_impls(self.args.include_receivers)
+            receiver_impls = self.parse_impls(self.args.include_receivers)
 
         if self.args.include_servers != "all":
-            server_impls = self.parse_server_impls(self.args.include_servers)
+            server_impls = self.parse_impls(self.args.include_servers)
 
         if self.args.exclude_senders != "none":
-            sender_impls -= self.parse_arrow_impls(self.args.exclude_senders)
+            sender_impls -= self.parse_impls(self.args.exclude_senders)
 
         if self.args.exclude_receivers != "none":
-            receiver_impls -= self.parse_arrow_impls(self.args.exclude_receivers)
+            receiver_impls -= self.parse_impls(self.args.exclude_receivers)
 
         if self.args.exclude_servers != "none":
-            server_impls -= self.parse_server_impls(self.args.exclude_servers)
+            server_impls -= self.parse_impls(self.args.exclude_servers)
 
         for name in list(sender_impls):
             impl = get_impl(name)
@@ -165,21 +165,8 @@ class QuiverBenchCommand(Command):
         self.receiver_impls = sorted(receiver_impls)
         self.server_impls = sorted(server_impls)
 
-    def parse_arrow_impls(self, value):
-        impls = set()
-
-        for name in value.split(","):
-            impls.add(get_impl_name(name, name))
-
-        return impls
-
-    def parse_server_impls(self, value):
-        impls = set()
-
-        for name in value.split(","):
-            impls.add(get_impl_name(name, name))
-
-        return impls
+    def parse_impls(self, value):
+        return {x for x in value.split(",")}
 
     def run(self):
         if self.client_server:
