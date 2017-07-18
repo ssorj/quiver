@@ -135,8 +135,10 @@ def test_quiver_pair_peer_to_peer(out):
     port = random_port()
     url = "//127.0.0.1:{}/q0".format(port)
 
-    call("quiver {} --arrow rhea -m 1 --peer-to-peer --verbose", url, output=out)
     call("quiver {} --arrow qpid-proton-python -m 1 --peer-to-peer --verbose", url, output=out)
+
+    if impl_exists("rhea"):
+        call("quiver {} --arrow rhea -m 1 --peer-to-peer --verbose", url, output=out)
 
 def test_quiver_bench(out):
     temp_dir = make_temp_dir()

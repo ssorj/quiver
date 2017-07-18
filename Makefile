@@ -40,9 +40,10 @@ QPID_PROTON_CPP_INSTALLED := \
 QPID_PROTON_PYTHON_INSTALLED := \
 	$(shell PYTHONPATH=python scripts/check-python-import "proton" 1> /dev/null 2>&1 && echo yes)
 
-ifneq (${QPID_PROTON_PYTHON_INSTALLED},yes)
-        $(error Qpid Proton Python is required to build Quiver)
-endif
+# XXX
+#ifneq (${QPID_PROTON_PYTHON_INSTALLED},yes)
+#        $(error Qpid Proton Python is required to build Quiver)
+#endif
 
 # XXX Workaround for an Ubuntu packaging problem
 ifeq ($(shell lsb_release -is),Ubuntu)
@@ -147,7 +148,7 @@ test: devel
 	quiver-test
 
 .PHONY: big-test
-big-test: test test-fedora test-ubuntu
+big-test: test test-centos test-fedora test-ubuntu
 
 .PHONY: test-centos
 test-centos:

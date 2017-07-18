@@ -10,8 +10,8 @@ RUN yum -y install java-1.8.0-openjdk nodejs numpy python python-qpid-messaging 
     qpid-cpp-client-devel qpid-proton-c-devel qpid-proton-cpp-devel \
     && yum clean all
 
-ADD . /root/qtools
-WORKDIR /root/qtools
+ADD . /root/quiver
+WORKDIR /root/quiver
 
 RUN make install PREFIX=/usr
 
