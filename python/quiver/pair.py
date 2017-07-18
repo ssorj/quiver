@@ -55,6 +55,7 @@ implementations:
   qpid-jms [jms]                  Client mode only
   qpid-messaging-cpp              Client mode only
   qpid-messaging-python           Client mode only
+  qpid-proton-c [c]
   qpid-proton-cpp [cpp]
   qpid-proton-python [python]
   rhea [javascript]
@@ -104,26 +105,26 @@ class QuiverPairCommand(Command):
         self.init_common_tool_attributes()
 
     def init_impl_attributes(self):
-        self.arrow_impl = self.get_arrow_impl_name(self.args.arrow, self.args.arrow)
+        arrow_impl = get_impl_name(self.args.arrow)
 
-        if self.arrow_impl is None:
-            self.arrow_impl = self.get_arrow_impl_name(self.args.impl, self.args.impl)
+        if arrow_impl is None:
+            arrow_impl = get_impl_name(self.args.impl, self.args.impl)
 
-        self.sender_impl = self.arrow_impl
-
-        if self.sender_impl is None:
-            self.sender_impl = self.get_arrow_impl_name(self.args.sender, self.args.sender)
+        self.sender_impl = arrow_impl
 
         if self.sender_impl is None:
-            self.sender_impl = "qpid-proton-python"
+            self.sender_impl = get_impl_name(self.args.sender, self.args.sender)
 
-        self.receiver_impl = self.arrow_impl
+        if self.sender_impl is None:
+            self.sender_impl = DEFAULT_ARROW_IMPL
+
+        self.receiver_impl = arrow_impl
 
         if self.receiver_impl is None:
-            self.receiver_impl = self.get_arrow_impl_name(self.args.receiver, self.args.receiver)
+            self.receiver_impl = get_impl_name(self.args.receiver, self.args.receiver)
 
         if self.receiver_impl is None:
-            self.receiver_impl = "qpid-proton-python"
+            self.receiver_impl = DEFAULT_ARROW_IMPL
 
     def run(self):
         args = [

@@ -84,8 +84,6 @@ example usage:
   $ quiver-arrow send q0          # Start sending
 """
 
-_default_impl = "qpid-proton-python"
-
 class QuiverArrowCommand(Command):
     def __init__(self, home_dir):
         super(QuiverArrowCommand, self).__init__(home_dir)
@@ -102,7 +100,7 @@ class QuiverArrowCommand(Command):
                                  help="Save output files to DIR")
         self.parser.add_argument("--impl", metavar="NAME",
                                  help="Use NAME implementation",
-                                 default=_default_impl)
+                                 default=DEFAULT_ARROW_IMPL)
         self.parser.add_argument("--impl-info", action="store_true",
                                  help="Print implementation details and exit")
         self.parser.add_argument("--id", metavar="ID",
@@ -118,26 +116,12 @@ class QuiverArrowCommand(Command):
         self.add_common_tool_arguments()
 
     def init(self):
-        _plano.set_message_threshold("warn")
-
-        if "--impl-info" in _plano.ARGS:
-            parser = _argparse.ArgumentParser()
-            parser.add_argument("--impl", default=_default_impl)
-
-            args, other = parser.parse_known_args(_plano.ARGS)
-            impl = self.get_arrow_impl_name(args.impl, args.impl)
-            impl_file = self.get_arrow_impl_file(impl)
-
-            if not _plano.exists(impl_file):
-                raise CommandError("No implementation at '{}'", impl_file)
-
-            _plano.call(impl_file)
-            _plano.exit(0)
+        self.intercept_impl_info_request(DEFAULT_ARROW_IMPL)
 
         super(QuiverArrowCommand, self).init()
 
         self.operation = self.args.operation
-        self.impl = self.get_arrow_impl_name(self.args.impl, self.args.impl)
+        self.impl = require_impl(self.args.impl)
         self.id_ = self.args.id
         self.connection_mode = "client"
         self.channel_mode = "active"
@@ -151,11 +135,6 @@ class QuiverArrowCommand(Command):
             self.transfers_parse_func = _parse_receive
         else:
             raise Exception()
-
-        self.impl_file = self.get_arrow_impl_file(self.impl)
-
-        if not _plano.exists(self.impl_file):
-            raise CommandError("No implementation at '{}'", self.impl_file)
 
         if self.id_ is None:
             self.id_ = "quiver-{}".format(_plano.unique_id(4))
@@ -172,7 +151,7 @@ class QuiverArrowCommand(Command):
         self.init_output_dir()
 
         if _urlparse(self.url).port is None:
-            if self.impl in ("activemq-jms", "activemq-artemis-jms"):
+            if self.impl.name in ("activemq-jms", "activemq-artemis-jms"):
                 self.port = "61616"
 
         flags = list()
@@ -201,7 +180,7 @@ class QuiverArrowCommand(Command):
 
     def run(self):
         args = self.prelude + [
-            self.impl_file,
+            self.impl.file,
             self.connection_mode,
             self.channel_mode,
             self.operation,
@@ -337,7 +316,7 @@ class QuiverArrowCommand(Command):
     def save_summary(self):
         props = {
             "config": {
-                "impl": self.impl,
+                "impl": self.impl.name,
                 "url": self.url,
                 "output_dir": self.output_dir,
                 "connection_mode": self.connection_mode,

@@ -186,7 +186,7 @@ build/java/%.jar: java/pom.xml java/quiver-jms-driver/pom.xml $(shell find java/
 
 build/python/%.py: python/%.py.in
 	@mkdir -p build/python
-	scripts/configure-file -a version=${VERSION} $< $@
+	scripts/configure-file -a version=${VERSION} -a quiver_home=${QUIVER_HOME} $< $@
 
 .PHONY: update-rhea
 update-rhea:

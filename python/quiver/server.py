@@ -55,8 +55,6 @@ server implementations:
   qpid-dispatch [dispatch, qdrouterd]
 """
 
-_default_impl = "builtin"
-
 class QuiverServerCommand(Command):
     def __init__(self, home_dir):
         super(QuiverServerCommand, self).__init__(home_dir)
@@ -68,7 +66,7 @@ class QuiverServerCommand(Command):
                                  help="The location of a message queue")
         self.parser.add_argument("--impl", metavar="NAME",
                                  help="Use NAME implementation",
-                                 default=_default_impl)
+                                 default=DEFAULT_SERVER_IMPL)
         self.parser.add_argument("--impl-info", action="store_true",
                                  help="Print implementation details and exit")
         self.parser.add_argument("--ready-file", metavar="FILE",
@@ -79,29 +77,13 @@ class QuiverServerCommand(Command):
         self.add_common_tool_arguments()
 
     def init(self):
-        _plano.set_message_threshold("warn")
-
-        if "--impl-info" in _plano.ARGS:
-            parser = _argparse.ArgumentParser()
-            parser.add_argument("--impl", default=_default_impl)
-
-            args, other = parser.parse_known_args(_plano.ARGS)
-            impl = self.get_server_impl_name(args.impl, args.impl)
-            impl_file = self.get_server_impl_file(impl)
-
-            _plano.call(impl_file)
-            _plano.exit(0)
+        self.intercept_impl_info_request(DEFAULT_SERVER_IMPL)
 
         super(QuiverServerCommand, self).init()
 
-        self.impl = self.get_server_impl_name(self.args.impl, self.args.impl)
+        self.impl = require_impl(self.args.impl)
         self.ready_file = self.args.ready_file
         self.prelude = _shlex.split(self.args.prelude)
-
-        self.impl_file = self.get_server_impl_file(self.impl)
-
-        if not _plano.exists(self.impl_file):
-            raise CommandError("No implementation at '{}'", self.impl_file)
 
         if self.ready_file is None:
             self.ready_file = "-"
@@ -111,7 +93,7 @@ class QuiverServerCommand(Command):
 
     def run(self):
         args = self.prelude + [
-            self.impl_file,
+            self.impl.file,
             self.host,
             self.port,
             self.path,

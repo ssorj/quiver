@@ -140,26 +140,26 @@ class QuiverBenchCommand(Command):
         if self.args.exclude_servers != "none":
             server_impls -= self.parse_server_impls(self.args.exclude_servers)
 
-        for impl in list(sender_impls):
-            file = self.get_arrow_impl_file(impl)
+        for name in list(sender_impls):
+            impl = get_impl(name)
 
-            if not _plano.exists(file):
-                _plano.warn("No implementation at '{}'; skipping it", file)
-                sender_impls.remove(impl)
+            if not impl.exists:
+                _plano.warn("No implementation for '{}'; skipping it", name)
+                sender_impls.remove(name)
 
-        for impl in list(receiver_impls):
-            file = self.get_arrow_impl_file(impl)
+        for name in list(receiver_impls):
+            impl = get_impl(name)
 
-            if not _plano.exists(file):
-                _plano.warn("No implementation at '{}'; skipping it", file)
-                receiver_impls.remove(impl)
+            if not impl.exists:
+                _plano.warn("No implementation for '{}'; skipping it", name)
+                receiver_impls.remove(name)
 
-        for impl in list(server_impls):
-            file = self.get_server_impl_file(impl)
+        for name in list(server_impls):
+            impl = get_impl(name)
 
-            if not _plano.exists(file):
-                _plano.warn("No implementation at '{}'; skipping it", file)
-                server_impls.remove(impl)
+            if not impl.exists:
+                _plano.warn("No implementation for '{}'; skipping it", name)
+                server_impls.remove(name)
 
         self.sender_impls = sorted(sender_impls)
         self.receiver_impls = sorted(receiver_impls)
@@ -169,7 +169,7 @@ class QuiverBenchCommand(Command):
         impls = set()
 
         for name in value.split(","):
-            impls.add(self.get_arrow_impl_name(name, name))
+            impls.add(get_impl_name(name, name))
 
         return impls
 
@@ -177,7 +177,7 @@ class QuiverBenchCommand(Command):
         impls = set()
 
         for name in value.split(","):
-            impls.add(self.get_server_impl_name(name, name))
+            impls.add(get_impl_name(name, name))
 
         return impls
 
