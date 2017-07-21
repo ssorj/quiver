@@ -110,6 +110,9 @@ def require_impl(name, fallback=None):
     if impl is None:
         raise CommandError("No implementation for '{}'", name)
 
+    if not impl.exists:
+        raise CommandError("No implementation for '{}'", impl.name)
+
     return impl
 
 def impl_exists(name):

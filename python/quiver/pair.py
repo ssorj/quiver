@@ -96,8 +96,13 @@ class QuiverPairCommand(Command):
     def init(self):
         super(QuiverPairCommand, self).init()
 
-        self.sender_impl = require_impl(self.args.sender, self.args.arrow)
-        self.receiver_impl = require_impl(self.args.receiver, self.args.arrow)
+        arrow = self.args.arrow
+
+        if self.args.impl is not None:
+            arrow = self.args.impl
+
+        self.sender_impl = require_impl(self.args.sender, arrow)
+        self.receiver_impl = require_impl(self.args.receiver, arrow)
         self.peer_to_peer = self.args.peer_to_peer
 
         self.init_url_attributes()
