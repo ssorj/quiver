@@ -19,24 +19,29 @@
 
 from __future__ import print_function
 
-import argparse
-import sys
+import sys as _sys
 
 from plano import *
 from quiver.common import *
 
-class TestBroker(running_process):
-    def __init__(self, **kwargs):
+class _TestServer(running_process):
+    def __init__(self, impl="builtin", **kwargs):
         port = random_port()
 
         self.url = "//127.0.0.1:{}/q0".format(port)
         self.ready_file = make_temp_file()
 
-        super(TestBroker, self).__init__("quiver-server {} --verbose --ready-file {}",
-                                         self.url, self.ready_file, **kwargs)
+        command = [
+            "quiver-server", self.url,
+            "--verbose",
+            "--ready-file", self.ready_file,
+            "--impl", impl,
+        ]
+
+        super(_TestServer, self).__init__(command, **kwargs)
 
     def __enter__(self):
-        super(TestBroker, self).__enter__()
+        super(_TestServer, self).__enter__()
 
         self.proc.url = self.url
 
@@ -48,7 +53,10 @@ class TestBroker(running_process):
 
         return self.proc
 
-def test_common_options(out, *args):
+def _test_url():
+    return "//127.0.0.1:{}/q0".format(random_port())
+
+def test_common_options():
     commands = [
         "quiver",
         "quiver-arrow",
@@ -58,23 +66,18 @@ def test_common_options(out, *args):
     ]
 
     for command in commands:
-        call("{} --help", command, output=out)
-        call("{} --version", command, output=out)
+        call("{} --help", command)
+        call("{} --version", command)
 
-def test_quiver_arrow(out, home):
+def test_quiver_arrow():
     call("quiver-arrow send q0 --init-only")
     call("quiver-arrow --init-only receive q0")
 
     for impl in ARROW_IMPLS:
-        impl_file = join(home, "exec", "quiver-arrow-{}".format(impl))
+        if impl_exists(impl):
+            call("quiver-arrow --impl {} --impl-info", impl)
 
-        if not exists(impl_file):
-            warn("No implementation at '{}'; skipping it", impl_file)
-            continue
-
-        call("quiver-arrow --impl {} --impl-info", impl, output=out)
-
-def test_quiver_server(out, home):
+def test_quiver_server():
     for impl in SERVER_IMPLS:
         if impl == "activemq" and which("activemq") is None:
             continue
@@ -88,84 +91,96 @@ def test_quiver_server(out, home):
         if impl == "qpid-dispatch" and which("qdrouterd") is None:
             continue
 
-        call("quiver-server --impl {} --impl-info", impl, output=out)
+        call("quiver-server --impl {} --impl-info", impl)
 
         if impl == "activemq-artemis":
             # XXX Permissions problem
             continue
 
-        port = random_port()
-        url = "//127.0.0.1:{}/q0".format(port)
-        ready_file = make_temp_file()
+        with _TestServer(impl=impl) as server:
+            call("quiver {} -m 1", server.url)
 
-        with running_process("quiver-server --impl {} --ready-file {} --verbose {}", impl, ready_file, url, output=out):
-            for i in range(30):
-                if read(ready_file) == "ready\n":
-                    break
+def test_quiver_launch_client_server():
+    with _TestServer() as server:
+        call("quiver-launch {} --count 2 --options \"-m 1\" --verbose", server.url)
 
-                sleep(0.2)
+def test_quiver_launch_peer_to_peer():
+    call("quiver-launch --sender-options=\"-m 1\" --receiver-options=\"-m 1 --server --passive\" --verbose {}", _test_url())
 
-            call("quiver {} -m 1", url, output=out)
-
-def test_quiver_launch_client_server(out):
-    with TestBroker(output=out) as b:
-        call("quiver-launch {} --count 2 --options \"-m 1\" --verbose", b.url, output=out)
-
-def test_quiver_launch_peer_to_peer(out):
-    port = random_port()
-    url = "//127.0.0.1:{}/q0".format(port)
-
-    call("quiver-launch --sender-options=\"-m 1\" --receiver-options=\"-m 1 --server --passive\" --verbose {}", url, output=out)
-
-def test_quiver_pair_client_server(out):
+def test_quiver_pair_client_server():
     # XXX full matrix
 
-    with TestBroker(output=out) as b:
-        call("quiver {} --arrow qpid-proton-python -m 1 --verbose", b.url, output=out)
+    with _TestServer() as server:
+        call("quiver {} --arrow qpid-proton-python -m 1 --verbose", server.url)
 
         if impl_exists("qpid-jms"):
-            call("quiver {} --arrow qpid-jms -m 1 --verbose", b.url, output=out)
+            call("quiver {} --arrow qpid-jms -m 1 --verbose", server.url)
 
         if impl_exists("vertx-proton"):
-            call("quiver {} --arrow vertx-proton -m 1 --verbose", b.url, output=out)
+            call("quiver {} --arrow vertx-proton -m 1 --verbose", server.url)
 
-def test_quiver_pair_peer_to_peer(out):
+def test_quiver_pair_peer_to_peer():
     # XXX full matrix
 
-    port = random_port()
-    url = "//127.0.0.1:{}/q0".format(port)
-
-    call("quiver {} --arrow qpid-proton-python -m 1 --peer-to-peer --verbose", url, output=out)
+    call("quiver {} --arrow qpid-proton-python -m 1 --peer-to-peer --verbose", _test_url())
 
     if impl_exists("rhea"):
-        call("quiver {} --arrow rhea -m 1 --peer-to-peer --verbose", url, output=out)
+        call("quiver {} --arrow rhea -m 1 --peer-to-peer --verbose", _test_url())
 
-def test_quiver_bench(out):
-    temp_dir = make_temp_dir()
-
-    args = [
+def test_quiver_bench():
+    command = [
         "quiver-bench",
         "-m", "1",
         "--include-servers", "builtin",
         "--exclude-servers", "none",
         "--verbose",
-        "--output", temp_dir,
+        "--output", make_temp_dir(),
     ]
 
-    call(args, output=out)
+    call(command)
 
-def run_test(name, *args):
+class _OutputRedirected(object):
+    def __init__(self, stdout=None, stderr=None):
+        self.new_stdout = stdout or _sys.stdout
+        self.new_stderr = stderr or _sys.stderr
+
+        self.old_stdout = _sys.stdout
+        self.old_stderr = _sys.stderr
+
+    def __enter__(self):
+        self.flush()
+
+        _sys.stdout = self.new_stdout
+        _sys.stderr = self.new_stderr
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.flush()
+
+        _sys.stdout = self.old_stdout
+        _sys.stderr = self.old_stderr
+
+    def flush(self):
+        _sys.stdout.flush()
+        _sys.stderr.flush()
+
+def run_test(name, *args, **kwargs):
     print("{:.<73} ".format(name + " "), end="")
     flush()
 
     namespace = globals()
-    function = namespace["test_{}".format(name)]
+    function_name = "test_{}".format(name)
+
+    try:
+        function = namespace[function_name]
+    except KeyError:
+        raise Exception("Test function '{}' is missing".format(function_name))
 
     output_file = make_temp_file()
 
     try:
         with open(output_file, "w") as out:
-            function(out, *args)
+            with _OutputRedirected(out, out):
+                function(*args, **kwargs)
     except CalledProcessError:
         print("FAILED")
         flush()
@@ -185,15 +200,12 @@ def run_test(name, *args):
 def main(home):
     set_message_threshold("error")
 
-    parser = argparse.ArgumentParser()
-    args = parser.parse_args()
-
     failures = 0
 
     failures += run_test("common_options")
-    failures += run_test("quiver_arrow", home)
-    failures += run_test("quiver_server", home)
-    #failures += run_test("quiver_launch_client_server")
+    failures += run_test("quiver_arrow")
+    failures += run_test("quiver_server")
+    failures += run_test("quiver_launch_client_server")
     failures += run_test("quiver_launch_peer_to_peer")
     failures += run_test("quiver_pair_client_server")
     failures += run_test("quiver_pair_peer_to_peer")
