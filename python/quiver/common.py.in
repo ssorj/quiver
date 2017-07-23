@@ -43,8 +43,6 @@ try:
 except ImportError:
     from urlparse import urlparse as _urlparse
 
-# XXX *The* default server and arrow
-
 _home = "@quiver_home@"
 
 _impls = []
@@ -67,7 +65,7 @@ class _Impl(object):
 
     @property
     def file(self):
-        return _plano.join(_home, "exec", "quiver-{}-{}".format(self.kind, self.name))
+        return _plano.join(_home, "impls", "quiver-{}-{}".format(self.kind, self.name))
 
     @property
     def exists(self):

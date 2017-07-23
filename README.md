@@ -125,7 +125,7 @@ and runs a sanity test.
     devel.sh              # Sets up your project environment for development
     Makefile              # Defines the build and test targets
     bin/                  # Command-line tools
-    exec/                 # Library executables and quiver-arrow implementations
+    impls/                # Arrow and server implementations
     scripts/              # Scripts called by Makefile rules
     docs/                 # Documentation and notes
     java/                 # Java library code
@@ -295,5 +295,5 @@ number of messages are all sent or received.
 
 ## More information
 
- - [Arrow implementations](docs/implementations.md)
+ - [Implementations](impls/README.md)
  - [Packaging](packaging/README.md)

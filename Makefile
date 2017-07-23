@@ -61,45 +61,45 @@ TARGETS := \
 	build/bin/quiver-launch \
 	build/bin/quiver-server \
 	build/bin/quiver-test \
-	build/exec/quiver-arrow-qpid-proton-python \
-	build/exec/quiver-server-activemq \
-	build/exec/quiver-server-activemq-artemis \
-	build/exec/quiver-server-builtin \
-	build/exec/quiver-server-qpid-cpp \
-	build/exec/quiver-server-qpid-dispatch \
+	build/impls/quiver-arrow-qpid-proton-python \
+	build/impls/quiver-server-activemq \
+	build/impls/quiver-server-activemq-artemis \
+	build/impls/quiver-server-builtin \
+	build/impls/quiver-server-qpid-cpp \
+	build/impls/quiver-server-qpid-dispatch \
 	build/python/quiver/common.py
 
 ifeq (${MAVEN_INSTALLED},yes)
 TARGETS += \
-	build/exec/quiver-arrow-activemq-artemis-jms \
-	build/exec/quiver-arrow-activemq-jms \
-	build/exec/quiver-arrow-qpid-jms \
-	build/exec/quiver-arrow-vertx-proton
+	build/impls/quiver-arrow-activemq-artemis-jms \
+	build/impls/quiver-arrow-activemq-jms \
+	build/impls/quiver-arrow-qpid-jms \
+	build/impls/quiver-arrow-vertx-proton
 endif
 
 ifeq (${NODEJS_INSTALLED},yes)
 TARGETS += \
-	build/exec/quiver-arrow-rhea
+	build/impls/quiver-arrow-rhea
 endif
 
 ifeq (${QPID_MESSAGING_CPP_INSTALLED},yes)
 TARGETS += \
-	build/exec/quiver-arrow-qpid-messaging-cpp
+	build/impls/quiver-arrow-qpid-messaging-cpp
 endif
 
 ifeq (${QPID_MESSAGING_PYTHON_INSTALLED},yes)
 TARGETS += \
-	build/exec/quiver-arrow-qpid-messaging-python
+	build/impls/quiver-arrow-qpid-messaging-python
 endif
 
 ifeq (${QPID_PROTON_C_INSTALLED},yes)
 TARGETS += \
-	build/exec/quiver-arrow-qpid-proton-c
+	build/impls/quiver-arrow-qpid-proton-c
 endif
 
 ifeq (${QPID_PROTON_CPP_INSTALLED},yes)
 TARGETS += \
-	build/exec/quiver-arrow-qpid-proton-cpp
+	build/impls/quiver-arrow-qpid-proton-cpp
 endif
 
 CCFLAGS := -Os -std=c++11 -lstdc++
@@ -134,7 +134,7 @@ do-install:
 	scripts/install-files build/python ${DESTDIR}${QUIVER_HOME}/python
 	scripts/install-files javascript ${DESTDIR}${QUIVER_HOME}/javascript
 	scripts/install-files build/java ${DESTDIR}${QUIVER_HOME}/java
-	scripts/install-files build/exec ${DESTDIR}${QUIVER_HOME}/exec
+	scripts/install-files build/impls ${DESTDIR}${QUIVER_HOME}/impls
 	scripts/install-files build/bin ${DESTDIR}${PREFIX}/bin
 
 .PHONY: devel
@@ -172,35 +172,35 @@ check-dependencies:
 build/bin/%: bin/%.in
 	scripts/configure-file -a quiver_home=${QUIVER_HOME} $< $@
 
-build/exec/%: exec/%.in
+build/impls/%: impls/%.in
 	scripts/configure-file -a quiver_home=${QUIVER_HOME} $< $@
 
-build/exec/quiver-arrow-qpid-proton-c: exec/quiver-arrow-qpid-proton-c.c
-	@mkdir -p build/exec
+build/impls/quiver-arrow-qpid-proton-c: impls/quiver-arrow-qpid-proton-c.c
+	@mkdir -p build/impls
 	${CC} $< -o $@ ${CFLAGS} -lqpid-proton -lqpid-proton-proactor
 
-build/exec/quiver-arrow-qpid-proton-cpp: exec/quiver-arrow-qpid-proton-cpp.cpp
-	@mkdir -p build/exec
+build/impls/quiver-arrow-qpid-proton-cpp: impls/quiver-arrow-qpid-proton-cpp.cpp
+	@mkdir -p build/impls
 	${CXX} $< -o $@ ${CCFLAGS} -lqpid-proton -lqpid-proton-cpp
 
-build/exec/quiver-arrow-qpid-messaging-cpp: exec/quiver-arrow-qpid-messaging-cpp.cpp
-	@mkdir -p build/exec
+build/impls/quiver-arrow-qpid-messaging-cpp: impls/quiver-arrow-qpid-messaging-cpp.cpp
+	@mkdir -p build/impls
 	${CXX} $< -o $@ ${CCFLAGS} -lqpidmessaging -lqpidtypes
 
 # XXX Use a template for the java rules
 
-build/exec/quiver-arrow-vertx-proton: exec/quiver-arrow-vertx-proton.in build/java/quiver-vertx-proton.jar
+build/impls/quiver-arrow-vertx-proton: impls/quiver-arrow-vertx-proton.in build/java/quiver-vertx-proton.jar
 
 build/java/quiver-vertx-proton.jar: java/quiver-vertx-proton/pom.xml $(shell find java/quiver-vertx-proton/src -type f)
 	@mkdir -p build/java
 	cd java/quiver-vertx-proton && mvn clean package
 	cp java/quiver-vertx-proton/target/quiver-vertx-proton-1.0.0-SNAPSHOT-jar-with-dependencies.jar $@
 
-build/exec/quiver-arrow-activemq-jms: exec/quiver-arrow-activemq-jms.in build/java/quiver-activemq-jms.jar
+build/impls/quiver-arrow-activemq-jms: impls/quiver-arrow-activemq-jms.in build/java/quiver-activemq-jms.jar
 
-build/exec/quiver-arrow-activemq-artemis-jms: exec/quiver-arrow-activemq-artemis-jms.in build/java/quiver-activemq-artemis-jms.jar
+build/impls/quiver-arrow-activemq-artemis-jms: impls/quiver-arrow-activemq-artemis-jms.in build/java/quiver-activemq-artemis-jms.jar
 
-build/exec/quiver-arrow-qpid-jms: exec/quiver-arrow-qpid-jms.in build/java/quiver-qpid-jms.jar
+build/impls/quiver-arrow-qpid-jms: impls/quiver-arrow-qpid-jms.in build/java/quiver-qpid-jms.jar
 
 build/java/%.jar: java/pom.xml java/quiver-jms-driver/pom.xml $(shell find java/quiver-jms-driver/src -type f)
 	@mkdir -p build/java
