@@ -24,37 +24,8 @@ import sys as _sys
 from plano import *
 from quiver.common import *
 
-class _TestServer(running_process):
-    def __init__(self, impl="builtin", **kwargs):
-        port = random_port()
-
-        self.url = "//127.0.0.1:{}/q0".format(port)
-        self.ready_file = make_temp_file()
-
-        command = [
-            "quiver-server", self.url,
-            "--verbose",
-            "--ready-file", self.ready_file,
-            "--impl", impl,
-        ]
-
-        super(_TestServer, self).__init__(command, **kwargs)
-
-    def __enter__(self):
-        super(_TestServer, self).__enter__()
-
-        self.proc.url = self.url
-
-        for i in range(30):
-            if read(self.ready_file) == "ready\n":
-                break
-
-            sleep(0.2)
-
-        return self.proc
-
-def _test_url():
-    return "//127.0.0.1:{}/q0".format(random_port())
+def init_test_module():
+    set_message_threshold("error")
 
 def test_common_options():
     commands = [
@@ -139,79 +110,34 @@ def test_quiver_bench():
 
     call(command)
 
-class _OutputRedirected(object):
-    def __init__(self, stdout=None, stderr=None):
-        self.new_stdout = stdout or _sys.stdout
-        self.new_stderr = stderr or _sys.stderr
+class _TestServer(running_process):
+    def __init__(self, impl="builtin", **kwargs):
+        port = random_port()
 
-        self.old_stdout = _sys.stdout
-        self.old_stderr = _sys.stderr
+        self.url = "//127.0.0.1:{}/q0".format(port)
+        self.ready_file = make_temp_file()
+
+        command = [
+            "quiver-server", self.url,
+            "--verbose",
+            "--ready-file", self.ready_file,
+            "--impl", impl,
+        ]
+
+        super(_TestServer, self).__init__(command, **kwargs)
 
     def __enter__(self):
-        self.flush()
+        super(_TestServer, self).__enter__()
 
-        _sys.stdout = self.new_stdout
-        _sys.stderr = self.new_stderr
+        self.proc.url = self.url
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.flush()
+        for i in range(30):
+            if read(self.ready_file) == "ready\n":
+                break
 
-        _sys.stdout = self.old_stdout
-        _sys.stderr = self.old_stderr
+            sleep(0.2)
 
-    def flush(self):
-        _sys.stdout.flush()
-        _sys.stderr.flush()
+        return self.proc
 
-def run_test(name, *args, **kwargs):
-    print("{:.<73} ".format(name + " "), end="")
-    flush()
-
-    namespace = globals()
-    function_name = "test_{}".format(name)
-
-    try:
-        function = namespace[function_name]
-    except KeyError:
-        raise Exception("Test function '{}' is missing".format(function_name))
-
-    output_file = make_temp_file()
-
-    try:
-        with open(output_file, "w") as out:
-            with _OutputRedirected(out, out):
-                function(*args, **kwargs)
-    except CalledProcessError:
-        print("FAILED")
-        flush()
-
-        for line in read_lines(output_file):
-            eprint("> {}".format(line), end="")
-
-        flush()
-
-        return 1
-
-    print("PASSED")
-    flush()
-
-    return 0
-
-def main(home):
-    set_message_threshold("error")
-
-    failures = 0
-
-    failures += run_test("common_options")
-    failures += run_test("quiver_arrow")
-    failures += run_test("quiver_server")
-    failures += run_test("quiver_launch_client_server")
-    failures += run_test("quiver_launch_peer_to_peer")
-    failures += run_test("quiver_pair_client_server")
-    failures += run_test("quiver_pair_peer_to_peer")
-    failures += run_test("quiver_bench")
-
-    if failures == 0:
-        print("All tests passed")
-    else:
-        exit("Some tests failed")
+def _test_url():
+    return "//127.0.0.1:{}/q0".format(random_port())

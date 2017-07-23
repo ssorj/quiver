@@ -24,7 +24,10 @@ import sys
 home = os.path.normpath("@quiver_home@")
 sys.path.insert(0, os.path.join(home, "python"))
 
-from quiver.test import main
+import quiver.test
+
+from commandant import TestCommand
 
 if __name__ == "__main__":
-    main(home)
+    command = TestCommand(home, [quiver.test])
+    command.main()
