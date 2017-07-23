@@ -152,11 +152,11 @@ def _format_message(category, message, args):
     return message
 
 def eprint(*args, **kwargs):
-    print(*args, file=STD_ERR, **kwargs)
+    print(*args, file=_sys.stderr, **kwargs)
 
 def flush():
-    STD_OUT.flush()
-    STD_ERR.flush()
+    _sys.stdout.flush()
+    _sys.stderr.flush()
 
 absolute_path = _os.path.abspath
 normalize_path = _os.path.normpath
@@ -489,7 +489,7 @@ class working_dir(object):
         self.prev_dir = change_dir(self.dir)
         return self.dir
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback):
         change_dir(self.prev_dir)
 
 def call(command, *args, **kwargs):
@@ -532,32 +532,16 @@ def call_and_print_on_error(command, *args, **kwargs):
 _child_processes = list()
 
 class _Process(_subprocess.Popen):
-    def __init__(self, command, *args, **kwargs):
-        super(_Process, self).__init__(command, *args, **kwargs)
+    def __init__(self, command, options, name, command_string):
+        super(_Process, self).__init__(command, **options)
 
-        if _is_string(command):
-            self.name = program_name(command)
-            self.command_string = command
-        elif isinstance(command, _collections.Iterable):
-            self.name = command[0]
-            self.command_string = _command_string(command, args)
-        else:
-            raise Exception()
-
-        if "name" in kwargs:
-            self.name = kwargs["name"]
+        self.name = name
+        self.command_string = command_string
 
         _child_processes.append(self)
 
     def __repr__(self):
         return "process {0} ({1})".format(self.pid, self.name)
-
-def _command_string(command, args):
-    elems = ["\"{0}\"".format(x) if " " in x else x for x in command]
-    string = " ".join(elems)
-    string = string.format(*args)
-
-    return string
 
 def default_sigterm_handler(signum, frame):
     for proc in _child_processes:
@@ -570,8 +554,14 @@ def default_sigterm_handler(signum, frame):
 
 _signal.signal(_signal.SIGTERM, default_sigterm_handler)
 
+def _command_string(command, args):
+    elems = ["\"{0}\"".format(x) if " " in x else x for x in command]
+    string = " ".join(elems)
+    string = string.format(*args)
+
+    return string
+
 def start_process(command, *args, **kwargs):
-    # XXX This duplicates the command string logic in _Process
     if _is_string(command):
         command = command.format(*args)
         command_args = _shlex.split(command)
@@ -585,16 +575,21 @@ def start_process(command, *args, **kwargs):
 
     notice("Calling '{0}'", command_string)
 
+    name = kwargs.get("name", command_args[0])
+
+    kwargs["stdout"] = kwargs.get("stdout", _sys.stdout)
+    kwargs["stderr"] = kwargs.get("stderr", _sys.stderr)
+
     if "output" in kwargs:
         out = kwargs.pop("output")
 
         kwargs["stdout"] = out
         kwargs["stderr"] = out
 
-    if "shell" in kwargs and kwargs["shell"]:
-        proc = _Process(command_string, **kwargs)
+    if "shell" in kwargs and kwargs["shell"] is True:
+        proc = _Process(command_string, kwargs, name, command_string)
     else:
-        proc = _Process(command_args, **kwargs)
+        proc = _Process(command_args, kwargs, name, command_string)
 
     debug("{0} started", proc)
 
@@ -656,7 +651,7 @@ class running_process(object):
         self.proc = start_process(self.command, *self.args, **self.kwargs)
         return self.proc
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback):
         stop_process(self.proc)
 
 def make_archive(input_dir, output_dir, archive_stem):
