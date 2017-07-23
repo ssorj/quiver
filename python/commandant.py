@@ -240,8 +240,10 @@ class _TestModule(object):
             except:
                 self._print("FAILED")
 
-                for line in read(output_file):
-                    print("> {}".format(line), end="", file=_sys.stderr)
+                with open(output_file, "r") as out:
+                    for line in out:
+                        _sys.stderr.write("> ")
+                        _sys.stderr.write(line)
 
                 _sys.stderr.flush()
 
