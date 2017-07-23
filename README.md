@@ -71,8 +71,13 @@ transmission of messages.
 | Qpid Proton Python    | python-qpid-proton    | python-qpid-proton
 | XZ                    | xz-utils              | xz
 
+### Using Docker
+
+    $ sudo docker run -it ssorj/quiver
+
 ### Installing on Fedora
 
+    $ sudo dnf install dnf-plugins-core
     $ sudo dnf enable jross/ssorj
     $ sudo dnf install quiver
 
@@ -81,18 +86,19 @@ If you don't have `dnf`, use the repo files at
 
 ### Installing on Ubuntu
 
-The primary Ubuntu repos don't have new enough versions of the Qpid
-dependencies.  Use the following commands to get the right ones.
+Quiver requires newer version of the Qpid dependencies than Ubuntu
+provides by default.  Use these commands to install them from an
+Ubuntu PPA.
 
-    $ apt-get -y install software-properties-common
-    $ add-apt-repository -y ppa:qpid/released
-    $ apt-get update
-    $ apt-get -y install build-essential make openjdk-8-jdk maven nodejs \
+    $ sudo apt-get install software-properties-common
+    $ sudo add-apt-repository -y ppa:qpid/released
+    $ sudo apt-get update
+    $ sudo apt-get install build-essential make openjdk-8-jdk maven nodejs \
         python-numpy python xz-utils libqpidmessaging2-dev libqpidtypes1-dev \
         libqpidcommon2-dev libqpid-proton8-dev python-qpid python-qpid-messaging \
         python-qpid-proton
 
-After that you can install from source.
+After this you can install from source.
 
 To use the JavaScript implementation, you also need to symlink
 `nodejs` to `node`.
@@ -106,6 +112,10 @@ By default, installs from source go to `/usr/local`.  Make sure
 
     $ cd quiver/
     $ sudo make install
+
+Use the `PREFIX` option to change the install location.
+
+    $ sudo make install PREFIX=/usr/local
 
 ## Development
 

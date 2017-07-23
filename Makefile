@@ -53,6 +53,7 @@ endif
 DESTDIR := ""
 PREFIX := /usr/local
 QUIVER_HOME := ${PREFIX}/lib/quiver
+DOCKER_TAG := docker.io/ssorj/quiver
 
 TARGETS := \
 	build/bin/quiver \
@@ -152,22 +153,32 @@ big-test: test test-centos test-fedora test-ubuntu
 
 .PHONY: test-centos
 test-centos:
-	sudo docker build -f scripts/test-centos.dockerfile -t quiver-test-centos .
+	sudo docker build -f scripts/test-centos.dockerfile -t quiver-test-centos --build-arg CACHE_BUST=$${RANDOM} .
 	sudo docker run quiver-test-centos
 
 .PHONY: test-fedora
-test-fedora:
-	sudo docker build -f scripts/test-fedora.dockerfile -t quiver-test-fedora .
-	sudo docker run quiver-test-fedora
+test-fedora: docker-build docker-test
 
 .PHONY: test-ubuntu
 test-ubuntu:
-	sudo docker build -f scripts/test-ubuntu.dockerfile -t quiver-test-ubuntu .
+	sudo docker build -f scripts/test-ubuntu.dockerfile -t quiver-test-ubuntu --build-arg CACHE_BUST=$${RANDOM} .
 	sudo docker run quiver-test-ubuntu
 
 .PHONY: check-dependencies
 check-dependencies:
 	scripts/check-dependencies
+
+.PHONY: docker-build
+docker-build:
+	sudo docker build -t ${DOCKER_TAG} --build-arg CACHE_BUST=$${RANDOM} .
+
+.PHONY: docker-test
+docker-test:
+	sudo docker run -t ${DOCKER_TAG} quiver-test
+
+.PHONY: docker-push
+docker-push:
+	sudo docker push ${DOCKER_TAG}
 
 build/bin/%: bin/%.in
 	scripts/configure-file -a quiver_home=${QUIVER_HOME} $< $@
