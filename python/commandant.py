@@ -203,7 +203,7 @@ class _TestModule(object):
         failures = 0
 
         if not self.command.verbose:
-            self._print("## Test module '{}'".format(self.module.__name__))
+            self.command.notice("Running tests from module '{}'", self.module.__name__)
 
         for function in self.test_functions:
             failures += self._run_test(function)
@@ -223,6 +223,8 @@ class _TestModule(object):
 
             try:
                 function(*args, **kwargs)
+            except KeyboardInterrupt:
+                raise
             except:
                 self.command.error("Test '{}' FAILED", long_name)
                 return 1
@@ -237,6 +239,8 @@ class _TestModule(object):
                 with open(output_file, "w") as out:
                     with _OutputRedirected(out, out):
                         function(*args, **kwargs)
+            except KeyboardInterrupt:
+                raise
             except:
                 self._print("FAILED")
 

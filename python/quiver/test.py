@@ -71,11 +71,11 @@ def test_quiver_server():
         with _TestServer(impl=impl) as server:
             call("quiver {} -m 1", server.url)
 
-def test_quiver_launch_client_server():
+def disabled_test_quiver_launch_client_server():
     with _TestServer() as server:
         call("quiver-launch {} --count 2 --options \"-m 1\" --verbose", server.url)
 
-def test_quiver_launch_peer_to_peer():
+def disabled_test_quiver_launch_peer_to_peer():
     call("quiver-launch --sender-options=\"-m 1\" --receiver-options=\"-m 1 --server --passive\" --verbose {}", _test_url())
 
 def test_quiver_pair_client_server():
