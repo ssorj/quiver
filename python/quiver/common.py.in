@@ -50,12 +50,13 @@ _impls_by_name = {}
 _impl_names_by_alias = {}
 
 class _Impl(object):
-    def __init__(self, kind, name, aliases=[], protocols=["amqp"], peer_to_peer=False):
+    def __init__(self, kind, name, aliases=[], protocols=["amqp"], peer_to_peer=False, executable=None):
         self.kind = kind
         self.name = name
         self.aliases = aliases
         self.protocols = protocols
         self.peer_to_peer = peer_to_peer
+        self.executable = executable
 
         _impls.append(self)
         _impls_by_name[self.name] = self
@@ -69,7 +70,13 @@ class _Impl(object):
 
     @property
     def exists(self):
-        return _plano.is_file(self.file)
+        if not _plano.is_file(self.file):
+            return False
+
+        if self.executable is not None and _plano.which(self.executable) is None:
+            return False
+
+        return True
 
 _Impl("arrow", "activemq-artemis-jms", aliases=["artemis-jms"], protocols=["core"])
 _Impl("arrow", "activemq-jms", protocols=["openwire"])
@@ -82,11 +89,11 @@ _Impl("arrow", "qpid-proton-python", aliases=["python"], peer_to_peer=True)
 _Impl("arrow", "rhea", aliases=["javascript"], peer_to_peer=True)
 _Impl("arrow", "vertx-proton", aliases=["java"])
 
-_Impl("server", "activemq", protocols=["amqp", "openwire"])
-_Impl("server", "activemq-artemis", aliases=["artemis"], protocols=["amqp", "openwire", "core"])
+_Impl("server", "activemq", protocols=["amqp", "openwire"], executable="activemq")
+_Impl("server", "activemq-artemis", aliases=["artemis"], protocols=["amqp", "openwire", "core"], executable="artemis")
 _Impl("server", "builtin")
-_Impl("server", "qpid-cpp", aliases=["qpidd"])
-_Impl("server", "qpid-dispatch", aliases=["qdrouterd", "dispatch"])
+_Impl("server", "qpid-cpp", aliases=["qpidd"], executable="qpidd")
+_Impl("server", "qpid-dispatch", aliases=["qdrouterd", "dispatch"], executable="qdrouterd")
 
 def get_impl(name):
     try:
