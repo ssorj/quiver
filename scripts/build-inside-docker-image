@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -17,20 +18,16 @@
 # under the License.
 #
 
-FROM fedora
-MAINTAINER Justin Ross <jross@apache.org>
+set -ex
 
-RUN dnf -y update && dnf clean all
+BUILD_DEPS="gcc-c++ java-1.8.0-openjdk-devel maven make qpid-cpp-client-devel qpid-proton-c-devel qpid-proton-cpp-devel"
 
-RUN dnf -y install java-1.8.0-openjdk nodejs numpy python python-qpid-messaging python-qpid-proton \
-        qpid-cpp-client qpid-proton-c qpid-proton-cpp unzip xz \
-    && dnf clean all
+dnf -y install $BUILD_DEPS
 
-ADD . /root/qtools
-ADD scripts/build-inside-docker-image /root/qtools/build-inside-docker-image
-WORKDIR /root/qtools
-ARG CACHE_BUST=1
-RUN ./build-inside-docker-image && cd && rm -rf /root/qtools
+make install PREFIX=/usr
 
-WORKDIR /root
-CMD ["/bin/bash"]
+dnf -y remove $BUILD_DEPS
+
+dnf clean all
+
+rm -rf /root/.m2

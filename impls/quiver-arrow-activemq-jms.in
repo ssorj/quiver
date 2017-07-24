@@ -41,7 +41,7 @@ def main():
 
     if len(ARGS) == 1:
         with working_dir(make_temp_dir()):
-            call("jar -xf {} META-INF", jar_file)
+            call("unzip {}", jar_file)
             print(read(join("META-INF", "maven", "org.apache.activemq", "activemq-client", "pom.properties")), end="")
 
         call("java -version")

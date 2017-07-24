@@ -176,6 +176,10 @@ docker-build:
 docker-test:
 	sudo docker run -t ${DOCKER_TAG} quiver-test
 
+.PHONY: docker-run
+docker-run:
+	sudo docker run -it ${DOCKER_TAG}
+
 .PHONY: docker-push
 docker-push:
 	sudo docker push ${DOCKER_TAG}
