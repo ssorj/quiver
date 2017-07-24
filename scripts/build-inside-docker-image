@@ -26,7 +26,7 @@ dnf -y install $BUILD_DEPS
 
 make install PREFIX=/usr
 
-dnf -y remove $BUILD_DEPS
+#dnf -y remove $BUILD_DEPS
 
 dnf clean all
 
