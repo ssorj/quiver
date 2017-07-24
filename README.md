@@ -91,7 +91,7 @@ provides by default.  Use these commands to install them from an
 Ubuntu PPA.
 
     $ sudo apt-get install software-properties-common
-    $ sudo add-apt-repository -y ppa:qpid/released
+    $ sudo add-apt-repository ppa:qpid/released
     $ sudo apt-get update
     $ sudo apt-get install build-essential make openjdk-8-jdk maven nodejs \
         python-numpy python xz-utils libqpidmessaging2-dev libqpidtypes1-dev \
