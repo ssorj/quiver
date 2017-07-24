@@ -50,16 +50,7 @@ def test_quiver_arrow():
 
 def test_quiver_server():
     for impl in SERVER_IMPLS:
-        if impl == "activemq" and which("activemq") is None:
-            continue
-
-        if impl == "activemq-artemis" and which("artemis") is None:
-            continue
-
-        if impl == "qpid-cpp" and which("qpidd") is None:
-            continue
-
-        if impl == "qpid-dispatch" and which("qdrouterd") is None:
+        if not impl_exists(impl):
             continue
 
         call("quiver-server --impl {} --impl-info", impl)
