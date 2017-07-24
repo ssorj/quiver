@@ -40,9 +40,11 @@ def main():
     jar_file = join(home, "java", "quiver-qpid-jms.jar")
 
     if len(ARGS) == 1:
+        pom_file = join("META-INF", "maven", "org.apache.qpid", "qpid-jms-client", "pom.properties")
+
         with working_dir(make_temp_dir()):
-            call("unzip {}", jar_file)
-            print(read(join("META-INF", "maven", "org.apache.qpid", "qpid-jms-client", "pom.properties")), end="")
+            call("unzip {} {}", jar_file, pom_file)
+            print(read(pom_file), end="")
 
         call("java -version")
         exit()
