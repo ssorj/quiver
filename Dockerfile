@@ -26,9 +26,10 @@ RUN dnf -y install java-1.8.0-openjdk nodejs numpy python python-qpid-messaging 
         qpid-cpp-client qpid-proton-c qpid-proton-cpp unzip xz \
     && dnf clean all
 
-ADD . /root/qtools
+COPY . /root/qtools
+
 ARG CACHE_BUST=1
-RUN cd /root/qtools && scripts/build-inside-docker-image && cd && rm -rf /root/qtools
+RUN cd /root/qtools && scripts/build-inside-docker-image && rm -rf /root/qtools
 
 WORKDIR /root
 CMD ["/bin/bash"]

@@ -31,10 +31,9 @@ RUN apt-get -y install libqpidmessaging2-dev libqpidtypes1-dev libqpidcommon2-de
 
 RUN cd /usr/bin && ln -s nodejs node
 
-ADD . /root/quiver
-WORKDIR /root/quiver
+COPY . /root/quiver
 
 ARG CACHE_BUST=1
-RUN make install PREFIX=/usr
+RUN cd /root/quiver && make install PREFIX=/usr
 
 CMD ["quiver-test"]
