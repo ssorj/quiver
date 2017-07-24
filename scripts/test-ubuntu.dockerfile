@@ -24,7 +24,7 @@ RUN apt-get update \
     && apt-get -y install software-properties-common \
     && add-apt-repository -y ppa:qpid/released \
     && apt-get update \
-    && apt-get -y install build-essential make openjdk-8-jdk maven nodejs python-numpy python xz-utils
+    && apt-get -y install build-essential make openjdk-8-jdk maven nodejs python-numpy python unzip xz-utils
 
 RUN apt-get -y install libqpidmessaging2-dev libqpidtypes1-dev libqpidcommon2-dev \
         libqpid-proton8-dev python-qpid python-qpid-messaging python-qpid-proton
