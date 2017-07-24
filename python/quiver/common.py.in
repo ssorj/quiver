@@ -73,7 +73,7 @@ class _Impl(object):
 
 _Impl("arrow", "activemq-artemis-jms", aliases=["artemis-jms"], protocols=["core"])
 _Impl("arrow", "activemq-jms", protocols=["openwire"])
-_Impl("arrow", "qpid-jms", aliases="jms")
+_Impl("arrow", "qpid-jms", aliases=["jms"])
 _Impl("arrow", "qpid-messaging-cpp", "arrow")
 _Impl("arrow", "qpid-messaging-python", "arrow")
 _Impl("arrow", "qpid-proton-cpp", aliases=["cpp"], peer_to_peer=True)
@@ -258,13 +258,7 @@ class Command(object):
             parser.add_argument("--impl", default=default_impl)
 
             args, other = parser.parse_known_args(_plano.ARGS)
-            impl = get_impl(args.impl)
-
-            if impl is None:
-                raise CommandError("Implementation '{}' is unknown", args.impl)
-
-            if not impl.exists:
-                raise CommandError("No implementation for '{}'", impl)
+            impl = require_impl(args.impl)
 
             _plano.call(impl.file)
             _plano.exit(0)
