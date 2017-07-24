@@ -313,16 +313,12 @@ def _remove_temp_dir():
 
 _atexit.register(_remove_temp_dir)
 
-# XXX Use _tempfile instead
-def make_temp_file(extension=""):
-    key = unique_id(4)
-    file = join(_temp_dir, "_file_{0}{1}".format(key, extension))
-
-    return append(file, "")
+def make_temp_file(suffix=""):
+    return _tempfile.mkstemp(prefix="", suffix=suffix, dir=_temp_dir)[1]
 
 # This one is deleted on process exit
-def make_temp_dir():
-    return _tempfile.mkdtemp(prefix="_dir_", dir=_temp_dir)
+def make_temp_dir(suffix=""):
+    return _tempfile.mkdtemp(prefix="", suffix=suffix, dir=_temp_dir)
 
 # This one sticks around
 def make_user_temp_dir():
