@@ -90,16 +90,17 @@ def test_quiver_pair_peer_to_peer():
         call("quiver {} --arrow rhea -m 1 --peer-to-peer --verbose", _test_url())
 
 def test_quiver_bench():
-    command = [
-        "quiver-bench",
-        "-m", "1",
-        "--include-servers", "builtin",
-        "--exclude-servers", "none",
-        "--verbose",
-        "--output", make_temp_dir(),
-    ]
+    with temp_dir() as output:
+        command = [
+            "quiver-bench",
+            "-m", "1",
+            "--include-servers", "builtin",
+            "--exclude-servers", "none",
+            "--verbose",
+            "--output", output,
+        ]
 
-    call(command)
+        call(command)
 
 class _TestServer(running_process):
     def __init__(self, impl="builtin", **kwargs):
@@ -129,6 +130,10 @@ class _TestServer(running_process):
             sleep(0.2)
 
         return self.proc
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        super(_TestServer, self).__exit__(exc_type, exc_value, traceback)
+        remove(self.ready_file)
 
 def _test_url():
     return "//127.0.0.1:{}/q0".format(random_port())

@@ -400,6 +400,8 @@ class _TestServer(object):
         else:
             _plano.write(self.status_file, "PASSED\n")
 
+        _plano.remove(self.ready_file)
+
     def print_summary(self):
         print("--- Server command ---")
         print("> {}".format(_plano.read(self.command_file)))

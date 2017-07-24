@@ -306,27 +306,40 @@ def write_json(file, obj):
     with _codecs.open(file, encoding="utf-8", mode="w") as f:
         return _json.dump(obj, f, indent=4, separators=(",", ": "), sort_keys=True)
 
-_temp_dir = _tempfile.mkdtemp(prefix="plano-")
-
-def _remove_temp_dir():
-    _shutil.rmtree(_temp_dir, ignore_errors=True)
-
-_atexit.register(_remove_temp_dir)
-
 def make_temp_file(suffix=""):
-    return _tempfile.mkstemp(prefix="", suffix=suffix, dir=_temp_dir)[1]
+    return _tempfile.mkstemp(prefix="plano-", suffix=suffix)[1]
 
-# This one is deleted on process exit
 def make_temp_dir(suffix=""):
-    return _tempfile.mkdtemp(prefix="", suffix=suffix, dir=_temp_dir)
+    return _tempfile.mkdtemp(prefix="plano-", suffix=suffix)
 
-# This one sticks around
 def make_user_temp_dir():
     temp_dir = _tempfile.gettempdir()
     user = _getpass.getuser()
     user_temp_dir = join(temp_dir, user)
 
     return make_dir(user_temp_dir)
+
+class temp_file(object):
+    def __init__(self, suffix=""):
+        self.file_ = make_temp_file(suffix=suffix)
+
+    def __enter__(self):
+        return self.file_
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exists(self.file_):
+            _os.remove(self.file_)
+
+class temp_dir(object):
+    def __init__(self, suffix=""):
+        self.dir = make_temp_dir(suffix=suffix)
+
+    def __enter__(self):
+        return self.dir
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exists(self.dir):
+            _shutil.rmtree(self.dir, ignore_errors=True)
 
 def unique_id(length=16):
     assert length >= 1
@@ -488,6 +501,16 @@ class working_dir(object):
     def __exit__(self, exc_type, exc_value, traceback):
         change_dir(self.prev_dir)
 
+class temp_working_dir(working_dir):
+    def __init__(self):
+        super(temp_working_dir, self).__init__(make_temp_dir())
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        super(temp_working_dir, self).__exit__(exc_type, exc_value, traceback)
+
+        if exists(self.dir):
+            _shutil.rmtree(self.dir, ignore_errors=True)
+
 def call(command, *args, **kwargs):
     proc = start_process(command, *args, **kwargs)
     check_process(proc)
@@ -515,15 +538,14 @@ def call_for_output(command, *args, **kwargs):
     return output
 
 def call_and_print_on_error(command, *args, **kwargs):
-    output_file = make_temp_file()
-
-    try:
-        with open(output_file, "w") as out:
-            kwargs["output"] = out
-            call(command, *args, **kwargs)
-    except CalledProcessError:
-        eprint(read(output_file), end="")
-        raise
+    with temp_file() as output_file:
+        try:
+            with open(output_file, "w") as out:
+                kwargs["output"] = out
+                call(command, *args, **kwargs)
+        except CalledProcessError:
+            eprint(read(output_file), end="")
+            raise
 
 _child_processes = list()
 
@@ -544,7 +566,7 @@ def default_sigterm_handler(signum, frame):
         if proc.poll() is None:
             proc.terminate()
 
-    _remove_temp_dir()
+    #_remove_temp_dir()
 
     exit(-(_signal.SIGTERM))
 
@@ -638,19 +660,17 @@ def check_process(proc):
 
 class running_process(object):
     def __init__(self, command, *args, **kwargs):
-        self.command = command
-        self.args = args
-        self.kwargs = kwargs
-        self.proc = None
+        self.proc = start_process(command, *args, **kwargs)
 
     def __enter__(self):
-        self.proc = start_process(self.command, *self.args, **self.kwargs)
         return self.proc
 
     def __exit__(self, exc_type, exc_value, traceback):
         stop_process(self.proc)
 
 def make_archive(input_dir, output_dir, archive_stem):
+    # XXX Cleanup temp dir
+
     temp_dir = make_temp_dir()
     temp_input_dir = join(temp_dir, archive_stem)
 
@@ -679,6 +699,8 @@ def extract_archive(archive_file, output_dir):
     return output_dir
 
 def rename_archive(archive_file, new_archive_stem):
+    # XXX Cleanup temp dir
+
     assert is_file(archive_file)
 
     if name_stem(archive_file) == new_archive_stem:

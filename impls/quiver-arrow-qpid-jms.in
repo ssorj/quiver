@@ -42,7 +42,7 @@ def main():
     if len(ARGS) == 1:
         pom_file = join("META-INF", "maven", "org.apache.qpid", "qpid-jms-client", "pom.properties")
 
-        with working_dir(make_temp_dir()):
+        with temp_working_dir():
             call("unzip {} {}", jar_file, pom_file)
             print(read(pom_file), end="")
 
