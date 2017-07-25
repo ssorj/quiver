@@ -102,7 +102,7 @@ def test_quiver_bench():
 
         call(command)
 
-class _TestServer(running_process):
+class _TestServer(object):
     def __init__(self, impl="builtin", **kwargs):
         port = random_port()
 
@@ -116,13 +116,10 @@ class _TestServer(running_process):
             "--impl", impl,
         ]
 
-        super(_TestServer, self).__init__(command, **kwargs)
-
-    def __enter__(self):
-        super(_TestServer, self).__enter__()
-
+        self.proc = start_process(command, **kwargs)
         self.proc.url = self.url
 
+    def __enter__(self):
         for i in range(30):
             if read(self.ready_file) == "ready\n":
                 break
@@ -132,7 +129,7 @@ class _TestServer(running_process):
         return self.proc
 
     def __exit__(self, exc_type, exc_value, traceback):
-        super(_TestServer, self).__exit__(exc_type, exc_value, traceback)
+        stop_process(self.proc)
         remove(self.ready_file)
 
 def _test_url():
