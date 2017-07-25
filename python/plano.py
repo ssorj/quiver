@@ -321,14 +321,14 @@ def make_user_temp_dir():
 
 class temp_file(object):
     def __init__(self, suffix=""):
-        self.file_ = make_temp_file(suffix=suffix)
+        self.file = make_temp_file(suffix=suffix)
 
     def __enter__(self):
-        return self.file_
+        return self.file
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if exists(self.file_):
-            _os.remove(self.file_)
+        if exists(self.file):
+            _os.remove(self.file)
 
 class temp_dir(object):
     def __init__(self, suffix=""):
@@ -558,6 +558,16 @@ class _Process(_subprocess.Popen):
 
         _child_processes.append(self)
 
+    @property
+    def exit_code(self):
+        return self.returncode
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        stop_process(self.proc)
+
     def __repr__(self):
         return "process {0} ({1})".format(self.pid, self.name)
 
@@ -657,16 +667,6 @@ def check_process(proc):
 
     if proc.returncode != 0:
         raise CalledProcessError(proc.returncode, proc.command_string)
-
-class running_process(object):
-    def __init__(self, command, *args, **kwargs):
-        self.proc = start_process(command, *args, **kwargs)
-
-    def __enter__(self):
-        return self.proc
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        stop_process(self.proc)
 
 def make_archive(input_dir, output_dir, archive_stem):
     # XXX Cleanup temp dir
