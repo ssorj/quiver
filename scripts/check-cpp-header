@@ -23,7 +23,7 @@ from plano import *
 def main():
     header = ARGS[1]
 
-    source_file = make_temp_file(extension=".cpp")
+    source_file = make_temp_file(suffix=".cpp")
     output_file = make_temp_file()
     source = "#include <{}>\n int main() {{ return 1; }}\n".format(header)
 

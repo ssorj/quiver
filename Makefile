@@ -25,30 +25,38 @@ export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
 
 VERSION := $(shell cat VERSION.txt)
 
-MAVEN_INSTALLED := \
-	$(shell which mvn 1> /dev/null 2>&1 && echo yes)
-NODEJS_INSTALLED := \
-	$(shell which node 1> /dev/null 2>&1 && echo yes)
-QPID_MESSAGING_CPP_INSTALLED := \
-	$(shell PYTHONPATH=python scripts/check-cpp-header "qpid/messaging/Message.h" 1> /dev/null 2>&1 && echo yes)
-QPID_MESSAGING_PYTHON_INSTALLED := \
-	$(shell PYTHONPATH=python scripts/check-python-import "qpid_messaging" 1> /dev/null 2>&1 && echo yes)
-QPID_PROTON_C_INSTALLED := \
-	$(shell PYTHONPATH=python scripts/check-cpp-header "proton/proactor.h" 1> /dev/null 2>&1 && echo yes)
-QPID_PROTON_CPP_INSTALLED := \
-	$(shell PYTHONPATH=python scripts/check-cpp-header "proton/message.hpp" 1> /dev/null 2>&1 && echo yes)
-QPID_PROTON_PYTHON_INSTALLED := \
+MAVEN_ENABLED := \
+	$(shell which mvn 1> /dev/null 2>&1 && echo yes || echo no)
+NODEJS_ENABLED := \
+	$(shell which node 1> /dev/null 2>&1 && echo yes || echo no)
+QPID_MESSAGING_CPP_ENABLED := \
+	$(shell PYTHONPATH=python scripts/check-cpp-header "qpid/messaging/Message.h" 1> /dev/null 2>&1 && echo yes || echo no)
+QPID_MESSAGING_PYTHON_ENABLED := \
+	$(shell PYTHONPATH=python scripts/check-python-import "qpid_messaging" 1> /dev/null 2>&1 && echo yes || echo no)
+QPID_PROTON_C_ENABLED := \
+	$(shell PYTHONPATH=python scripts/check-cpp-header "proton/proactor.h" 1> /dev/null 2>&1 && echo yes || echo no)
+QPID_PROTON_CPP_ENABLED := \
+	$(shell PYTHONPATH=python scripts/check-cpp-header "proton/message.hpp" 1> /dev/null 2>&1 && echo yes || echo no)
+QPID_PROTON_PYTHON_ENABLED := \
 	$(shell PYTHONPATH=python scripts/check-python-import "proton" 1> /dev/null 2>&1 && echo yes)
 
 # XXX
-#ifneq (${QPID_PROTON_PYTHON_INSTALLED},yes)
+#ifneq (${QPID_PROTON_PYTHON_ENABLED},yes)
 #        $(error Qpid Proton Python is required to build Quiver)
 #endif
 
 # XXX Workaround for an Ubuntu packaging problem
 ifeq ($(shell lsb_release -is),Ubuntu)
-	QPID_PROTON_CPP_INSTALLED := no
+	QPID_PROTON_CPP_ENABLED := no
 endif
+
+$(info MAVEN_ENABLED=${MAVEN_ENABLED})
+$(info NODEJS_ENABLED=${NODEJS_ENABLED})
+$(info QPID_MESSAGING_CPP_ENABLED=${QPID_MESSAGING_CPP_ENABLED})
+$(info QPID_MESSAGING_PYTHON_ENABLED=${QPID_MESSAGING_PYTHON_ENABLED})
+$(info QPID_PROTON_C_ENABLED=${QPID_PROTON_C_ENABLED})
+$(info QPID_PROTON_CPP_ENABLED=${QPID_PROTON_CPP_ENABLED})
+$(info QPID_PROTON_PYTHON_ENABLED=${QPID_PROTON_PYTHON_ENABLED})
 
 DESTDIR := ""
 PREFIX := /usr/local
@@ -70,7 +78,7 @@ TARGETS := \
 	build/impls/quiver-server-qpid-dispatch \
 	build/python/quiver/common.py
 
-ifeq (${MAVEN_INSTALLED},yes)
+ifeq (${MAVEN_ENABLED},yes)
 TARGETS += \
 	build/impls/quiver-arrow-activemq-artemis-jms \
 	build/impls/quiver-arrow-activemq-jms \
@@ -78,27 +86,27 @@ TARGETS += \
 	build/impls/quiver-arrow-vertx-proton
 endif
 
-ifeq (${NODEJS_INSTALLED},yes)
+ifeq (${NODEJS_ENABLED},yes)
 TARGETS += \
 	build/impls/quiver-arrow-rhea
 endif
 
-ifeq (${QPID_MESSAGING_CPP_INSTALLED},yes)
+ifeq (${QPID_MESSAGING_CPP_ENABLED},yes)
 TARGETS += \
 	build/impls/quiver-arrow-qpid-messaging-cpp
 endif
 
-ifeq (${QPID_MESSAGING_PYTHON_INSTALLED},yes)
+ifeq (${QPID_MESSAGING_PYTHON_ENABLED},yes)
 TARGETS += \
 	build/impls/quiver-arrow-qpid-messaging-python
 endif
 
-ifeq (${QPID_PROTON_C_INSTALLED},yes)
+ifeq (${QPID_PROTON_C_ENABLED},yes)
 TARGETS += \
 	build/impls/quiver-arrow-qpid-proton-c
 endif
 
-ifeq (${QPID_PROTON_CPP_INSTALLED},yes)
+ifeq (${QPID_PROTON_CPP_ENABLED},yes)
 TARGETS += \
 	build/impls/quiver-arrow-qpid-proton-cpp
 endif

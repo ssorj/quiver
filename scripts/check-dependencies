@@ -26,7 +26,7 @@ def check_executable(executable, missing, fedora_package):
         missing.append(fedora_package)
 
 def check_header(header, missing, fedora_package):
-    source_file = make_temp_file(extension=".cpp")
+    source_file = make_temp_file(suffix=".cpp")
     output_file = make_temp_file()
     source = "#include <{}>\n int main() {{ return 1; }}\n".format(header)
     
