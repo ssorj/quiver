@@ -194,26 +194,78 @@ class TestCommand(Command):
             module.init()
 
     def run(self):
+        sessions = list()
+
         for i in range(self.iterations):
             for module in self.test_modules:
-                module.run_tests()
+                session = _TestSession(self)
+                sessions.append(session)
+
+                module.run_tests(session)
+
+        for session in sessions:
+            if len(session.failed_tests) != 0:
+                break
+        else:
+            print("RESULT: All tests passed")
+            return
+
+        print("RESULT: Some tests failed")
+
+class _TestSession(object):
+    def __init__(self, module):
+        self.module = module
+
+        self.passed_tests = []
+        self.failed_tests = []
+
+class _TestFunction(object):
+    def __init__(self, module, function):
+        self.module = module
+        self.function = function
+
+        self.module.test_functions.append(self)
+        self.module.test_functions_by_name[self.name] = self
+
+    def __call__(self, session):
+        return self.function(session)
+
+    def __repr__(self):
+        return "test '{}:{}'".format(self.module.name, self.name)
+
+    @property
+    def name(self):
+        return self.function.__name__
 
 class _TestModule(object):
     def __init__(self, command, module):
         self.command = command
         self.module = module
 
-        self.init_function = None
+        self.open_function = None
+        self.close_function = None
+
         self.test_functions = []
         self.test_functions_by_name = {}
 
         self.command.test_modules.append(self)
 
-    def init(self):
-        self.init_function = getattr(self.module, "init_test_module")
+    def __repr__(self):
+        return "module '{}'".format(self.name)
 
-        if self.init_function is not None:
-            assert _inspect.isroutine(self.init_function), self.init_function
+    @property
+    def name(self):
+        return self.module.__name__
+
+    def init(self):
+        self.open_function = getattr(self.module, "open_test_session", None)
+        self.close_function = getattr(self.module, "close_test_session", None)
+
+        if self.open_function is not None:
+            assert _inspect.isroutine(self.open_function), self.open_function
+
+        if self.close_function is not None:
+            assert _inspect.isroutine(self.close_function), self.close_function
 
         members = _inspect.getmembers(self.module, _inspect.isroutine)
 
@@ -237,68 +289,66 @@ class _TestModule(object):
                 continue
 
             if not included(name):
+                self.command.info("Skipping test '{}:{}' (not included)", self.module.__name__, name)
                 continue
 
             if excluded(name):
+                self.command.info("Skipping test '{}:{}' (excluded)", self.module.__name__, name)
                 continue
 
-            self.test_functions.append(function)
-            self.test_functions_by_name[name] = function
+            _TestFunction(self, function)
 
-    def run_tests(self):
+    def run_tests(self, session):
         if self.command.list_only:
             for function in self.test_functions:
-                print("{}:{}".format(self.module.__name__, function.__name__))
+                print(function)
 
             return
 
-        if self.init_function is not None:
-            self.init_function()
-
-        failures = 0
-
         if not self.command.verbose:
-            self.command.notice("Running tests from module '{}'", self.module.__name__)
+            self.command.notice("Running tests from {}", self)
 
-        for function in self.test_functions:
-            failures += self._run_test(function)
+        if self.open_function is not None:
+            self.open_function(session)
 
-        if failures == 0:
-            print("All tests passed")
-        else:
-            # XXX This is wrong for multiple modules
-            _sys.exit("Some tests failed")
+        try:
+            for function in self.test_functions:
+                self.run_test(session, function)
+        finally:
+            if self.close_function is not None:
+                self.close_function(session)
 
-    def _run_test(self, function, *args, **kwargs):
-        long_name = "{}:{}".format(self.module.__name__, function.__name__)
-        short_name = function.__name__
-
+    def run_test(self, session, function):
         start_time = _time.time()
 
         if self.command.verbose:
-            self.command.notice("Running test '{}'", long_name)
+            self.command.notice("Running {}", function)
 
             try:
-                function(*args, **kwargs)
+                function(session)
             except KeyboardInterrupt:
                 raise
             except:
-                self.command.error("Test '{}' FAILED ({})", long_name, _elapsed_time(start_time))
-                return 1
+                session.failed_tests.append(function)
+                self.command.error("{} FAILED ({})", function, _elapsed_time(start_time))
 
-            self.command.notice("Test '{}' PASSED ({})", long_name, _elapsed_time(start_time))
+                return
+
+            session.passed_tests.append(function)
+            self.command.notice("{} PASSED ({})", function, _elapsed_time(start_time))
         else:
-            self._print("{:.<73} ".format(short_name + " "), end="")
+            self._print("{:.<73} ".format(function.name + " "), end="")
 
             output_file = _tempfile.mkstemp(prefix="commandant-")[1]
 
             try:
                 with open(output_file, "w") as out:
                     with _OutputRedirected(out, out):
-                        function(*args, **kwargs)
+                        function(session)
             except KeyboardInterrupt:
                 raise
             except:
+                session.failed_tests.append(function)
                 self._print("FAILED {:>6}".format(_elapsed_time(start_time)))
 
                 with open(output_file, "r") as out:
@@ -308,13 +358,12 @@ class _TestModule(object):
 
                 _sys.stderr.flush()
 
-                return 1
+                return
             finally:
                 _os.remove(output_file)
 
+            session.passed_tests.append(function)
             self._print("PASSED {:>6}".format(_elapsed_time(start_time)))
-
-        return 0
 
     def _print(self, *args, **kwargs):
         if self.command.quiet:
@@ -326,6 +375,13 @@ class _TestModule(object):
 
 def _elapsed_time(start_time):
     elapsed = _time.time() - start_time
+
+    if elapsed > 240:
+        return "{:.0f}m".format(elapsed / 60)
+
+    if elapsed > 60:
+        return "{:.0f}s".format(elapsed)
+
     return "{:.1f}s".format(elapsed)
 
 class _OutputRedirected(object):

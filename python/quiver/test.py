@@ -24,10 +24,10 @@ import sys as _sys
 from plano import *
 from quiver.common import *
 
-def init_test_module():
+def open_test_session(session):
     set_message_threshold("error")
 
-def test_common_options():
+def test_common_options(session):
     commands = [
         "quiver",
         "quiver-arrow",
@@ -40,7 +40,7 @@ def test_common_options():
         call("{} --help", command)
         call("{} --version", command)
 
-def test_quiver_arrow():
+def test_quiver_arrow(session):
     call("quiver-arrow send q0 --init-only")
     call("quiver-arrow --init-only receive q0")
 
@@ -48,7 +48,7 @@ def test_quiver_arrow():
         if impl_exists(impl):
             call("quiver-arrow --impl {} --impl-info", impl)
 
-def test_quiver_server():
+def test_quiver_server(session):
     for impl in SERVER_IMPLS:
         if not impl_exists(impl):
             continue
@@ -62,14 +62,14 @@ def test_quiver_server():
         with _TestServer(impl=impl) as server:
             call("quiver {} -m 1", server.url)
 
-def disabled_test_quiver_launch_client_server():
+def disabled_test_quiver_launch_client_server(session):
     with _TestServer() as server:
         call("quiver-launch {} --count 2 --options \"-m 1\" --verbose", server.url)
 
-def disabled_test_quiver_launch_peer_to_peer():
+def disabled_test_quiver_launch_peer_to_peer(session):
     call("quiver-launch --sender-options=\"-m 1\" --receiver-options=\"-m 1 --server --passive\" --verbose {}", _test_url())
 
-def test_quiver_pair_client_server():
+def test_quiver_pair_client_server(session):
     # XXX full matrix
 
     with _TestServer() as server:
@@ -81,7 +81,7 @@ def test_quiver_pair_client_server():
         if impl_exists("vertx-proton"):
             call("quiver {} --arrow vertx-proton -m 1 --verbose", server.url)
 
-def test_quiver_pair_peer_to_peer():
+def test_quiver_pair_peer_to_peer(session):
     # XXX full matrix
 
     call("quiver {} --arrow qpid-proton-python -m 1 --peer-to-peer --verbose", _test_url())
@@ -89,7 +89,7 @@ def test_quiver_pair_peer_to_peer():
     if impl_exists("rhea"):
         call("quiver {} --arrow rhea -m 1 --peer-to-peer --verbose", _test_url())
 
-def test_quiver_bench():
+def test_quiver_bench(session):
     with temp_dir() as output:
         command = [
             "quiver-bench",
