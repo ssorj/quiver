@@ -24,11 +24,13 @@ from __future__ import unicode_literals
 from __future__ import with_statement
 
 import argparse as _argparse
+import fnmatch as _fnmatch
 import inspect as _inspect
 import os as _os
 import runpy as _runpy
 import sys as _sys
 import tempfile as _tempfile
+import time as _time
 
 class Command(object):
     def __init__(self, home, name=None):
@@ -146,6 +148,14 @@ class Command(object):
         _sys.stderr.write("{}\n".format(message))
         _sys.stderr.flush()
 
+_test_epilog = """
+patterns:
+  The --include and --exclude options take comma-separated lists of
+  shell-style match expressions.  '*' matches multiple characters, and
+  '?' matches exactly one character.  Take care to escape these so
+  that your shell doesn't expand them.
+"""
+
 class TestCommand(Command):
     def __init__(self, home, test_modules, name=None):
         super(TestCommand, self).__init__(home, name=name)
@@ -155,17 +165,38 @@ class TestCommand(Command):
         for module in test_modules:
             _TestModule(self, module)
 
+        self.epilog = _test_epilog
+
         self.test_prefixes = ["test_"]
+
+        self.add_argument("--list", action="store_true",
+                          help="Print the test names and exit")
+        self.add_argument("--include", metavar="PATTERNS",
+                          help="Run only tests with names matching PATTERNS (default '*')",
+                          default="*")
+        self.add_argument("--exclude", metavar="PATTERNS",
+                          help="Do not run tests with names matching PATTERNS")
+        self.add_argument("--iterations", metavar="COUNT", type=int, default=1,
+                          help="Run the tests COUNT times (default 1)")
 
     def init(self):
         super(TestCommand, self).init()
+
+        self.list_only = self.args.list
+        self.include_patterns = self.args.include.split(",")
+        self.exclude_patterns = []
+        self.iterations = self.args.iterations
+
+        if self.args.exclude is not None:
+            self.exclude_patterns = self.args.exclude.split(",")
 
         for module in self.test_modules:
             module.init()
 
     def run(self):
-        for module in self.test_modules:
-            module.run_tests()
+        for i in range(self.iterations):
+            for module in self.test_modules:
+                module.run_tests()
 
 class _TestModule(object):
     def __init__(self, command, module):
@@ -186,17 +217,41 @@ class _TestModule(object):
 
         members = _inspect.getmembers(self.module, _inspect.isroutine)
 
-        for name, function in members:
+        def is_test_function(name):
             for prefix in self.command.test_prefixes:
                 if name.startswith(prefix):
-                    break
-            else:
+                    return True
+
+        def included(name):
+            for pattern in self.command.include_patterns:
+                if _fnmatch.fnmatchcase(name, pattern):
+                    return True
+
+        def excluded(name):
+            for pattern in self.command.exclude_patterns:
+                if _fnmatch.fnmatchcase(name, pattern):
+                    return True
+
+        for name, function in members:
+            if not is_test_function(name):
+                continue
+
+            if not included(name):
+                continue
+
+            if excluded(name):
                 continue
 
             self.test_functions.append(function)
             self.test_functions_by_name[name] = function
 
     def run_tests(self):
+        if self.command.list_only:
+            for function in self.test_functions:
+                print("{}:{}".format(self.module.__name__, function.__name__))
+
+            return
+
         if self.init_function is not None:
             self.init_function()
 
@@ -211,12 +266,14 @@ class _TestModule(object):
         if failures == 0:
             print("All tests passed")
         else:
-
+            # XXX This is wrong for multiple modules
             _sys.exit("Some tests failed")
 
     def _run_test(self, function, *args, **kwargs):
         long_name = "{}:{}".format(self.module.__name__, function.__name__)
         short_name = function.__name__
+
+        start_time = _time.time()
 
         if self.command.verbose:
             self.command.notice("Running test '{}'", long_name)
@@ -226,14 +283,14 @@ class _TestModule(object):
             except KeyboardInterrupt:
                 raise
             except:
-                self.command.error("Test '{}' FAILED", long_name)
+                self.command.error("Test '{}' FAILED ({})", long_name, _elapsed_time(start_time))
                 return 1
 
-            self.command.notice("Test '{}' PASSED", long_name)
+            self.command.notice("Test '{}' PASSED ({})", long_name, _elapsed_time(start_time))
         else:
             self._print("{:.<73} ".format(short_name + " "), end="")
 
-            output_file = _tempfile.mktemp(prefix="commandant-")
+            output_file = _tempfile.mkstemp(prefix="commandant-")[1]
 
             try:
                 with open(output_file, "w") as out:
@@ -242,7 +299,7 @@ class _TestModule(object):
             except KeyboardInterrupt:
                 raise
             except:
-                self._print("FAILED")
+                self._print("FAILED {:>6}".format(_elapsed_time(start_time)))
 
                 with open(output_file, "r") as out:
                     for line in out:
@@ -255,7 +312,7 @@ class _TestModule(object):
             finally:
                 _os.remove(output_file)
 
-            self._print("PASSED")
+            self._print("PASSED {:>6}".format(_elapsed_time(start_time)))
 
         return 0
 
@@ -266,6 +323,10 @@ class _TestModule(object):
         print(*args, **kwargs)
         _sys.stdout.flush()
         _sys.stderr.flush()
+
+def _elapsed_time(start_time):
+    elapsed = _time.time() - start_time
+    return "{:.1f}s".format(elapsed)
 
 class _OutputRedirected(object):
     def __init__(self, stdout=None, stderr=None):
