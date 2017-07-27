@@ -89,13 +89,31 @@ def test_quiver_pair_peer_to_peer(session):
     if impl_exists("rhea"):
         call("quiver {} --arrow rhea -m 1 --peer-to-peer --verbose", _test_url())
 
-def test_quiver_bench(session):
+def test_quiver_bench_client_server(session):
+    # XXX Mixed pairs
+
     with temp_dir() as output:
         command = [
             "quiver-bench",
             "-m", "1",
+            "--client-server",
             "--include-servers", "builtin",
             "--exclude-servers", "none",
+            "--verbose",
+            "--output", output,
+        ]
+
+        call(command)
+
+def test_quiver_bench_peer_to_peer(session):
+    # XXX Mixed pairs
+
+    with temp_dir() as output:
+        command = [
+            "quiver-bench",
+            "-m", "1",
+            "--peer-to-peer",
+            "--exclude-senders", "qpid-proton-cpp",
             "--verbose",
             "--output", output,
         ]
@@ -105,6 +123,9 @@ def test_quiver_bench(session):
 class _TestServer(object):
     def __init__(self, impl="builtin", **kwargs):
         port = random_port()
+
+        if impl == "activemq":
+            port = "5672"
 
         self.url = "//127.0.0.1:{}/q0".format(port)
         self.ready_file = make_temp_file()
