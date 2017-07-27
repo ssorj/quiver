@@ -24,6 +24,7 @@ from __future__ import unicode_literals
 from __future__ import with_statement
 
 import os
+import shlex
 import sys
 
 home = os.path.normpath("@quiver_home@")
@@ -57,10 +58,12 @@ def main():
 
     url = "tcp://{}:{}?{}".format(host, port, "&".join(params))
 
-    args = [
-        "/usr/bin/env",
-        "--",
-        "java",
+    args = ["/usr/bin/env", "--", "java"]
+
+    if "JAVA_OPTS" in ENV:
+        args += shlex.split(ENV["JAVA_OPTS"])
+
+    args += [
         "-Darrow.jms.url={}".format(url),
         "-Djava.naming.factory.initial=org.apache.activemq.jndi.ActiveMQInitialContextFactory",
         "-Dorg.slf4j.simpleLogger.defaultLogLevel=warn",
@@ -70,9 +73,7 @@ def main():
 
     args += ARGS[1:]
 
-    notice("Calling '{}'", " ".join(args))
-
-    os.execl(*args)
+    exec_process(args)
 
 if __name__ == "__main__":
     try:

@@ -668,6 +668,22 @@ def check_process(proc):
     if proc.returncode != 0:
         raise CalledProcessError(proc.returncode, proc.command_string)
 
+def exec_process(command, *args):
+    if _is_string(command):
+        command = command.format(*args)
+        command_args = _shlex.split(command)
+        command_string = command
+    elif isinstance(command, _collections.Iterable):
+        assert len(args) == 0, args
+        command_args = command
+        command_string = _command_string(command, [])
+    else:
+        raise Exception()
+
+    notice("Calling '{0}'", command_string)
+
+    _os.execvp(command_args[0], command_args[1:])
+
 def make_archive(input_dir, output_dir, archive_stem):
     # XXX Cleanup temp dir
 
