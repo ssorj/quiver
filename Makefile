@@ -25,7 +25,7 @@ export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
 
 VERSION := $(shell cat VERSION.txt)
 
-MAVEN_ENABLED := \
+JAVA_ENABLED := \
 	$(shell which mvn 1> /dev/null 2>&1 && echo yes || echo no)
 NODEJS_ENABLED := \
 	$(shell which node 1> /dev/null 2>&1 && echo yes || echo no)
@@ -38,19 +38,18 @@ QPID_PROTON_C_ENABLED := \
 QPID_PROTON_CPP_ENABLED := \
 	$(shell PYTHONPATH=python scripts/check-cpp-header "proton/message.hpp" 1> /dev/null 2>&1 && echo yes || echo no)
 QPID_PROTON_PYTHON_ENABLED := \
-	$(shell PYTHONPATH=python scripts/check-python-import "proton" 1> /dev/null 2>&1 && echo yes)
+	$(shell PYTHONPATH=python scripts/check-python-import "proton" 1> /dev/null 2>&1 && echo yes || echo no)
 
-# XXX
-#ifneq (${QPID_PROTON_PYTHON_ENABLED},yes)
-#        $(error Qpid Proton Python is required to build Quiver)
-#endif
+ifneq (${QPID_PROTON_PYTHON_ENABLED},yes)
+        $(error Qpid Proton Python is required to build Quiver)
+endif
 
 # XXX Workaround for an Ubuntu packaging problem
 ifeq ($(shell lsb_release -is),Ubuntu)
 	QPID_PROTON_CPP_ENABLED := no
 endif
 
-$(info MAVEN_ENABLED=${MAVEN_ENABLED})
+$(info JAVA_ENABLED=${JAVA_ENABLED})
 $(info NODEJS_ENABLED=${NODEJS_ENABLED})
 $(info QPID_MESSAGING_CPP_ENABLED=${QPID_MESSAGING_CPP_ENABLED})
 $(info QPID_MESSAGING_PYTHON_ENABLED=${QPID_MESSAGING_PYTHON_ENABLED})
@@ -78,7 +77,7 @@ TARGETS := \
 	build/impls/quiver-server-qpid-dispatch \
 	build/python/quiver/common.py
 
-ifeq (${MAVEN_ENABLED},yes)
+ifeq (${JAVA_ENABLED},yes)
 TARGETS += \
 	build/impls/quiver-arrow-activemq-artemis-jms \
 	build/impls/quiver-arrow-activemq-jms \
