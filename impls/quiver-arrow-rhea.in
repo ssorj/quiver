@@ -31,7 +31,8 @@ var rhea = require(home + "/javascript/node_modules/rhea");
 var types = require(home + "/javascript/node_modules/rhea/lib/types.js");
 
 if (process.argv.length === 2) {
-    process.stdout.write("Rhea XXX\n");
+    var data = require(home + "/javascript/node_modules/rhea/package.json");
+    process.stdout.write("Rhea " + data.version + "\n");
     process.exit(0);
 }
 
