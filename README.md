@@ -147,7 +147,7 @@ running make targets.  These are the important ones:
 
     $ make build         # Builds the code
     $ make install       # Installs the code
-    $ make clean         # Removes build/ and install/
+    $ make clean         # Removes build/
     $ make test          # Runs the test suite
 
 ### Building against locally installed libraries
