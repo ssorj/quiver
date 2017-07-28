@@ -111,11 +111,13 @@ By default, installs from source go to `/usr/local`.  Make sure
 `/usr/local/bin` is in your path.
 
     $ cd quiver/
+    $ make build
     $ sudo make install
 
 Use the `PREFIX` option to change the install location.
 
-    $ sudo make install PREFIX=/usr/local
+    $ make build PREFIX=/usr
+    $ sudo make install
 
 ## Development
 
@@ -124,11 +126,6 @@ script from the project directory.
 
     $ cd quiver/
     $ source devel.sh
-
-The `devel` make target creates a local installation in your checkout
-and runs a sanity test.
-
-    $ make devel
 
 ### Project layout
 
@@ -142,7 +139,6 @@ and runs a sanity test.
     javascript/           # JavaScript library code
     python/               # Python library code
     build/                # The default build location
-    install/              # The development-mode install location
 
 ### Make targets
 
@@ -152,7 +148,6 @@ running make targets.  These are the important ones:
     $ make build         # Builds the code
     $ make install       # Installs the code
     $ make clean         # Removes build/ and install/
-    $ make devel         # Builds, installs in the checkout, tests sanity
     $ make test          # Runs the test suite
 
 ### Building against locally installed libraries
@@ -164,7 +159,7 @@ variables.
     $ export LIBRARY_PATH=$HOME/.local/lib64
     $ export C_INCLUDE_PATH=$HOME/.local/include
     $ export CPLUS_INCLUDE_PATH=$HOME/.local/include
-    $ make clean devel
+    $ make clean build
 
 Set `LD_LIBRARY_PATH` or update `ld.so.conf` to match your
 `LIBRARY_PATH` before running the resulting executables.

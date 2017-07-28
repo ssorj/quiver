@@ -21,13 +21,19 @@
 
 "use strict";
 
+var home = "@quiver_home@";
+
+if (process.env.hasOwnProperty("QUIVER_HOME")) {
+    home = process.env.QUIVER_HOME;
+}
+
+var rhea = require(home + "/javascript/node_modules/rhea");
+var types = require(home + "/javascript/node_modules/rhea/lib/types.js");
+
 if (process.argv.length === 2) {
     process.stdout.write("Rhea XXX\n");
     process.exit(0);
 }
-
-var rhea = require("@quiver_home@/javascript/node_modules/rhea");
-var types = require("@quiver_home@/javascript/node_modules/rhea/lib/types.js");
 
 var container = rhea.create_container({id: process.argv[5]});
 

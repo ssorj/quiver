@@ -43,7 +43,8 @@ try:
 except ImportError:
     from urlparse import urlparse as _urlparse
 
-_home = "@quiver_home@"
+_default_home = "@quiver_home@"
+_home = _os.environ.get("QUIVER_HOME", _default_home)
 
 _impls = []
 _impls_by_name = {}
