@@ -20,9 +20,10 @@
 
 set -ex
 
+RUN_DEPS="java-1.8.0-openjdk nodejs numpy python python-qpid-messaging python-qpid-proton qpid-cpp-client qpid-proton-c qpid-proton-cpp unzip xz"
 BUILD_DEPS="gcc-c++ java-1.8.0-openjdk-devel maven make qpid-cpp-client-devel qpid-proton-c-devel qpid-proton-cpp-devel"
 
-dnf -y install $BUILD_DEPS
+dnf -y install $RUN_DEPS $BUILD_DEPS
 
 make install PREFIX=/usr
 
@@ -30,4 +31,4 @@ make install PREFIX=/usr
 
 dnf clean all
 
-rm -rf /root/.m2
+rm -rf $HOME/.m2

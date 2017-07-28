@@ -22,14 +22,10 @@ MAINTAINER Justin Ross <jross@apache.org>
 
 RUN dnf -y update && dnf clean all
 
-RUN dnf -y install java-1.8.0-openjdk nodejs numpy python python-qpid-messaging python-qpid-proton \
-        qpid-cpp-client qpid-proton-c qpid-proton-cpp unzip xz \
-    && dnf clean all
-
 COPY . /root/qtools
 
 ARG CACHE_BUST=1
-RUN cd /root/qtools && scripts/build-inside-docker-image && rm -rf /root/qtools
+RUN cd /root/qtools && scripts/build-inside-container && rm -rf /root/qtools
 
 WORKDIR /root
 CMD ["/bin/bash"]
