@@ -133,8 +133,8 @@ build: ${TARGETS} build/prefix.txt
 
 .PHONY: install
 install: build
-	scripts/install-files build/quiver ${DESTDIR}$$(cat build/prefix.txt)/lib/quiver
 	scripts/install-files build/bin ${DESTDIR}$$(cat build/prefix.txt)/bin
+	scripts/install-files build/quiver ${DESTDIR}$$(cat build/prefix.txt)/lib/quiver
 
 .PHONY: test
 test: build
@@ -226,6 +226,10 @@ build/quiver/javascript/%: javascript/%
 build/quiver/python/quiver/common.py: python/quiver/common.py.in
 	@mkdir -p ${@D}
 	scripts/configure-file -a version=${VERSION} -a quiver_home=${INSTALLED_QUIVER_HOME} $< $@
+
+build/quiver/python/quiver/%: python/quiver/% python/commandant.py python/pencil.py python/plano.py build/quiver/python/quiver/common.py
+	@mkdir -p ${@D}
+	cp $< $@
 
 build/quiver/python/%: python/%
 	@mkdir -p ${@D}
