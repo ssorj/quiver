@@ -41,7 +41,7 @@
     <slf4j-version>1.7.25</slf4j-version>
 
     <!-- Client Dependencies for Quiver -->
-    <activemq-version>5.15.2</activemq-version>
+    <activemq-version>5.15.1</activemq-version>
     <artemis-version>2.3.0</artemis-version>
     <qpid-jms-version>0.26.0</qpid-jms-version>
     <vertx-proton-version>3.5.0</vertx-proton-version>
