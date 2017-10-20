@@ -20,14 +20,14 @@
 FROM ubuntu
 MAINTAINER Justin Ross <jross@apache.org>
 
-RUN apt-get -qq update && apt-get -qq upgrade
+RUN apt-get -qq update && apt-get -qq dist-upgrade
 
 RUN apt-get -qq install software-properties-common \
     && add-apt-repository -y ppa:qpid/released \
     && apt-get -qq update \
     && apt-get -qq install build-essential make openjdk-8-jdk maven nodejs python-numpy python unzip xz-utils
 
-RUN apt-get -qq install libqpidmessaging2-dev libqpidtypes1-dev libqpidcommon2-dev \
+RUN apt-get -qq install libqpidmessaging-dev libqpidtypes-dev libqpidcommon-dev \
         libqpid-proton8-dev python-qpid python-qpid-messaging python-qpid-proton
 
 RUN cd /usr/bin && ln -s nodejs node
