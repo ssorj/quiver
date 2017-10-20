@@ -38,13 +38,13 @@
     <source-version>1.8</source-version>
     <target-version>1.8</target-version>
 
-    <slf4j-version>1.7.21</slf4j-version>
+    <slf4j-version>1.7.25</slf4j-version>
 
     <!-- Client Dependencies for Quiver -->
-    <activemq-version>5.15.0</activemq-version>
-    <artemis-version>2.1.0</artemis-version>
-    <qpid-jms-version>0.24.0</qpid-jms-version>
-    <vertx-proton-version>3.4.2</vertx-proton-version>
+    <activemq-version>5.15.2</activemq-version>
+    <artemis-version>2.3.0</artemis-version>
+    <qpid-jms-version>0.26.0</qpid-jms-version>
+    <vertx-proton-version>3.5.0</vertx-proton-version>
     <geronimo.jms.2.spec.version>1.0-alpha-2</geronimo.jms.2.spec.version>
 
     <!-- Maven Plugin Versions for this Project -->
