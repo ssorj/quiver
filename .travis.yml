@@ -7,7 +7,7 @@ services:
 before_install:
   - sudo add-apt-repository -y ppa:qpid/released
   - sudo apt-get -qq update
-  - sudo apt-get -qq install build-essential make openjdk-8-jdk maven nodejs python-numpy python xz-utils libqpidmessaging2-dev libqpidtypes1-dev libqpidcommon2-dev libqpid-proton8-dev python-qpid python-qpid-messaging python-qpid-proton
+  - sudo apt-get -qq install build-essential make openjdk-8-jdk maven nodejs python-numpy python xz-utils libqpidmessaging-dev libqpidtypes-dev libqpidcommon-dev libqpid-proton8-dev python-qpid python-qpid-messaging python-qpid-proton
 
 script:
  - make big-test
