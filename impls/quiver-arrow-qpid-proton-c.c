@@ -102,10 +102,10 @@ static inline bool bytes_equal(const pn_bytes_t a, const pn_bytes_t b) {
 }
 
 /* TODO aconway 2017-06-09: need windows portable version */
-pn_timestamp_t timestamp() {
+int64_t now() {
     struct timespec t;
     clock_gettime(CLOCK_REALTIME, &t);
-    return t.tv_sec*1000 + t.tv_nsec/1000000;
+    return t.tv_sec * 1000 + t.tv_nsec / (1000 * 1000);
 }
 
 static const size_t BUF_MIN = 1024;
@@ -152,9 +152,8 @@ static void decode_message(pn_message_t *m, pn_delivery_t *d, pn_rwbytes_t *buf)
 
 static void print_message(pn_message_t *m) {
     pn_atom_t id_atom = pn_message_get_id(m);
-    ASSERT(id_atom.type == PN_ULONG);
-    uint64_t id = id_atom.u.as_ulong;
-
+    ASSERT(id_atom.type == PN_STRING);
+    pn_bytes_t id = id_atom.u.as_bytes;
     pn_data_t *props = pn_message_properties(m);
     pn_data_rewind(props);
     ASSERT(pn_data_next(props));
@@ -167,25 +166,28 @@ static void print_message(pn_message_t *m) {
         FAIL("unexpected property name: %.*s", key.start, key.size);
     }
     ASSERT(pn_data_next(props));
-    ASSERT(pn_data_type(props) == PN_TIMESTAMP);
-    pn_timestamp_t ts = pn_data_get_timestamp(props);
-    pn_data_exit(props);
-    printf("%" PRIu64 ",%" PRId64 ",%" PRId64 "\n", id, ts, timestamp());
+    ASSERT(pn_data_type(props) == PN_LONG);
+    int64_t stime = pn_data_get_long(props);
+    ASSERT(pn_data_exit(props));
+    printf("%s,%" PRId64 ",%" PRId64 "\n", id.start, stime, now());
 }
 
 static void send_message(struct arrow *a, pn_link_t *l) {
     ++a->sent;
-    pn_timestamp_t ts = timestamp();
-    pn_atom_t id;
-    id.type = PN_ULONG;
-    id.u.as_ulong = (uint64_t)a->sent;
-    pn_message_set_id(a->message, id);
+    int64_t stime = now();
+    pn_atom_t id_atom;
+    int id_len = snprintf(NULL, 0, "%d", a->sent);
+    char id_str[id_len + 1];
+    snprintf(id_str, id_len + 1, "%d", a->sent);
+    id_atom.type = PN_STRING;
+    id_atom.u.as_bytes = pn_bytes(id_len + 1, id_str);
+    pn_message_set_id(a->message, id_atom);
     pn_data_t *props = pn_message_properties(a->message);
     pn_data_clear(props);
     ASSERT(!pn_data_put_map(props));
     ASSERT(pn_data_enter(props));
     ASSERT(!pn_data_put_string(props, pn_bytes(SEND_TIME.size, SEND_TIME.start)));
-    ASSERT(!pn_data_put_timestamp(props, ts));
+    ASSERT(!pn_data_put_long(props, stime));
     ASSERT(pn_data_exit(props));
     size_t size = encode_message(a->message, &a->buffer);
     ASSERT(size > 0);
@@ -193,7 +195,7 @@ static void send_message(struct arrow *a, pn_link_t *l) {
     pn_delivery(l, pn_dtag((const char *)&a->sent, sizeof(a->sent)));
     ASSERT(size == pn_link_send(l, a->buffer.start, size));
     ASSERT(pn_link_advance(l));
-    printf("%zu,%" PRId64 "\n", a->sent, ts);
+    printf("%zu,%" PRId64 "\n", a->sent, stime);
 }
 
 static void fail_if_condition(pn_event_t *e, pn_condition_t *cond) {
