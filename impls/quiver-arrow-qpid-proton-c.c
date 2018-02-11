@@ -329,7 +329,8 @@ static bool handle(struct arrow* a, pn_event_t* e) {
 void run(struct arrow *a) {
     while(true) {
         pn_event_batch_t *events = pn_proactor_wait(a->proactor);
-        for (pn_event_t *e = pn_event_batch_next(events); e; e = pn_event_batch_next(events)) {
+        pn_event_t *e;
+        for (e = pn_event_batch_next(events); e; e = pn_event_batch_next(events)) {
             if (!handle(a, e)) {
                 return;
             }
