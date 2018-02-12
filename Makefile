@@ -47,7 +47,7 @@ QPID_PROTON_PYTHON_ENABLED := \
 	$(shell PYTHONPATH=python scripts/check-python-import "proton" 1> /dev/null 2>&1 && echo yes || echo no)
 
 ifneq (${QPID_PROTON_PYTHON_ENABLED},yes)
-        $(error Qpid Proton Python is required to build Quiver)
+        $(warning Qpid Proton Python is required to build Quiver)
 endif
 
 # XXX Workaround for an Ubuntu packaging problem
