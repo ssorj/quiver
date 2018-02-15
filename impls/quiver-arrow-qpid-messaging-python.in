@@ -24,7 +24,8 @@ import sys
 from qpid_messaging import *
 from qpid_messaging import __file__ as messaging_module_file
 
-home = os.path.normpath("@quiver_home@")
+default_home = os.path.normpath("@quiver_home@")
+home = os.environ.get("QUIVER_HOME", default_home)
 sys.path.insert(0, os.path.join(home, "python"))
 
 from plano import *

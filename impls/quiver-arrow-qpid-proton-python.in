@@ -26,7 +26,8 @@ from proton import Message, VERSION, __file__ as proton_module_file
 from proton.handlers import MessagingHandler
 from proton.reactor import Container
 
-home = os.path.normpath("@quiver_home@")
+default_home = os.path.normpath("@quiver_home@")
+home = os.environ.get("QUIVER_HOME", default_home)
 sys.path.insert(0, os.path.join(home, "python"))
 
 from plano import *
