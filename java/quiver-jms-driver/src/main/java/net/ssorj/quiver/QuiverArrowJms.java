@@ -56,6 +56,7 @@ public class QuiverArrowJms {
 
         Hashtable<Object, Object> env = new Hashtable<Object, Object>();
         env.put("connectionFactory.ConnectionFactory", url);
+        env.put("brokerURL", url);
         env.put("queue.queueLookup", path);
 
         Context context = new InitialContext(env);;
