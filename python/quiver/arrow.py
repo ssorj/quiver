@@ -308,7 +308,7 @@ class QuiverArrowCommand(Command):
 
         q = 0, 25, 50, 75, 100, 90, 99, 99.9, 99.99, 99.999
         percentiles = _numpy.percentile(latencies, q)
-        percentiles = map(int, percentiles)
+        percentiles = [int(x) for x in percentiles]
 
         self.latency_average = _numpy.mean(latencies)
         self.latency_quartiles = percentiles[:5]
@@ -343,7 +343,7 @@ class QuiverArrowCommand(Command):
             },
         }
 
-        with open(self.summary_file, "wb") as f:
+        with open(self.summary_file, "w") as f:
             _json.dump(props, f, indent=2)
 
 class _StatusSnapshot(object):
@@ -426,12 +426,13 @@ class _StatusSnapshot(object):
                   self.rss)
 
         fields = map(str, fields)
-        line = b"{}\n".format(b",".join(fields))
+        line = "{}\n".format(",".join(fields))
 
-        return line
+        return line.encode("ascii")
 
     def unmarshal(self, line):
-        fields = map(int, line.split(b","))
+        line = line.decode("ascii")
+        fields = [int(x) for x in line.split(",")]
 
         (self.timestamp,
          self.period,
@@ -447,7 +448,7 @@ def _read_lines(file_):
         fpos = file_.tell()
         line = file_.readline()
 
-        if line == "" or line[-1] != b"\n":
+        if line == b"" or line[-1] != b"\n":
             file_.seek(fpos)
             break
 

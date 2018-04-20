@@ -113,7 +113,7 @@ def exit(arg=None, *args):
     if _is_string(arg):
         error(arg, args)
         _sys.exit(1)
-    elif isinstance(arg, _types.IntType):
+    elif isinstance(arg, int):
         if arg > 0:
             error("Exiting with code {0}", arg)
         else:

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/node
 
 //
 // Licensed to the Apache Software Foundation (ASF) under one

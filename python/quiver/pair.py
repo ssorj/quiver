@@ -180,7 +180,7 @@ class QuiverPairCommand(Command):
                 sline = _read_line(fs)
                 rline = _read_line(fr)
 
-                #print("S: {:60} R: {}".format(sline, rline))
+                #print("S: {} R: {}".format(sline, rline))
 
                 if sline is not None:
                     ssnap = _StatusSnapshot(self, None)
@@ -326,7 +326,7 @@ def _read_line(file_):
     fpos = file_.tell()
     line = file_.readline()
 
-    if line == "" or line[-1] != b"\n":
+    if line == b"" or line[-1] != b"\n":
         file_.seek(fpos)
         return
 

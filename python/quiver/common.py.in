@@ -297,4 +297,4 @@ class _Formatter(_argparse.ArgumentDefaultsHelpFormatter,
     pass
 
 def now():
-    return long(_time.time() * 1000)
+    return int(_time.time() * 1000)
