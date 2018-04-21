@@ -5,4 +5,4 @@ services:
  - docker
 
 script:
- - make big-test
+ - make test-fedora test-ubuntu
