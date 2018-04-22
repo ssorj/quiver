@@ -22,10 +22,10 @@ MAINTAINER Justin Ross <jross@apache.org>
 
 RUN dnf -y update && dnf clean all
 
-COPY . /root/qtools
+COPY . /root/quiver
 
 ARG CACHE_BUST=1
-RUN cd /root/qtools && scripts/build-inside-container && rm -rf /root/qtools
+RUN cd /root/quiver && scripts/build-inside-container && rm -rf /root/quiver
 
 WORKDIR /root
 CMD ["/bin/bash"]

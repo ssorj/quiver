@@ -62,13 +62,14 @@ transmission of messages.
 | Java 8 JDK            | openjdk-8-jdk         | java-1.8.0-openjdk-devel
 | Maven                 | maven                 | maven
 | Node.js               | nodejs                | nodejs
-| NumPy                 | python-numpy          | numpy
+| NumPy                 | python3-numpy         | python3-numpy
 | Python 2.7            | python                | python
+| Python 3              | python3               | python3
 | Qpid Messaging C++    | libqpidmessaging2-dev, libqpidtypes1-dev, libqpidcommon2-dev | qpid-cpp-client-devel
 | Qpid Messaging Python | python-qpid-messaging, python-qpid | python-qpid-messaging
 | Qpid Proton C         | libqpid-proton8-dev   | qpid-proton-c-devel
 | Qpid Proton C++       | -                     | qpid-proton-cpp-devel
-| Qpid Proton Python    | python-qpid-proton    | python-qpid-proton
+| Qpid Proton Python    | python3-qpid-proton   | python3-qpid-proton
 | XZ                    | xz-utils              | xz
 
 ### Using Docker
@@ -94,9 +95,9 @@ Ubuntu PPA.
     $ sudo add-apt-repository ppa:qpid/released
     $ sudo apt-get update
     $ sudo apt-get install build-essential make openjdk-8-jdk maven nodejs \
-        python-numpy python xz-utils libqpidmessaging2-dev libqpidtypes1-dev \
+        python3-numpy python python3 xz-utils libqpidmessaging2-dev libqpidtypes1-dev \
         libqpidcommon2-dev libqpid-proton8-dev python-qpid python-qpid-messaging \
-        python-qpid-proton
+        python3-qpid-proton
 
 After this you can install from source.
 
