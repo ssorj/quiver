@@ -3,6 +3,8 @@
 %global _short_commit %(c=%{_commit}; echo ${c:0:8})
 %global _timestamp %(date +"%Y%m%d")
 
+%global debug_package %{nil}
+
 Name:           quiver
 Version:        0
 Release:        0.1.%{_timestamp}.%{_short_commit}%{?dist}
@@ -28,6 +30,7 @@ BuildRequires:  make
 BuildRequires:  python
 BuildRequires:  python3
 BuildRequires:  python3-numpy
+BuildRequires:  python3-qpid-proton
 BuildRequires:  qpid-cpp-client-devel
 BuildRequires:  qpid-proton-c-devel
 BuildRequires:  qpid-proton-cpp-devel
