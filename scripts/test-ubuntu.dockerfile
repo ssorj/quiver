@@ -17,7 +17,7 @@
 # under the License.
 #
 
-FROM ubuntu
+FROM ubuntu:xenial
 MAINTAINER Justin Ross <jross@apache.org>
 
 RUN apt-get -qq update && apt-get -qq dist-upgrade
@@ -26,10 +26,11 @@ RUN apt-get -qq update \
     && apt-get -qq install software-properties-common \
     && add-apt-repository -y ppa:qpid/released \
     && apt-get -qq update \
-    && apt-get -qq install build-essential make openjdk-8-jdk maven nodejs python3-numpy python python3 unzip xz-utils
+    && apt-get -qq install build-essential make openjdk-8-jdk maven nodejs python \
+        python3 python-numpy python3-numpy unzip xz-utils
 
 RUN apt-get -qq install libqpidmessaging-dev libqpidtypes-dev libqpidcommon-dev \
-        libqpid-proton8-dev python-qpid python-qpid-messaging python3-qpid-proton
+        libqpid-proton-cpp11-dev python-qpid python-qpid-messaging python3-qpid-proton
 
 RUN cd /usr/bin && ln -s nodejs node
 
