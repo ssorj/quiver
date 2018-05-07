@@ -457,8 +457,6 @@ def _read_lines(file_):
 
         yield line[:-1]
 
-    return None
-
 def _parse_send(line):
     message_id, send_time = line.split(b",", 1)
     send_time = int(send_time)
