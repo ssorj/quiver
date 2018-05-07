@@ -65,11 +65,12 @@ transmission of messages.
 | NumPy                 | python3-numpy         | python3-numpy
 | Python 2.7            | python                | python
 | Python 3              | python3               | python3
-| Qpid Messaging C++    | libqpidmessaging2-dev, libqpidtypes1-dev, libqpidcommon2-dev | qpid-cpp-client-devel
+| Qpid Messaging C++    | libqpidmessaging-dev, libqpidtypes-dev, libqpidcommon-dev | qpid-cpp-client-devel
 | Qpid Messaging Python | python-qpid-messaging, python-qpid | python-qpid-messaging
-| Qpid Proton C         | libqpid-proton8-dev   | qpid-proton-c-devel
-| Qpid Proton C++       | -                     | qpid-proton-cpp-devel
+| Qpid Proton C         | libqpid-proton-proactor1-dev | qpid-proton-c-devel
+| Qpid Proton C++       | libqpid-proton-cpp11-dev | qpid-proton-cpp-devel
 | Qpid Proton Python    | python3-qpid-proton   | python3-qpid-proton
+| Unzip                 | unzip                 | unzip
 | XZ                    | xz-utils              | xz
 
 ### Using Docker
@@ -95,9 +96,11 @@ Ubuntu PPA.
     $ sudo add-apt-repository ppa:qpid/released
     $ sudo apt-get update
     $ sudo apt-get install build-essential make openjdk-8-jdk maven nodejs \
-        python3-numpy python python3 xz-utils libqpidmessaging2-dev libqpidtypes1-dev \
-        libqpidcommon2-dev libqpid-proton8-dev python-qpid python-qpid-messaging \
-        python3-qpid-proton
+        python python-numpy python3 python3-numpy \
+        libqpidmessaging-dev libqpidtypes-dev libqpidcommon-dev \
+        libqpid-proton-proactor1-dev libqpid-proton-cpp11-dev \
+        python-qpid python-qpid-messaging python3-qpid-proton \
+        unzip xz-utils
 
 After this you can install from source.
 
