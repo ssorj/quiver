@@ -326,9 +326,12 @@ def _read_line(file_):
     fpos = file_.tell()
     line = file_.readline()
 
-    if line == b"" or line[-1] != b"\n":
+    if line == b"":
+        return None
+
+    if not line.endswith(b"\n"):
         file_.seek(fpos)
-        return
+        return None
 
     return line[:-1]
 

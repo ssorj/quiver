@@ -448,11 +448,16 @@ def _read_lines(file_):
         fpos = file_.tell()
         line = file_.readline()
 
-        if line == b"" or line[-1] != b"\n":
+        if line == b"":
+            break
+
+        if not line.endswith(b"\n"):
             file_.seek(fpos)
             break
 
         yield line[:-1]
+
+    return None
 
 def _parse_send(line):
     message_id, send_time = line.split(b",", 1)
