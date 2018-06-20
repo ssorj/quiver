@@ -193,6 +193,7 @@ class QuiverArrowCommand(Command):
             str(self.credit_window),
             str(self.transaction_size),
             self.flags,
+            str(self.target),
         ]
 
         assert None not in args, args
@@ -328,6 +329,7 @@ class QuiverArrowCommand(Command):
                 "body_size": self.body_size,
                 "credit_window": self.credit_window,
                 "transaction_size": self.transaction_size,
+                "target": self.target,
                 "timeout": self.timeout,
             },
             "results": {

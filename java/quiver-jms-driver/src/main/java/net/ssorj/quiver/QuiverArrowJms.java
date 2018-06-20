@@ -18,10 +18,14 @@
  */
 package net.ssorj.quiver;
 
-import java.io.*;
-import java.util.*;
 import javax.jms.*;
-import javax.naming.*;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.Hashtable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 public class QuiverArrowJms {
     public static void main(String[] args) {
@@ -42,6 +46,7 @@ public class QuiverArrowJms {
         int bodySize = Integer.parseInt(args[8]);
         int transactionSize = Integer.parseInt(args[10]);
         String[] flags = args[11].split(",");
+        int target = Integer.parseInt(args[12]);
 
         if (!connectionMode.equals("client")) {
             throw new RuntimeException("This impl supports client mode only");
@@ -59,11 +64,11 @@ public class QuiverArrowJms {
         env.put("brokerURL", url);
         env.put("queue.queueLookup", path);
 
-        Context context = new InitialContext(env);;
+        Context context = new InitialContext(env);
         ConnectionFactory factory = (ConnectionFactory) context.lookup("ConnectionFactory");
         Destination queue = (Destination) context.lookup("queueLookup");
 
-        Client client = new Client(factory, queue, operation, messages, bodySize, transactionSize, flags);
+        Client client = new Client(factory, queue, operation, messages, bodySize, transactionSize, flags, target);
 
         client.run();
     }
@@ -81,18 +86,18 @@ class Client {
 
     protected int sent;
     protected int received;
+    private final long nanoPeriod;
 
     Client(ConnectionFactory factory, Destination queue, String operation,
-           int messages, int bodySize, int transactionSize, String[] flags) {
+           int messages, int bodySize, int transactionSize, String[] flags, int target) {
         this.factory = factory;
         this.queue = queue;
         this.operation = operation;
         this.messages = messages;
         this.bodySize = bodySize;
         this.transactionSize = transactionSize;
-
         this.durable = Arrays.asList(flags).contains("durable");
-
+        this.nanoPeriod = target > 0 ? TimeUnit.SECONDS.toNanos(1) / target : 0;
         this.sent = 0;
         this.received = 0;
     }
@@ -132,6 +137,18 @@ class Client {
         return new PrintWriter(System.out);
     }
 
+    private static long waitUntilNextTime(final long nextTime, final long nanoPeriod) {
+        assert nanoPeriod > 0;
+        long waitNanos;
+        do {
+            waitNanos = nextTime - System.nanoTime();
+            if (waitNanos > 0) {
+                LockSupport.parkNanos(waitNanos);
+            }
+        } while (waitNanos > 0);
+        return nextTime + nanoPeriod;
+    }
+
     void sendMessages(Session session) throws JMSException {
         PrintWriter out = getOutputWriter();
         MessageProducer producer = session.createProducer(queue);
@@ -146,14 +163,18 @@ class Client {
 
         byte[] body = new byte[bodySize];
         Arrays.fill(body, (byte) 120);
+        final long nanoPeriod = this.nanoPeriod;
+        final long start = System.nanoTime();
+        long nextTime = start + nanoPeriod;
 
         while (sent < messages) {
             BytesMessage message = session.createBytesMessage();
-            long stime = System.currentTimeMillis();
-
             message.writeBytes(body);
+            if (nanoPeriod > 0) {
+                nextTime = waitUntilNextTime(nextTime, nanoPeriod);
+            }
+            final long stime = System.currentTimeMillis();
             message.setLongProperty("SendTime", stime);
-
             producer.send(message);
 
             out.printf("%s,%d\n", message.getJMSMessageID(), stime);

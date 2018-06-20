@@ -44,6 +44,7 @@ Implementations must process the following positional arguments.
     [10] credit-window     Size of credit window to maintain
     [11] transaction-size  Size of transaction batches; 0 for no transactions
     [12] flags             Comma-separated list of named tokens
+    [13] target            Target throughput in msg/sec; 0 to disable. Java only
 
 If an implementation does not support a particular `connection-mode`
 or `channel-mode`, for instance `server`, it should raise an error at

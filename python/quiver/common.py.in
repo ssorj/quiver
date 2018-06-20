@@ -180,6 +180,9 @@ class Command(object):
         self.parser.add_argument("--transaction-size", metavar="COUNT",
                                  help="Transfer batches of COUNT messages inside transactions; 0 to disable",
                                  default="0")
+        self.parser.add_argument("--target", metavar="COUNT",
+                                 help="Set a target throughput in msg/sec; 0 to disable. Java only",
+                                 default="0")
         self.parser.add_argument("--durable", action="store_true",
                                  help="Require persistent store-and-forward transfers")
         self.parser.add_argument("--timeout", metavar="SECONDS",
@@ -202,6 +205,7 @@ class Command(object):
         self.body_size = self.parse_int_with_unit(self.args.body_size)
         self.credit_window = self.parse_int_with_unit(self.args.credit)
         self.transaction_size = self.parse_int_with_unit(self.args.transaction_size)
+        self.target = self.parse_int_with_unit(self.args.target)
         self.durable = self.args.durable
         self.timeout = self.parse_int_with_unit(self.args.timeout)
 
