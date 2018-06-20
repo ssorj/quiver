@@ -219,6 +219,9 @@ class Command(object):
                                  help="Transfer batches of COUNT messages inside transactions " \
                                  "(default 0, disabled)",
                                  default="0")
+        self.parser.add_argument("--target", metavar="COUNT",
+                                 help="Set a target throughput in msg/sec; 0 to disable. Java only",
+                                 default="0")
         self.parser.add_argument("--durable", action="store_true",
                                  help="Require persistent store-and-forward transfers")
         self.parser.add_argument("--timeout", metavar="DURATION",
@@ -239,6 +242,7 @@ class Command(object):
     def init_common_test_attributes(self):
         self.count = self.parse_count(self.args.count)
         self.duration = self.parse_duration(self.args.duration)
+        self.rate = self.parse_count(self.args.rate)
         self.body_size = self.parse_count(self.args.body_size)
         self.credit_window = self.parse_count(self.args.credit)
         self.transaction_size = self.parse_count(self.args.transaction_size)

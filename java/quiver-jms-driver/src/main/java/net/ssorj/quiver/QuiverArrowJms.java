@@ -21,7 +21,9 @@ package net.ssorj.quiver;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 import javax.jms.*;
 import javax.naming.*;
 
@@ -49,6 +51,7 @@ public class QuiverArrowJms {
         final String path = kwargs.get("path");
         final int desiredDuration = Integer.parseInt(kwargs.get("duration"));
         final int desiredCount = Integer.parseInt(kwargs.get("count"));
+        final int desiredRate = Integer.parseInt(kwargs.get("rate"));
         final int bodySize = Integer.parseInt(kwargs.get("body-size"));
         final int transactionSize = Integer.parseInt(kwargs.get("transaction-size"));
         final boolean durable = Integer.parseInt(kwargs.get("durable")) == 1;
@@ -73,8 +76,8 @@ public class QuiverArrowJms {
         final ConnectionFactory factory = (ConnectionFactory) context.lookup("ConnectionFactory");
         final Destination queue = (Destination) context.lookup("queueLookup");
 
-        final Client client = new Client(factory, queue, operation, desiredDuration, desiredCount, bodySize,
-                                         transactionSize, durable);
+        final Client client = new Client(factory, queue, operation, desiredDuration, desiredCount, desiredRate,
+                                         bodySize, transactionSize, durable);
 
         client.run();
     }
@@ -93,19 +96,29 @@ class Client {
 
     protected int sent;
     protected int received;
+
     protected final AtomicBoolean stopping = new AtomicBoolean();
+    private final long nanoPeriod;
 
     Client(final ConnectionFactory factory, final Destination queue, final String operation,
-           final int desiredDuration, final int desiredCount, final int bodySize,
-           final int transactionSize, final boolean durable) {
+           final int desiredDuration, final int desiredCount, final int desiredRate,
+           final int bodySize, final int transactionSize, final boolean durable) {
         this.factory = factory;
         this.queue = queue;
         this.operation = operation;
         this.desiredDuration = desiredDuration;
         this.desiredCount = desiredCount;
+        this.desiredRate = desiredRate;
         this.bodySize = bodySize;
         this.transactionSize = transactionSize;
         this.durable = durable;
+
+        if (this.desiredRate > 0) {
+            this.nanoPeriod = this.desiredRate > 0 ? TimeUnit.SECONDS.toNanos(1) / this.desiredRate;
+        }
+
+        this.sent = 0;
+        this.received = 0;
     }
 
     void run() {
@@ -162,11 +175,29 @@ class Client {
         return new BufferedWriter(new OutputStreamWriter(System.out));
     }
 
+    private static long waitUntilNextTime(final long nextTime, final long nanoPeriod) {
+        assert nanoPeriod > 0;
+        long waitNanos;
+
+        do {
+            waitNanos = nextTime - System.nanoTime();
+
+            if (waitNanos > 0) {
+                LockSupport.parkNanos(waitNanos);
+            }
+        } while (waitNanos > 0);
+
+        return nextTime + nanoPeriod;
+    }
+
     void sendMessages(final Session session) throws IOException, JMSException {
         final StringBuilder line = new StringBuilder();
         final BufferedWriter out = getWriter();
         final MessageProducer producer = session.createProducer(queue);
         final byte[] body = new byte[bodySize];
+        final long nanoPeriod = this.nanoPeriod;
+        final long startTime = System.nanoTime();
+        long nextTime = start + nanoPeriod;
 
         Arrays.fill(body, (byte) 120);
 
@@ -182,9 +213,22 @@ class Client {
             final BytesMessage message = session.createBytesMessage();
             final long stime = System.currentTimeMillis();
 
-            message.writeBytes(body);
-            message.setLongProperty("SendTime", stime);
+=======
+        byte[] body = new byte[bodySize];
+        Arrays.fill(body, (byte) 120);
+        final long nanoPeriod = this.nanoPeriod;
+        final long start = System.nanoTime();
+        long nextTime = start + nanoPeriod;
 
+        while (sent < messages) {
+            BytesMessage message = session.createBytesMessage();
+>>>>>>> 284e808 (Added support for target throughput benchmarks in Java)
+            message.writeBytes(body);
+            if (nanoPeriod > 0) {
+                nextTime = waitUntilNextTime(nextTime, nanoPeriod);
+            }
+            final long stime = System.currentTimeMillis();
+            message.setLongProperty("SendTime", stime);
             producer.send(message);
             sent += 1;
 
