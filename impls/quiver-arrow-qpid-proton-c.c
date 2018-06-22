@@ -176,9 +176,9 @@ static void send_message(struct arrow *a, pn_link_t *l) {
     ++a->sent;
     int64_t stime = now();
     pn_atom_t id_atom;
-    int id_len = snprintf(NULL, 0, "%d", a->sent);
+    int id_len = snprintf(NULL, 0, "%zu", a->sent);
     char id_str[id_len + 1];
-    snprintf(id_str, id_len + 1, "%d", a->sent);
+    snprintf(id_str, id_len + 1, "%zu", a->sent);
     id_atom.type = PN_STRING;
     id_atom.u.as_bytes = pn_bytes(id_len + 1, id_str);
     pn_message_set_id(a->message, id_atom);
