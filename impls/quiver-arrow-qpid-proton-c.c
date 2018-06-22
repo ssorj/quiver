@@ -195,7 +195,7 @@ static void send_message(struct arrow *a, pn_link_t *l) {
     pn_delivery(l, pn_dtag((const char *)&a->sent, sizeof(a->sent)));
     ASSERT(size == pn_link_send(l, a->buffer.start, size));
     ASSERT(pn_link_advance(l));
-    printf("%zu,%" PRId64 "\n", a->sent, stime);
+    printf("%s,%" PRId64 "\n", id_str, stime);
 }
 
 static void fail_if_condition(pn_event_t *e, pn_condition_t *cond) {
