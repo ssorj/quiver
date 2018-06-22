@@ -173,7 +173,7 @@ class Client {
         MessageConsumer consumer = session.createConsumer(queue);
 
         while (received < messages) {
-            BytesMessage message = (BytesMessage) consumer.receive();
+            Message message = consumer.receive();
 
             if (message == null) {
                 throw new RuntimeException("Null receive");
