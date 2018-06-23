@@ -133,6 +133,7 @@ class Client {
     }
 
     void sendMessages(Session session) throws JMSException {
+        final StringBuilder line = new StringBuilder();
         PrintWriter out = getOutputWriter();
         MessageProducer producer = session.createProducer(queue);
 
@@ -155,8 +156,8 @@ class Client {
             message.setLongProperty("SendTime", stime);
 
             producer.send(message);
-
-            out.printf("%s,%d\n", message.getJMSMessageID(), stime);
+            line.setLength(0);
+            out.append(line.append(message.getJMSMessageID()).append(',').append(stime).append('\n'));
 
             sent += 1;
 
@@ -169,6 +170,7 @@ class Client {
     }
 
     void receiveMessages(Session session) throws JMSException {
+        final StringBuilder line = new StringBuilder();
         PrintWriter out = getOutputWriter();
         MessageConsumer consumer = session.createConsumer(queue);
 
@@ -183,7 +185,8 @@ class Client {
             long stime = message.getLongProperty("SendTime");
             long rtime = System.currentTimeMillis();
 
-            out.printf("%s,%d,%d\n", id, stime, rtime);
+            line.setLength(0);
+            out.append(line.append(id).append(',').append(stime).append(',').append(rtime).append('\n'));
 
             received += 1;
 
