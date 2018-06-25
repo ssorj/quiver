@@ -137,6 +137,7 @@ public class QuiverArrowVertxProton {
 
     private static void send(ProtonConnection connection, String address,
                              int messages, int bodySize, boolean durable, CountDownLatch latch) {
+        final StringBuilder line = new StringBuilder();
         connection.open();
 
         byte[] body = new byte[bodySize];
@@ -165,7 +166,8 @@ public class QuiverArrowVertxProton {
 
                     sender.send(msg);
 
-                    out.printf("%s,%d\n", id, stime);
+                    line.setLength(0);
+                    out.append(line.append(id).append(',').append(stime).append('\n'));
 
                     if (count.getAndIncrement() >= messages) {
                         out.flush();
@@ -182,6 +184,7 @@ public class QuiverArrowVertxProton {
 
     private static void receive(ProtonConnection connection, String address,
                                 int messages, int creditWindow, CountDownLatch latch) {
+        final StringBuilder line = new StringBuilder();
         connection.open();
 
         PrintWriter out = getOutputWriter();
@@ -194,7 +197,8 @@ public class QuiverArrowVertxProton {
                 long stime = (Long) msg.getApplicationProperties().getValue().get("SendTime");
                 long rtime = System.currentTimeMillis();
 
-                out.printf("%s,%d,%d\n", id, stime, rtime);
+            line.setLength(0);
+            out.append(line.append(id).append(',').append(stime).append(',').append(rtime).append('\n'));
 
                 delivery.disposition(ACCEPTED, true);
                 receiver.flow(1);
