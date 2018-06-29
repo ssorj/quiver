@@ -1,5 +1,21 @@
 build
+,class
 
-# IntelliJ IDEA #
-.idea/
+# Start of IntelliJ IDE files
+.idea
+.idea/*
 *.iml
+*.ipr
+*.iws
+# End of IntelliJ IDE files
+
+# Start of Eclipse IDE files
+.project
+.classpath
+.settings
+.cproject
+.metadata/
+.recommenders/
+eclipse-classes
+# End of Eclipse IDE files
+
