@@ -42,9 +42,9 @@
 
     <!-- Client Dependencies for Quiver -->
     <activemq-version>5.15.4</activemq-version>
-    <artemis-version>2.6.0</artemis-version>
-    <qpid-jms-version>0.32.0</qpid-jms-version>
-    <vertx-proton-version>3.5.1</vertx-proton-version>
+    <artemis-version>2.6.2</artemis-version>
+    <qpid-jms-version>0.35.0</qpid-jms-version>
+    <vertx-proton-version>3.5.3</vertx-proton-version>
     <geronimo.jms.2.spec.version>1.0-alpha-2</geronimo.jms.2.spec.version>
 
     <!-- Maven Plugin Versions for this Project -->
