@@ -24,9 +24,9 @@ PREFIX := /usr/local
 INSTALLED_QUIVER_HOME := ${PREFIX}/lib/quiver
 DOCKER_TAG := docker.io/ssorj/quiver
 
-export QUIVER_HOME := ${PWD}/build/quiver
-export PATH := ${PWD}/build/bin:${PATH}
-export PYTHONPATH := ${QUIVER_HOME}/python:${PWD}/python:${PYTHONPATH}
+export QUIVER_HOME := ${CURDIR}/build/quiver
+export PATH := ${CURDIR}/build/bin:${PATH}
+export PYTHONPATH := ${QUIVER_HOME}/python:${CURDIR}/python:${PYTHONPATH}
 export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
 
 VERSION := $(shell cat VERSION.txt)
