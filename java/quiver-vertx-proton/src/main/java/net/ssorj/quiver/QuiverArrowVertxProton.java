@@ -39,6 +39,7 @@ import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.message.Message;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import io.vertx.proton.ProtonClient;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonReceiver;
@@ -103,9 +104,9 @@ public class QuiverArrowVertxProton {
         final int portNumber = Integer.parseInt(port);
 
         CountDownLatch completionLatch = new CountDownLatch(1);
-        Vertx vertx = Vertx.vertx();
-        ProtonClient client = ProtonClient.create(vertx);
+        Vertx vertx = Vertx.vertx(new VertxOptions().setPreferNativeTransport(true));
 
+        ProtonClient client = ProtonClient.create(vertx);
         client.connect(host, portNumber, res -> {
                 if (res.succeeded()) {
                     ProtonConnection connection = res.result();
