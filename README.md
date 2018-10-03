@@ -259,7 +259,7 @@ number of messages are all sent or received.
       --init-only           Initialize and immediately exit (default: False)
       --quiet               Print nothing to the console (default: False)
       --verbose             Print details to the console (default: False)
-
+o
     operations:
       send                  Send messages
       receive               Receive messages
