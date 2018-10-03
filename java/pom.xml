@@ -41,10 +41,10 @@
     <slf4j-version>1.7.25</slf4j-version>
 
     <!-- Client Dependencies for Quiver -->
-    <activemq-version>5.15.5</activemq-version>
-    <artemis-version>2.6.2</artemis-version>
-    <qpid-jms-version>0.36.0</qpid-jms-version>
-    <vertx-proton-version>3.5.3</vertx-proton-version>
+    <activemq-version>5.15.6</activemq-version>
+    <artemis-version>2.6.3</artemis-version>
+    <qpid-jms-version>0.37.0</qpid-jms-version>
+    <vertx-proton-version>3.5.4</vertx-proton-version>
     <geronimo.jms.2.spec.version>1.0-alpha-2</geronimo.jms.2.spec.version>
 
     <!-- Netty Version that is used to grab native transport libraries -->
