@@ -69,6 +69,10 @@ def test_arrow_qpid_proton_cpp(session):
     raise TestSkipped("Disabled: https://github.com/ssorj/quiver/issues/51")
     _test_arrow("qpid-proton-cpp")
 
+def test_arrow_qpid_proton_go(session):
+    raise TestSkipped("Disabled: https://github.com/ssorj/quiver/issues/51")
+    _test_arrow("qpid-proton-go")
+
 def test_arrow_qpid_proton_python(session):
     _test_arrow("qpid-proton-python")
 

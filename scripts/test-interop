@@ -22,7 +22,7 @@ from plano import *
 
 def main():
     enable_logging(level="warn")
-    impls = ["c", "python", "cpp"]
+    impls = ["c", "python", "cpp", "go"]
     pairs = [(s,r) for s in impls for r in impls]
     # This requires a router or broker to be running
     for s, r in pairs:

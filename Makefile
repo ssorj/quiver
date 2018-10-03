@@ -45,6 +45,8 @@ QPID_PROTON_CPP_ENABLED := \
 	$(shell PYTHONPATH=python scripts/check-cpp-header "proton/message.hpp" 1> /dev/null 2>&1 && echo yes || echo no)
 QPID_PROTON_PYTHON_ENABLED := \
 	$(shell PYTHONPATH=python scripts/check-python3-import "proton" 1> /dev/null 2>&1 && echo yes || echo no)
+QPID_PROTON_GO_ENABLED := \
+	$(shell go doc "qpid.apache.org/electron" 1> /dev/null 2>&1 && echo yes || echo no)
 
 ifneq (${QPID_PROTON_PYTHON_ENABLED},yes)
         $(warning Qpid Proton Python is required to build Quiver)
@@ -57,6 +59,7 @@ $(info QPID_MESSAGING_PYTHON_ENABLED=${QPID_MESSAGING_PYTHON_ENABLED})
 $(info QPID_PROTON_C_ENABLED=${QPID_PROTON_C_ENABLED})
 $(info QPID_PROTON_CPP_ENABLED=${QPID_PROTON_CPP_ENABLED})
 $(info QPID_PROTON_PYTHON_ENABLED=${QPID_PROTON_PYTHON_ENABLED})
+$(info QPID_PROTON_GO_ENABLED=${QPID_PROTON_GO_ENABLED})
 
 BIN_SOURCES := $(shell find bin -type f -name \*.in)
 BIN_TARGETS := ${BIN_SOURCES:%.in=build/%}
@@ -101,6 +104,10 @@ endif
 
 ifeq (${QPID_PROTON_CPP_ENABLED},yes)
 TARGETS += build/quiver/impls/quiver-arrow-qpid-proton-cpp
+endif
+
+ifeq (${QPID_PROTON_GO_ENABLED},yes)
+TARGETS += build/quiver/impls/quiver-arrow-qpid-electron-go
 endif
 
 CCFLAGS := -g -Os -std=c++11 -lstdc++ -lpthread
@@ -198,6 +205,11 @@ build/quiver/impls/quiver-arrow-qpid-proton-cpp: impls/quiver-arrow-qpid-proton-
 build/quiver/impls/quiver-arrow-qpid-messaging-cpp: impls/quiver-arrow-qpid-messaging-cpp.cpp
 	@mkdir -p ${@D}
 	${CXX} $< -o $@ ${CCFLAGS} -lqpidmessaging -lqpidtypes
+
+force:	      # `go build` will check all dependencies
+build/quiver/impls/quiver-arrow-qpid-electron-go: force
+	@mkdir -p ${@D}
+	go build -o $@ impls/quiver-arrow-qpid-electron-go.go
 
 # XXX Use a template for the java rules
 
