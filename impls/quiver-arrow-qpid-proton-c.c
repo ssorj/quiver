@@ -398,8 +398,9 @@ void run(struct arrow* a) {
 }
 
 bool find_flag(const char* want, const char* flags) {
+    if (!flags) return false;
     size_t len = strlen(want);
-    const char* found = strstr(want, flags);
+    const char* found = strstr(flags, want);
     // Return true only if what we found is ',' delimited or at start/end of flags
     return (found &&
             (found == flags || *(found - 1) == ',') &&
