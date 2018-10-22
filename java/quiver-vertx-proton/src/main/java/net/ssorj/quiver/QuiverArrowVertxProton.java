@@ -27,6 +27,7 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -110,6 +111,7 @@ public class QuiverArrowVertxProton {
         client.connect(host, portNumber, res -> {
                 if (res.succeeded()) {
                     ProtonConnection connection = res.result();
+
                     connection.setContainer(id);
 
                     if (sender) {
@@ -192,6 +194,8 @@ public class QuiverArrowVertxProton {
         AtomicInteger count = new AtomicInteger(1);
         ProtonReceiver receiver = connection.createReceiver(address);
 
+        int creditTopUpThreshold = Math.max(1, creditWindow / 2);
+
         receiver.setAutoAccept(false).setPrefetch(0).flow(creditWindow);
         receiver.handler((delivery, msg) -> {
                 Object id = msg.getMessageId();
@@ -202,7 +206,11 @@ public class QuiverArrowVertxProton {
             out.append(line.append(id).append(',').append(stime).append(',').append(rtime).append('\n'));
 
                 delivery.disposition(ACCEPTED, true);
-                receiver.flow(1);
+
+                int credit = receiver.getCredit();
+                if(credit < creditTopUpThreshold) {
+                    receiver.flow(creditWindow - credit);
+                }
 
                 if (count.getAndIncrement() >= messages) {
                     out.flush();
