@@ -58,6 +58,7 @@ struct arrow {
     const char* host;
     const char* port;
     const char* path;
+    double desired_duration;
     size_t messages;
     size_t body_size;
     size_t credit_window;
@@ -95,6 +96,7 @@ static void stop(struct arrow* a) {
     if (a->listener) {
         pn_listener_close(a->listener);
     }
+    pn_proactor_cancel_timeout(a->proactor);
 }
 
 static inline bool bytes_equal(const pn_bytes_t a, const pn_bytes_t b) {
@@ -319,6 +321,14 @@ static bool handle(struct arrow* a, pn_event_t* e) {
         fail_if_condition(e, pn_listener_condition(pn_event_listener(e)));
         break;
 
+    case PN_PROACTOR_TIMEOUT:
+      FAIL("timeout expired %lf", a->desired_duration);
+      /* stop(a); */
+      // NOTE: stop(a) works correctly but causes the arrow to exit
+      // with 0 status, which makes quiver think it succeeded and gives
+      // a misleading report.
+      break;
+
     case PN_PROACTOR_INACTIVE:
         return false;
 
@@ -329,6 +339,10 @@ static bool handle(struct arrow* a, pn_event_t* e) {
 }
 
 void run(struct arrow *a) {
+    if (a->desired_duration > 0) {
+        pn_millis_t timeout = a->desired_duration * 1000;
+        pn_proactor_set_timeout(a->proactor, timeout);
+    }
     while(true) {
         pn_event_batch_t *events = pn_proactor_wait(a->proactor);
         pn_event_t *e;
@@ -386,6 +400,9 @@ int main(int argc, char** argv) {
     a.credit_window = atoi(argv[10]);
     const char *flags = argv[12];
     a.durable = find_flag("durable", flags);
+
+    /* FIXME: hard-code a timeout, this version of quiver doesn't have an argument */
+    a.desired_duration = atof("2");
 
     /* Set up the fixed parts of the message. */
     a.message = pn_message();
