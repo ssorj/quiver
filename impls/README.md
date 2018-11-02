@@ -107,7 +107,7 @@ confirm their creation.
 
 ### Messages
 
-Implementations must give each message a unique ID to aid debugging.
+Implementations must give each message a unique string ID to aid debugging.
 They must also set an application property named `SendTime` containing
 a `long` representing the send time in milliseconds.
 

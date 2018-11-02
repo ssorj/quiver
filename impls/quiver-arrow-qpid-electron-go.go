@@ -33,8 +33,8 @@ import (
 )
 
 func fail(format string, arg ...interface{}) {
-	fmt.Fprintf(os.Stderr, "%s: %s\n",
-		filepath.Base(os.Args[0]), fmt.Sprintf(format, arg...))
+	fmt.Fprintf(os.Stderr, "%s (%s): %s\n",
+		filepath.Base(os.Args[0]), os.Args[3], fmt.Sprintf(format, arg...))
 	os.Exit(1)
 }
 
@@ -47,7 +47,7 @@ func failIfErr(err error) {
 type Arrow struct {
 	connectionMode, channelMode, operation  string
 	id, netAddr, path                       string
-	messages                                uint64 // MessageId must be AMQP ulong
+	messages                                int
 	bodySize, creditWindow, transactionSize int
 	flags                                   map[string]bool
 	connectionOptions                       []electron.ConnectionOption
@@ -60,7 +60,7 @@ type Arrow struct {
 // Handle delivery outcomes on the sender.
 // Close connection on error or completion.
 func (a *Arrow) outcomes(out chan electron.Outcome) {
-	for i := uint64(0); i < a.messages; i++ {
+	for i := 0; i < a.messages; i++ {
 		select {
 		case o := <-out:
 			if o.Status != electron.Accepted {
@@ -73,10 +73,8 @@ func (a *Arrow) outcomes(out chan electron.Outcome) {
 	a.connection.Close(nil)
 }
 
-// Convert Go time.Time into milliseconds since the Epoch
-// time.Time is encoded as an AMQP timestamp automatically,
-// but we also need to print the millisecond time for quiver.
-func msTime(t time.Time) int64 { return t.UnixNano() / int64(time.Millisecond) }
+// Compute the current time in milliseconds since the Epoch for quiver.
+func now() int64 { t := time.Now(); return t.UnixNano() / int64(time.Millisecond) }
 
 // Act as a sender
 func (a *Arrow) sender(s electron.Sender) {
@@ -84,27 +82,30 @@ func (a *Arrow) sender(s electron.Sender) {
 	go a.outcomes(out)
 	m := amqp.NewMessageWith(strings.Repeat("x", int(a.bodySize)))
 	m.SetApplicationProperties(make(map[string]interface{}, 1))
-	for i := uint64(0); i < a.messages; i++ {
+	for i := 0; i < a.messages; i++ {
 		failIfErr(s.Error())
 		id := i + 1
-		now := time.Now()
-		m.SetMessageId(id)
-		m.ApplicationProperties()["SendTime"] = now // time.Time encodes as AMQP timestamp
-		fmt.Printf("%v,%v\n", id, msTime(now))      // quiver wants millisecond time
-		s.SendAsync(m, out, nil)                    // May block for credit. Errors reported via outcomes
+		m.SetMessageId(strconv.Itoa(id))
+		t := now()
+		m.ApplicationProperties()["SendTime"] = t
+		fmt.Printf("%v,%v\n", id, t)
+		s.SendAsync(m, out, nil) // May block for credit. Errors reported via outcomes
 	}
 	<-a.connection.Done() // Wait for outcomes() to close the connection
 }
 
 // Act as a receiver
 func (a *Arrow) receiver(r electron.Receiver) {
-	for i := uint64(0); i < a.messages; i++ {
+	for i := 0; i < a.messages; i++ {
 		rm, err := r.Receive()
 		failIfErr(err)
 		rm.Accept()
 		m := rm.Message
-		sendTime := msTime(m.ApplicationProperties()["SendTime"].(time.Time))
-		fmt.Printf("%v,%v,%v\n", m.MessageId(), sendTime, msTime(time.Now()))
+		t := m.ApplicationProperties()["SendTime"]
+		if t == nil {
+			fail("no SendTime property in %v", m)
+		}
+		fmt.Printf("%v,%v,%v\n", m.MessageId(), t, now())
 	}
 	a.connection.Close(nil)
 }
@@ -215,7 +216,7 @@ func main() {
 		id:              os.Args[4],
 		netAddr:         fmt.Sprintf("%v:%v", os.Args[5], os.Args[6]),
 		path:            os.Args[7],
-		messages:        uint64(intArg(8)),
+		messages:        intArg(8),
 		bodySize:        intArg(9),
 		creditWindow:    intArg(10),
 		transactionSize: intArg(11),

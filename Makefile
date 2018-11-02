@@ -133,6 +133,9 @@ clean:
 build: ${TARGETS} build/prefix.txt
 	scripts/smoke-test
 
+.PHONY: force
+force:
+
 .PHONY: install
 install: build
 	scripts/install-files build/bin ${DESTDIR}$$(cat build/prefix.txt)/bin
@@ -144,6 +147,10 @@ test: build
 
 .PHONY: big-test
 big-test: test test-fedora test-ubuntu
+
+.PHONY: test-interop
+test-interop: build force
+	scripts/test-interop
 
 .PHONY: test-centos
 test-centos:
@@ -199,7 +206,7 @@ build/quiver/impls/quiver-arrow-qpid-messaging-cpp: impls/quiver-arrow-qpid-mess
 	@mkdir -p ${@D}
 	${CXX} $< -o $@ ${CCFLAGS} -lqpidmessaging -lqpidtypes
 
-force:	      # `go build` will check all dependencies
+# force so `go build` will check all dependencies
 build/quiver/impls/quiver-arrow-qpid-electron-go: force
 	@mkdir -p ${@D}
 	go build -o $@ impls/quiver-arrow-qpid-electron-go.go
