@@ -16,15 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package net.ssorj.quiver;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 import javax.jms.*;
 import javax.naming.*;
 
 public class QuiverArrowJms {
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         try {
             doMain(args);
         } catch (Exception e) {
@@ -33,15 +35,16 @@ public class QuiverArrowJms {
         }
     }
 
-    public static void doMain(String[] args) throws Exception {
-        String connectionMode = args[0];
-        String channelMode = args[1];
-        String operation = args[2];
-        String path = args[6];
-        int messages = Integer.parseInt(args[7]);
-        int bodySize = Integer.parseInt(args[8]);
-        int transactionSize = Integer.parseInt(args[10]);
-        String[] flags = args[11].split(",");
+    public static void doMain(final String[] args) throws Exception {
+        final String connectionMode = args[0];
+        final String channelMode = args[1];
+        final String operation = args[2];
+        final String path = args[6];
+        final int desiredDuration = Integer.parseInt(args[7]);
+        final int desiredCount = Integer.parseInt(args[8]);
+        final int bodySize = Integer.parseInt(args[9]);
+        final int transactionSize = Integer.parseInt(args[11]);
+        final String[] flags = args[12].split(",");
 
         if (!connectionMode.equals("client")) {
             throw new RuntimeException("This impl supports client mode only");
@@ -51,19 +54,20 @@ public class QuiverArrowJms {
             throw new RuntimeException("This impl supports active mode only");
         }
 
-        String url = System.getProperty("arrow.jms.url");
+        final String url = System.getProperty("arrow.jms.url");
         assert url != null;
 
-        Hashtable<Object, Object> env = new Hashtable<Object, Object>();
+        final Hashtable<Object, Object> env = new Hashtable<Object, Object>();
         env.put("connectionFactory.ConnectionFactory", url);
         env.put("brokerURL", url);
         env.put("queue.queueLookup", path);
 
-        Context context = new InitialContext(env);;
-        ConnectionFactory factory = (ConnectionFactory) context.lookup("ConnectionFactory");
-        Destination queue = (Destination) context.lookup("queueLookup");
+        final Context context = new InitialContext(env);
+        final ConnectionFactory factory = (ConnectionFactory) context.lookup("ConnectionFactory");
+        final Destination queue = (Destination) context.lookup("queueLookup");
 
-        Client client = new Client(factory, queue, operation, messages, bodySize, transactionSize, flags);
+        final Client client = new Client(factory, queue, operation, desiredDuration, desiredCount, bodySize,
+                                         transactionSize, flags);
 
         client.run();
     }
@@ -73,7 +77,8 @@ class Client {
     protected final ConnectionFactory factory;
     protected final Destination queue;
     protected final String operation;
-    protected final int messages;
+    protected final int desiredDuration;
+    protected final int desiredCount;
     protected final int bodySize;
     protected final int transactionSize;
 
@@ -81,26 +86,38 @@ class Client {
 
     protected int sent;
     protected int received;
+    protected final AtomicBoolean stopping = new AtomicBoolean();
 
-    Client(ConnectionFactory factory, Destination queue, String operation,
-           int messages, int bodySize, int transactionSize, String[] flags) {
+    Client(final ConnectionFactory factory, final Destination queue, final String operation,
+           final int desiredDuration, final int desiredCount, final int bodySize,
+           final int transactionSize, final String[] flags) {
         this.factory = factory;
         this.queue = queue;
         this.operation = operation;
-        this.messages = messages;
+        this.desiredDuration = desiredDuration;
+        this.desiredCount = desiredCount;
         this.bodySize = bodySize;
         this.transactionSize = transactionSize;
 
         this.durable = Arrays.asList(flags).contains("durable");
-
-        this.sent = 0;
-        this.received = 0;
     }
 
     void run() {
         try {
-            Connection conn = factory.createConnection();
+            final Connection conn = factory.createConnection();
+
             conn.start();
+
+            if (desiredDuration > 0) {
+                final Timer timer = new Timer(true);
+                final TimerTask task = new TimerTask() {
+                        public void run() {
+                            stopping.lazySet(true);
+                        }
+                    };
+
+                timer.schedule(task, desiredDuration * 1000);
+            }
 
             final Session session;
 
@@ -110,12 +127,17 @@ class Client {
                 session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
             }
 
-            if (operation.equals("send")) {
-                sendMessages(session);
-            } else if (operation.equals("receive")) {
-                receiveMessages(session);
-            } else {
-                throw new java.lang.IllegalStateException();
+            try {
+                if (operation.equals("send")) {
+                    sendMessages(session);
+                } else if (operation.equals("receive")) {
+                    receiveMessages(session);
+                } else {
+                    throw new java.lang.IllegalStateException();
+                }
+            } catch (JMSException e) {
+                // Ignore error from remote close
+                return;
             }
 
             if (transactionSize > 0) {
@@ -123,19 +145,24 @@ class Client {
             }
 
             conn.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         } catch (JMSException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static PrintWriter getOutputWriter() {
-        return new PrintWriter(System.out);
+    private static BufferedWriter getWriter() {
+        return new BufferedWriter(new OutputStreamWriter(System.out));
     }
 
-    void sendMessages(Session session) throws JMSException {
+    void sendMessages(final Session session) throws IOException, JMSException {
         final StringBuilder line = new StringBuilder();
-        PrintWriter out = getOutputWriter();
-        MessageProducer producer = session.createProducer(queue);
+        final BufferedWriter out = getWriter();
+        final MessageProducer producer = session.createProducer(queue);
+        final byte[] body = new byte[bodySize];
+
+        Arrays.fill(body, (byte) 120);
 
         if (durable) {
             producer.setDeliveryMode(DeliveryMode.PERSISTENT);
@@ -145,53 +172,58 @@ class Client {
 
         producer.setDisableMessageTimestamp(true);
 
-        byte[] body = new byte[bodySize];
-        Arrays.fill(body, (byte) 120);
-
-        while (sent < messages) {
-            BytesMessage message = session.createBytesMessage();
-            long stime = System.currentTimeMillis();
+        while (!stopping.get()) {
+            final BytesMessage message = session.createBytesMessage();
+            final long stime = System.currentTimeMillis();
 
             message.writeBytes(body);
             message.setLongProperty("SendTime", stime);
 
             producer.send(message);
+            sent += 1;
+
             line.setLength(0);
             out.append(line.append(message.getJMSMessageID()).append(',').append(stime).append('\n'));
 
-            sent += 1;
-
             if (transactionSize > 0 && (sent % transactionSize) == 0) {
                 session.commit();
+            }
+
+            if (sent == desiredCount) {
+                break;
             }
         }
 
         out.flush();
     }
 
-    void receiveMessages(Session session) throws JMSException {
+    void receiveMessages(Session session) throws IOException, JMSException {
         final StringBuilder line = new StringBuilder();
-        PrintWriter out = getOutputWriter();
-        MessageConsumer consumer = session.createConsumer(queue);
+        final BufferedWriter out = getWriter();
+        final MessageConsumer consumer = session.createConsumer(queue);
 
-        while (received < messages) {
-            Message message = consumer.receive();
+        while (!stopping.get()) {
+            final Message message = consumer.receive(100);
 
             if (message == null) {
-                throw new RuntimeException("Null receive");
+                continue;
             }
 
-            String id = message.getJMSMessageID();
-            long stime = message.getLongProperty("SendTime");
-            long rtime = System.currentTimeMillis();
+            received += 1;
+
+            final String id = message.getJMSMessageID();
+            final long stime = message.getLongProperty("SendTime");
+            final long rtime = System.currentTimeMillis();
 
             line.setLength(0);
             out.append(line.append(id).append(',').append(stime).append(',').append(rtime).append('\n'));
 
-            received += 1;
-
             if (transactionSize > 0 && (received % transactionSize) == 0) {
                 session.commit();
+            }
+
+            if (received == desiredCount) {
+                break;
             }
         }
 

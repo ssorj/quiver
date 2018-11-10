@@ -25,10 +25,10 @@ default_home = os.path.normpath("@quiver_home@")
 home = os.environ.get("QUIVER_HOME", default_home)
 sys.path.insert(0, os.path.join(home, "python"))
 
-import quiver.test
+import quiver.tests
 
 from commandant import TestCommand
 
 if __name__ == "__main__":
-    command = TestCommand(home, [quiver.test])
+    command = TestCommand([quiver.tests], home=home)
     command.main()

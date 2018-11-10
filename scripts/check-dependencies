@@ -44,7 +44,7 @@ def check_python_module(module, missing, fedora_package):
         missing.append(fedora_package)
 
 def main():
-    set_message_threshold("warn")
+    enable_logging("warn")
     
     missing = list()
 

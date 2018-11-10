@@ -22,15 +22,14 @@
 package net.ssorj.quiver;
 
 import java.io.BufferedWriter;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.UnsignedLong;
@@ -39,6 +38,7 @@ import org.apache.qpid.proton.amqp.messaging.ApplicationProperties;
 import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.message.Message;
 
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.proton.ProtonClient;
@@ -54,7 +54,7 @@ public class QuiverArrowVertxProton {
 
     private static final Accepted ACCEPTED = Accepted.getInstance();
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         try {
             doMain(args);
         } catch (Exception e) {
@@ -63,22 +63,22 @@ public class QuiverArrowVertxProton {
         }
     }
 
-    public static void doMain(String[] args) throws Exception {
-        String connectionMode = args[0];
-        String channelMode = args[1];
-        String operation = args[2];
-        String id = args[3];
-        String host = args[4];
-        String port = args[5];
-        String path = args[6];
-        int messages = Integer.parseInt(args[7]);
-        int bodySize = Integer.parseInt(args[8]);
-        int creditWindow = Integer.parseInt(args[9]);
-        int transactionSize = Integer.parseInt(args[10]);
+    private static void doMain(final String[] args) throws Exception {
+        final String connectionMode = args[0];
+        final String channelMode = args[1];
+        final String operation = args[2];
+        final String id = args[3];
+        final String host = args[4];
+        final int port = Integer.parseInt(args[5]);
+        final String path = args[6];
+        final int desiredDuration = Integer.parseInt(args[7]);
+        final int desiredCount = Integer.parseInt(args[8]);
+        final int bodySize = Integer.parseInt(args[9]);
+        final int creditWindow = Integer.parseInt(args[10]);
+        final int transactionSize = Integer.parseInt(args[11]);
+        final String[] flags = args[12].split(",");
 
-        String[] flags = args[11].split(",");
-
-        boolean durable = Arrays.asList(flags).contains("durable");
+        final boolean durable = Arrays.asList(flags).contains("durable");
 
         if (!CLIENT.equalsIgnoreCase(connectionMode)) {
             throw new RuntimeException("This impl currently supports client mode only");
@@ -102,22 +102,29 @@ public class QuiverArrowVertxProton {
             throw new java.lang.IllegalStateException("Unknown operation: " + operation);
         }
 
-        final int portNumber = Integer.parseInt(port);
+        final CountDownLatch completionLatch = new CountDownLatch(1);
+        final Vertx vertx = Vertx.vertx(new VertxOptions().setPreferNativeTransport(true));
+        final ProtonClient client = ProtonClient.create(vertx);
 
-        CountDownLatch completionLatch = new CountDownLatch(1);
-        Vertx vertx = Vertx.vertx(new VertxOptions().setPreferNativeTransport(true));
-
-        ProtonClient client = ProtonClient.create(vertx);
-        client.connect(host, portNumber, res -> {
+        client.connect(host, port, (res) -> {
                 if (res.succeeded()) {
-                    ProtonConnection connection = res.result();
+                    final ProtonConnection connection = res.result();
 
                     connection.setContainer(id);
+                    connection.closeHandler(x -> {
+                            completionLatch.countDown();
+                        });
+
+                    if (desiredDuration > 0) {
+                        vertx.setTimer(desiredDuration * 1000, timerId -> {
+                                connection.close();
+                            });
+                    }
 
                     if (sender) {
-                        send(connection, path, messages, bodySize, durable, completionLatch);
+                        send(connection, path, desiredCount, bodySize, durable);
                     } else {
-                        receive(connection, path, messages, creditWindow, completionLatch);
+                        receive(connection, path, desiredCount, creditWindow);
                     }
                 } else {
                     res.cause().printStackTrace();
@@ -132,94 +139,103 @@ public class QuiverArrowVertxProton {
         vertx.close();
     }
 
-    // TODO: adjust? The writer is [needlessly] synchronizing every
-    // write, the buffer may flush more/less often than desired?.
-    private static PrintWriter getOutputWriter() {
-        return new PrintWriter(System.out);
+    private static BufferedWriter getWriter() {
+        return new BufferedWriter(new OutputStreamWriter(System.out));
     }
 
-    private static void send(ProtonConnection connection, String address,
-                             int messages, int bodySize, boolean durable, CountDownLatch latch) {
+    private static void send(final ProtonConnection connection, final String address,
+                             final int desiredCount, final int bodySize, final boolean durable) {
         final StringBuilder line = new StringBuilder();
-        connection.open();
+        final BufferedWriter out = getWriter();
+        final AtomicInteger count = new AtomicInteger(0);
+        final ProtonSender sender = connection.createSender(address);
+        final byte[] body = new byte[bodySize];
 
-        byte[] body = new byte[bodySize];
         Arrays.fill(body, (byte) 120);
-        PrintWriter out = getOutputWriter();
-        AtomicLong count = new AtomicLong(1);
-        ProtonSender sender = connection.createSender(address);
 
-        sender.sendQueueDrainHandler(s -> {
-                while (!sender.sendQueueFull() && count.get() <= messages) {
-                    Message msg = Message.Factory.create();
+        sender.sendQueueDrainHandler((s) -> {
+                try {
+                    try {
+                        while (!sender.sendQueueFull()) {
+                            int sent = count.get();
 
-                    UnsignedLong id = UnsignedLong.valueOf(count.get());
-                    msg.setMessageId(id);
+                            if (sent > 0 && sent == desiredCount) {
+                                connection.close();
+                                break;
+                            }
 
-                    msg.setBody(new Data(new Binary(body)));
+                            final Message msg = Message.Factory.create();
+                            final String id = String.valueOf(count.get());
+                            final long stime = System.currentTimeMillis();
+                            final Map<String, Object> props = new HashMap<>();
 
-                    Map<String, Object> props = new HashMap<>();
-                    msg.setApplicationProperties(new ApplicationProperties(props));
-                    long stime = System.currentTimeMillis();
-                    props.put("SendTime", stime);
+                            props.put("SendTime", stime);
 
-                    if (durable) {
-                        msg.setDurable(true);
-                    }
+                            msg.setMessageId(id);
+                            msg.setBody(new Data(new Binary(body)));
+                            msg.setApplicationProperties(new ApplicationProperties(props));
 
-                    sender.send(msg);
+                            if (durable) {
+                                msg.setDurable(true);
+                            }
 
-                    line.setLength(0);
-                    out.append(line.append(id).append(',').append(stime).append('\n'));
+                            sender.send(msg);
+                            count.incrementAndGet();
 
-                    if (count.getAndIncrement() >= messages) {
+                            line.setLength(0);
+                            out.append(line.append(id).append(',').append(stime).append('\n'));
+                        }
+                    } finally {
                         out.flush();
-
-                        connection.closeHandler(x -> {
-                                latch.countDown();
-                            });
-                        connection.close();
-                    };
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             });
+
+        connection.open();
         sender.open();
     }
 
-    private static void receive(ProtonConnection connection, String address,
-                                int messages, int creditWindow, CountDownLatch latch) {
+    private static void receive(final ProtonConnection connection, final String address,
+                                final int desiredCount, final int creditWindow) {
         final StringBuilder line = new StringBuilder();
-        connection.open();
-
-        PrintWriter out = getOutputWriter();
-        AtomicInteger count = new AtomicInteger(1);
-        ProtonReceiver receiver = connection.createReceiver(address);
-
-        int creditTopUpThreshold = Math.max(1, creditWindow / 2);
+        final BufferedWriter out = getWriter();
+        final AtomicInteger count = new AtomicInteger(0);
+        final int creditTopUpThreshold = Math.max(1, creditWindow / 2);
+        final ProtonReceiver receiver = connection.createReceiver(address);
 
         receiver.setAutoAccept(false).setPrefetch(0).flow(creditWindow);
         receiver.handler((delivery, msg) -> {
-                Object id = msg.getMessageId();
-                long stime = (Long) msg.getApplicationProperties().getValue().get("SendTime");
-                long rtime = System.currentTimeMillis();
+                try {
+                    try {
+                        final Object id = msg.getMessageId();
+                        final long stime = (Long) msg.getApplicationProperties().getValue().get("SendTime");
+                        final long rtime = System.currentTimeMillis();
 
-            line.setLength(0);
-            out.append(line.append(id).append(',').append(stime).append(',').append(rtime).append('\n'));
+                        line.setLength(0);
+                        out.append(line.append(id).append(',').append(stime).append(',').append(rtime).append('\n'));
 
-                delivery.disposition(ACCEPTED, true);
+                        delivery.disposition(ACCEPTED, true);
 
-                int credit = receiver.getCredit();
-                if(credit < creditTopUpThreshold) {
-                    receiver.flow(creditWindow - credit);
+                        final int credit = receiver.getCredit();
+
+                        if (credit < creditTopUpThreshold) {
+                            receiver.flow(creditWindow - credit);
+                        }
+
+                        if (count.incrementAndGet() == desiredCount) {
+                            connection.close();
+                        }
+                    } finally {
+                        out.flush();
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
+            });
 
-                if (count.getAndIncrement() >= messages) {
-                    out.flush();
-
-                    connection.closeHandler(x -> {
-                            latch.countDown();
-                        });
-                    connection.close();
-                }
-            }).open();
+        connection.open();
+        receiver.open();
     }
 }

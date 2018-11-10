@@ -26,10 +26,12 @@
 #include <qpid/messaging/Session.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 using namespace qpid::messaging;
@@ -38,7 +40,7 @@ using namespace qpid::types;
 static const std::string LINK_OPTIONS =
     "{link: {durable: False, reliability: at-least-once}}";
 
-long now() {
+int64_t now() {
     return std::chrono::duration_cast<std::chrono::milliseconds>
         (std::chrono::system_clock::now().time_since_epoch()).count();
 }
@@ -67,15 +69,17 @@ struct Client {
     std::string host;
     std::string port;
     std::string path;
-    int messages;
+    std::chrono::seconds desired_duration;
+    int desired_count;
     int body_size;
     int credit_window;
     int transaction_size;
-
     bool durable;
 
+    int64_t start_time;
     int sent = 0;
     int received = 0;
+    std::atomic<bool> stopping {false};
 
     void run();
     void sendMessages(Session&);
@@ -93,11 +97,18 @@ void Client::run() {
     std::string options = oss.str();
 
     Connection conn(domain, options);
-
-    // XXX This didn't have any effect
-    //conn.setOption("container_id", id);
-
     conn.open();
+
+    start_time = now();
+
+    if (desired_duration > std::chrono::seconds::zero()) {
+        std::thread timer([this]() {
+                std::this_thread::sleep_for(desired_duration);
+                stopping = true;
+            });
+
+        timer.detach();
+    }
 
     try {
         Session session;
@@ -119,6 +130,10 @@ void Client::run() {
         if (transaction_size > 0) {
             session.commit();
         }
+
+        conn.close();
+    } catch (const ConnectionError& e) {
+        // Ignore error from remote close
     } catch (const std::exception& e) {
         conn.close();
         throw;
@@ -131,9 +146,9 @@ void Client::sendMessages(Session& session) {
 
     std::string body(body_size, 'x');
 
-    while (sent < messages) {
+    while (!stopping) {
         std::string id = std::to_string(sent + 1);
-        long stime = now();
+        int64_t stime = now();
 
         Message message(body);
         message.setMessageId(id);
@@ -151,6 +166,10 @@ void Client::sendMessages(Session& session) {
         if (transaction_size > 0 && (sent % transaction_size) == 0) {
             session.commit();
         }
+
+        if (sent == desired_count) {
+            break;
+        }
     }
 }
 
@@ -160,23 +179,28 @@ void Client::receiveMessages(Session& session) {
 
     Message message;
 
-    while (received < messages) {
+    while (!stopping) {
         if (receiver.getAvailable() == 0) {
             continue;
         }
 
         receiver.get(message);
         received++;
+
         session.acknowledge();
 
         std::string id = message.getMessageId();
-        long stime = message.getProperties()["SendTime"];
-        long rtime = now();
+        int64_t stime = message.getProperties()["SendTime"];
+        int64_t rtime = now();
 
         std::cout << id << "," << stime << "," << rtime << "\n";
 
         if (transaction_size > 0 && (received % transaction_size) == 0) {
             session.commit();
+        }
+
+        if (received == desired_count) {
+            break;
         }
     }
 }
@@ -207,12 +231,13 @@ int main(int argc, char** argv) {
     client.host = argv[5];
     client.port = argv[6];
     client.path = argv[7];
-    client.messages = std::atoi(argv[8]);
-    client.body_size = std::atoi(argv[9]);
-    client.credit_window = std::atoi(argv[10]);
-    client.transaction_size = std::atoi(argv[11]);
+    client.desired_duration = std::chrono::seconds(std::atoi(argv[8]));
+    client.desired_count = std::atoi(argv[9]);
+    client.body_size = std::atoi(argv[10]);
+    client.credit_window = std::atoi(argv[11]);
+    client.transaction_size = std::atoi(argv[12]);
 
-    std::vector<std::string> flags = split(argv[12], ',');
+    std::vector<std::string> flags = split(argv[13], ',');
 
     client.durable = std::any_of(flags.begin(), flags.end(), [](std::string &s) { return s == "durable"; });
 

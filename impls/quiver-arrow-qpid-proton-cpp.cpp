@@ -24,17 +24,20 @@
 #include <proton/container.hpp>
 #include <proton/default_container.hpp>
 #include <proton/delivery.hpp>
+#include <proton/duration.hpp>
 #include <proton/link.hpp>
 #include <proton/listener.hpp>
 #include <proton/message.hpp>
 #include <proton/message_id.hpp>
 #include <proton/messaging_handler.hpp>
-#include <proton/thread_safe.hpp>
+#include <proton/receiver_options.hpp>
+#include <proton/target_options.hpp>
 #include <proton/tracker.hpp>
+#include <proton/transfer.hpp>
+#include <proton/transport.hpp>
 #include <proton/value.hpp>
 #include <proton/version.h>
-#include <proton/receiver_options.hpp>
-#include <proton/transport.hpp>
+#include <proton/work_queue.hpp>
 
 #include <algorithm>
 #include <assert.h>
@@ -44,7 +47,7 @@
 #include <string>
 #include <vector>
 
-long now() {
+int64_t now() {
     return std::chrono::duration_cast<std::chrono::milliseconds>
         (std::chrono::system_clock::now().time_since_epoch()).count();
 }
@@ -75,117 +78,143 @@ struct handler : public proton::messaging_handler {
     std::string host;
     std::string port;
     std::string path;
-    int messages;
+    int desired_duration;
+    int desired_count;
     int body_size;
     int credit_window;
-
     bool durable;
 
+    proton::connection connection;
     proton::listener listener;
     proton::binary body;
 
+    long start_time = 0;
     int sent = 0;
     int received = 0;
     int accepted = 0;
 
-    void on_container_start(proton::container& c) override {
-        std::string domain = host + ":" + port;
+    void on_container_start(proton::container& cont) override {
+        body = std::string(body_size, 'x');
 
+        std::string domain = host + ":" + port;
         proton::connection_options opts;
+
         opts.sasl_allowed_mechs("ANONYMOUS");
 
         if (connection_mode == "client") {
-            c.connect(domain, opts);
+            connection = cont.connect(domain, opts);
         } else if (connection_mode == "server") {
-            listener = c.listen(domain, opts);
+            listener = cont.listen(domain, opts);
         } else {
             throw std::exception();
         }
 
-        body = std::string(body_size, 'x');
+        start_time = now();
+
+        if (desired_duration > 0) {
+            cont.schedule(desired_duration * proton::duration::SECOND, [this] { stop(); });
+        }
     }
 
-    void on_connection_open(proton::connection& c) override {
+    void on_connection_open(proton::connection& conn) override {
         if (channel_mode == "active") {
             if (operation == "send") {
-                c.open_sender(path);
+                conn.open_sender(path);
             } else if (operation == "receive") {
                 proton::receiver_options opts;
                 opts.credit_window(credit_window);
 
-                c.open_receiver(path, opts);
+                conn.open_receiver(path, opts);
             } else {
                 throw std::exception();
             }
+        } else if (channel_mode == "passive") {
+            connection = conn;
+            connection.open();
+        } else {
+            throw new std::exception();
         }
     }
 
-    void on_receiver_open(proton::receiver& r) override {
-        r.open(proton::receiver_options().credit_window(credit_window));
+    void on_receiver_open(proton::receiver& rcv) override {
+        proton::receiver_options ropts;
+        proton::target_options topts;
+
+        topts.address(rcv.target().address());
+
+        ropts.credit_window(credit_window);
+        ropts.target(topts);
+
+        rcv.open(ropts);
     }
 
-    void on_sendable(proton::sender& s) override {
+    void on_sendable(proton::sender& snd) override {
         assert (operation == "send");
 
-        while (s.credit() > 0 && sent < messages) {
-            int id = sent + 1;
-            long stime = now();
+        proton::message msg;
 
-            proton::message m(body);
-            m.id(id);
-            m.properties().put("SendTime", stime);
-
-            if (durable) {
-                m.durable(true);
+        while (snd.credit() > 0) {
+            if (desired_count > 0 && sent == desired_count) {
+                break;
             }
 
-            s.send(m);
+            std::string id = std::to_string(sent + 1);
+            int64_t stime = now();
+
+            msg.clear();
+            msg.body(body);
+            msg.id(id);
+            msg.properties().put("SendTime", stime);
+
+            if (durable) {
+                msg.durable(true);
+            }
+
+            snd.send(msg);
             sent++;
 
             std::cout << id << "," << stime << "\n";
         }
     }
 
-    void on_tracker_accept(proton::tracker& t) override {
+    void on_tracker_accept(proton::tracker& trk) override {
         accepted++;
 
-        if (accepted == messages) {
-            t.connection().close();
-
-            if (connection_mode == "server") {
-                listener.stop();
-            }
+        if (accepted == desired_count) {
+            stop();
         }
     }
 
-    void on_message(proton::delivery& d, proton::message& m) override {
+    void on_message(proton::delivery& dlv, proton::message& msg) override {
         assert (operation == "receive");
-
-        if (received == messages) {
-            return;
-        }
 
         received++;
 
-        proton::message_id id = m.id();
-        proton::scalar stime = m.properties().get("SendTime");
-        long rtime = now();
+        proton::message_id id = msg.id();
+        proton::scalar stime = msg.properties().get("SendTime");
+        int64_t rtime = now();
 
         std::cout << id << "," << stime << "," << rtime << "\n";
 
-        if (received == messages) {
-            d.connection().close();
-
-            if (connection_mode == "server") {
-                listener.stop();
-            }
+        if (received == desired_count) {
+            stop();
         }
     }
 
-    void on_transport_error(proton::transport& t) override {
+    void stop() {
+        if (!!connection) {
+            connection.close();
+        }
+
+        if (connection_mode == "server") {
+            listener.stop();
+        }
+    }
+
+    void on_transport_error(proton::transport& trans) override {
         // On server ignore errors from dummy connections to see if we are listening.
-        if (connection_mode != "server") {
-            on_error(t.error());
+        if (connection_mode == "client") {
+            on_error(trans.error());
         }
     }
 };
@@ -199,7 +228,7 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    int transaction_size = std::atoi(argv[11]);
+    int transaction_size = std::atoi(argv[12]);
 
     if (transaction_size > 0) {
         eprint("This impl doesn't support transactions");
@@ -215,11 +244,13 @@ int main(int argc, char** argv) {
     h.host = argv[5];
     h.port = argv[6];
     h.path = argv[7];
-    h.messages = std::atoi(argv[8]);
-    h.body_size = std::atoi(argv[9]);
-    h.credit_window = std::atoi(argv[10]);
 
-    std::vector<std::string> flags = split(argv[12], ',');
+    h.desired_duration = std::atoi(argv[8]);
+    h.desired_count = std::atoi(argv[9]);
+    h.body_size = std::atoi(argv[10]);
+    h.credit_window = std::atoi(argv[11]);
+
+    std::vector<std::string> flags = split(argv[13], ',');
 
     h.durable = std::any_of(flags.begin(), flags.end(), [](std::string &s) { return s == "durable"; });
 

@@ -21,51 +21,53 @@
 
 "use strict";
 
-var home = "@quiver_home@";
+let home = "@quiver_home@";
 
 if (process.env.hasOwnProperty("QUIVER_HOME")) {
     home = process.env.QUIVER_HOME;
 }
 
-var rhea = require(home + "/javascript/node_modules/rhea");
-var types = require(home + "/javascript/node_modules/rhea/lib/types.js");
+const rhea = require(home + "/javascript/node_modules/rhea");
+const types = require(home + "/javascript/node_modules/rhea/lib/types.js");
 
 if (process.argv.length === 2) {
-    var data = require(home + "/javascript/node_modules/rhea/package.json");
+    let data = require(home + "/javascript/node_modules/rhea/package.json");
     process.stdout.write("Rhea " + data.version + "\n");
     process.exit(0);
 }
 
-var container = rhea.create_container({id: process.argv[5]});
+const container = rhea.create_container({id: process.argv[5]});
 
-var connection_mode = process.argv[2];
-var channel_mode = process.argv[3];
-var operation = process.argv[4];
-var host = process.argv[6];
-var port = process.argv[7];
-var path = process.argv[8];
-var messages = process.argv[9];
-var body_size = process.argv[10];
-var credit_window = process.argv[11];
-var transaction_size = process.argv[12];
+const connection_mode = process.argv[2];
+const channel_mode = process.argv[3];
+const operation = process.argv[4];
+const host = process.argv[6];
+const port = process.argv[7];
+const path = process.argv[8];
+const desired_duration = process.argv[9];
+const desired_count = process.argv[10];
+const body_size = process.argv[11];
+const credit_window = process.argv[12];
+const transaction_size = process.argv[13];
+const flags = process.argv[14].split(",");
 
-var flags = process.argv[13].split(",");
+const durable = flags.indexOf("durable") > -1;
 
-var durable = flags.indexOf("durable") > -1;
+let a = new Array(body_size);
 
-var a = new Array(body_size);
-
-for (var i = 0; i < a.length; i++) {
+for (let i = 0; i < a.length; i++) {
     a[i] = 120;
 }
 
-var body = types.wrap_binary(new Uint8Array(a));
+const body = types.wrap_binary(new Uint8Array(a));
 
-var sent = 0;
-var received = 0;
-var accepted = 0;
+let start_time;
+let sent = 0;
+let received = 0;
+let accepted = 0;
 
-var listener;
+let connection;
+let listener;
 
 function eprint(message) {
     process.stderr.write("quiver-arrow: error: ");
@@ -73,8 +75,8 @@ function eprint(message) {
     process.stderr.write("\n");
 }
 
-var buffer = new Buffer(5120);
-var offset = 0;
+const buffer = new Buffer(5120);
+let offset = 0;
 
 function flush() {
     if (offset) {
@@ -83,35 +85,50 @@ function flush() {
     }
 }
 
-function log(message) {
+function write(message) {
     if (offset + message.length >= buffer.length) {
         flush();
     }
+
     buffer.write(message, offset, message.length, 'ascii');
     offset += message.length;
 }
 
-container.on("connection_close", function(context) {
+function stop() {
+    if (connection) {
+        connection.close();
+    }
+
+    if (listener) {
+        listener.close();
+    }
+}
+
+container.on("connection_close", function(event) {
     flush();
 });
 
-container.on("connection_open", function(context) {
+container.on("connection_open", function(event) {
+    if (connection_mode == "server") {
+        connection = event.connection;
+        connection.open();
+    }
+
     if (channel_mode == "passive") {
         return;
     }
 
     if (operation == "send") {
-        // XXX How do I set delivery mode?
-        var options = {
+        let options = {
             target: {
                 address: path,
                 durable: false
             }
         };
 
-        context.connection.open_sender(options);
+        event.connection.open_sender(options);
     } else if (operation == "receive") {
-        var options = {
+        let options = {
             source: {
                 address: path,
                 durable: false
@@ -119,69 +136,64 @@ container.on("connection_open", function(context) {
             prefetch: credit_window
         };
 
-        context.connection.open_receiver(options);
+        event.connection.open_receiver(options);
     } else {
         throw new Error();
     }
 });
 
-container.on("sendable", function(context) {
-    while (context.sender.sendable() && sent < messages) {
-        var id = sent + 1;
-        var stime = types.wrap_long(new Date().getTime());
+container.on("receiver_open", function (event) {
+    let target = {
+        address: event.receiver.remote.attach.target.address
+    };
 
-        var message = {
-            id: id,
+    event.receiver.set_target(target);
+});
+
+container.on("sendable", function(event) {
+    while (event.sender.sendable()) {
+        if (desired_count > 0 && sent == desired_count) {
+            break;
+        }
+
+        let id = (sent + 1).toString();
+        let stime = types.wrap_long(new Date().getTime());
+
+        let message = {
+            message_id: id,
             application_properties: {
-                SendTime: stime
+                SendTime: stime,
             },
             durable: durable,
             body: body,
         };
 
-        context.sender.send(message);
-
-        log(message.id + "," + stime + "\n");
-
+        event.sender.send(message);
         sent++;
+
+        write(id + "," + stime + "\n");
     }
 });
 
-container.on("accepted", function(context) {
+container.on("accepted", function(event) {
     accepted++;
 
-    if (accepted == messages) {
-        if (connection_mode == "client") {
-            context.connection.close();
-        } else if (connection_mode == "server") {
-            listener.close();
-        } else {
-            throw new Error();
-        }
+    if (accepted == desired_count) {
+        stop();
     }
 });
 
-container.on("message", function(context) {
-    if (received == messages) {
-        return;
-    }
-
-    var message = context.message;
-    var rtime = new Date().getTime();
-    var stime = message.application_properties.SendTime;
-
-    log(message.id + "," + stime + "," + rtime + "\n");
-
+container.on("message", function(event) {
     received++;
 
-    if (received == messages) {
-        if (connection_mode == "client") {
-            context.connection.close();
-        } else if (connection_mode == "server") {
-            listener.close();
-        } else {
-            throw new Error();
-        }
+    let message = event.message;
+    let rtime = new Date().getTime();
+    let stime = message.application_properties.SendTime;
+
+    write(message.id + "," + stime + "," + rtime + "\n");
+
+    if (received == desired_count) {
+        stop();
     }
 });
 
@@ -190,12 +202,17 @@ if (transaction_size > 0) {
     process.exit(1);
 }
 
+start_time = new Date().getTime();
+
+if (desired_duration > 0) {
+    setTimeout(function() { stop(); }, desired_duration * 1000);
+}
+
 if (connection_mode == "client") {
-    container.connect({username: "anonymous", host: host, port: port});
+    connection = container.connect({username: "anonymous", host: host, port: port});
 } else if (connection_mode == "server") {
     container.sasl_server_mechanisms.enable_anonymous();
-    // XXX listener = container.listen({host: host, port: port});
-    listener = container.listen({port: port});
+    listener = container.listen({host: host, port: port});
 } else {
     throw new Error();
 }

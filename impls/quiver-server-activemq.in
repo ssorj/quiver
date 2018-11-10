@@ -30,7 +30,7 @@ from plano import *
 from quiver.common import *
 
 def main():
-    set_message_threshold("warn")
+    enable_logging("warn")
 
     if which("activemq") is None:
         exit("The 'activemq' command is not on the path")

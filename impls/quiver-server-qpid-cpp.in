@@ -29,7 +29,7 @@ from plano import *
 from quiver.common import *
 
 def main():
-    set_message_threshold("warn")
+    enable_logging("warn")
 
     if which("qpidd") is None:
         exit("The 'qpidd' command is not on the path")

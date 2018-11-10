@@ -29,10 +29,10 @@ sys.path.insert(0, os.path.join(home, "python"))
 from plano import *
 
 def main():
-    set_message_threshold("warn")
+    enable_logging("warn")
 
     if "QUIVER_VERBOSE" in ENV:
-        set_message_threshold("notice")
+        enable_logging("notice")
 
     jar_file = join(home, "java", "quiver-qpid-jms.jar")
     pom_file = join("META-INF", "maven", "org.apache.qpid", "qpid-jms-client", "pom.properties")
@@ -45,7 +45,7 @@ def main():
     id_ = ARGS[4]
     host = ARGS[5]
     port = ARGS[6]
-    credit_window = ARGS[10]
+    credit_window = ARGS[11]
 
     params = (
         "jms.clientID={}".format(id_),

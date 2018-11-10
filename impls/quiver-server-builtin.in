@@ -32,7 +32,7 @@ from plano import *
 from quiver.server import BuiltinBroker, __version__
 
 def main():
-    set_message_threshold("warn")
+    enable_logging("warn")
 
     if len(ARGS) == 1:
         print("Quiver's builtin message broker {}".format(__version__))

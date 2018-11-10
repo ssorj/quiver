@@ -22,6 +22,7 @@ from __future__ import print_function
 
 import os
 import sys
+import threading
 
 from qpid_messaging import *
 from qpid_messaging import __file__ as messaging_module_file
@@ -33,8 +34,6 @@ sys.path.insert(0, os.path.join(home, "python"))
 from plano import *
 from quiver.common import now
 
-link_options = "{link: {durable: False, reliability: at-least-once}}"
-
 class Client(object):
     def __init__(self):
         self.operation = None
@@ -42,17 +41,23 @@ class Client(object):
         self.host = None
         self.port = None
         self.path = None
-        self.messages = None
+        self.desired_duration = None
+        self.desired_count = None
         self.body_size = None
         self.credit_window = None
         self.transaction_size = None
-
         self.durable = False
 
+        self.body = None
+
+        self.start_time = None
         self.sent = 0
         self.received = 0
+        self.stopping = threading.Event()
 
     def run(self):
+        self.body = b"x" * self.body_size
+
         domain = "{}:{}".format(self.host, self.port)
         conn = Connection(domain,
                           protocol=b"amqp1.0",
@@ -60,6 +65,15 @@ class Client(object):
                           sasl_mechanisms=b"ANONYMOUS")
 
         conn.open()
+
+        self.start_time = now()
+
+        if self.desired_duration > 0:
+            def task():
+                self.stopping.set()
+
+            timer = threading.Timer(self.desired_duration, task)
+            timer.start()
 
         try:
             transactional = self.transaction_size > 0
@@ -74,55 +88,54 @@ class Client(object):
 
             if transactional:
                 session.commit()
-        finally:
+
             conn.close()
+        except ConnectionError as e:
+            # Ignore error from remote close
+            pass
+        except:
+            conn.close()
+            raise
 
     def send_messages(self, session):
-        # XXX
-        # NotImplementedError: Wrong number or type of arguments for overloaded function 'Session__sender'.
-        #   Possible C/C++ prototypes are:
-        #     qpid::messaging::Session::createSender(qpid::messaging::Address const &)
-        #     qpid::messaging::Session::createSender(std::string const &)
-        #address = "{}; {}".format(self.path, link_options)
-        #sender = session.sender(address)
         sender = session.sender(self.path)
         sender.capacity = self.credit_window
 
-        body = b"x" * self.body_size
-
-        while self.sent < self.messages:
-            id_ = str(self.sent + 1)
+        while not self.stopping.is_set():
+            id = str(self.sent + 1)
             stime = now()
-            record = "{},{}\n".format(id_, stime)
+            record = "{},{}\n".format(id, stime)
 
-            message = Message(body)
-            message.id = id_
+            message = Message(self.body)
+            message.id = id
             message.properties[b"SendTime"] = stime
 
             if self.durable:
                 message.durable = True
 
-            sender.send(message)
+            sender.send(message, sync=False)
+            self.sent +=1
 
             sys.stdout.write(record)
-
-            self.sent +=1
 
             if self.transaction_size > 0 and (self.sent % self.transaction_size) == 0:
                 session.commit()
 
+            if self.sent == self.desired_count:
+                break
+
     def receive_messages(self, session):
-        # XXX See above
-        #address = "{}; {}".format(self.path, link_options)
-        #receiver = session.receiver(address)
         receiver = session.receiver(self.path)
         receiver.capacity = self.credit_window
 
-        while self.received < self.messages:
+        while not self.stopping.is_set():
             if receiver.available() == 0:
                 continue
 
             message = receiver.get()
+
+            self.received +=1
+
             session.acknowledge()
 
             stime = message.properties["SendTime"]
@@ -131,13 +144,14 @@ class Client(object):
 
             sys.stdout.write(record)
 
-            self.received +=1
-
             if self.transaction_size > 0 and (self.received % self.transaction_size) == 0:
                 session.commit()
 
+            if self.received == self.desired_count:
+                break
+
 def main():
-    set_message_threshold("warn")
+    enable_logging("warn")
 
     if len(ARGS) == 1:
         print("Qpid Messaging Python XXX")
@@ -158,12 +172,13 @@ def main():
     client.host = ARGS[5]
     client.port = ARGS[6]
     client.path = ARGS[7]
-    client.messages = int(ARGS[8])
-    client.body_size = int(ARGS[9])
-    client.credit_window = int(ARGS[10])
-    client.transaction_size = int(ARGS[11])
+    client.desired_duration = int(ARGS[8])
+    client.desired_count = int(ARGS[9])
+    client.body_size = int(ARGS[10])
+    client.credit_window = int(ARGS[11])
+    client.transaction_size = int(ARGS[12])
 
-    flags = ARGS[12].split(",")
+    flags = ARGS[13].split(",")
 
     if "durable" in flags:
         client.durable = True

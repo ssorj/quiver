@@ -20,7 +20,7 @@
 
 set -ex
 
-RUN_DEPS="java-1.8.0-openjdk nodejs python3-numpy python python3 python-qpid-messaging python3-qpid-proton qpid-cpp-client qpid-proton-c qpid-proton-cpp unzip xz"
+RUN_DEPS="java-1.8.0-openjdk nodejs python python3 python-numpy python3-numpy python-qpid-messaging python3-qpid-proton qpid-cpp-client qpid-proton-c qpid-proton-cpp unzip xz"
 BUILD_DEPS="gcc-c++ java-1.8.0-openjdk-devel maven make qpid-cpp-client-devel qpid-proton-c-devel qpid-proton-cpp-devel"
 
 dnf -y install $RUN_DEPS $BUILD_DEPS

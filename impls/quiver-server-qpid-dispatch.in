@@ -44,7 +44,7 @@ listener {{
 """
 
 def main():
-    set_message_threshold("warn")
+    enable_logging("warn")
 
     if which("qdrouterd") is None:
         exit("The 'qdouterd' command is not on the path")

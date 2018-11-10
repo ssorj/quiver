@@ -17,12 +17,6 @@
 # under the License.
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import with_statement
-
 import json as _json
 import os as _os
 import plano as _plano
@@ -33,6 +27,9 @@ import time as _time
 from .arrow import _StatusSnapshot
 from .common import *
 from .common import __version__
+from .common import _epilog_address_urls
+from .common import _epilog_arrow_impls
+from .common import _epilog_count_and_duration_formats
 
 _description = """
 Start a sender-receiver pair for a particular messaging address.
@@ -42,29 +39,16 @@ message servers and APIs.
 """
 
 _epilog = """
-URLs:
-  [amqp://DOMAIN/]PATH            The default domain is 'localhost'
-  amqp://example.net/jobs
-  amqp://10.0.0.10:5672/jobs/alpha
-  amqp://localhost/q0
-  q0
+{_epilog_address_urls}
 
-implementations:
-  activemq-artemis-jms            Client mode only; requires Artemis server
-  activemq-jms                    Client mode only; ActiveMQ or Artemis server
-  qpid-jms [jms]                  Client mode only
-  qpid-messaging-cpp              Client mode only
-  qpid-messaging-python           Client mode only
-  qpid-proton-c [c]
-  qpid-proton-cpp [cpp]
-  qpid-proton-python [python]
-  rhea [javascript]
-  vertx-proton [java]             Client mode only
+{_epilog_count_and_duration_formats}
+
+{_epilog_arrow_impls}
 
 example usage:
   $ qdrouterd &                   # Start a message server
-  $ quiver q0                     # Start test
-"""
+  $ quiver q0                     # Start the test
+""".format(**globals())
 
 class QuiverPairCommand(Command):
     def __init__(self, home_dir):
@@ -73,20 +57,21 @@ class QuiverPairCommand(Command):
         self.parser.description = _description.lstrip()
         self.parser.epilog = _epilog.lstrip()
 
-        self.parser.add_argument("url", metavar="URL",
-                                 help="The location of a message queue")
+        self.parser.add_argument("url", metavar="ADDRESS-URL",
+                                 help="The location of a message source or target")
         self.parser.add_argument("--output", metavar="DIR",
                                  help="Save output files to DIR")
         self.parser.add_argument("--arrow", metavar="IMPL", default=DEFAULT_ARROW_IMPL,
-                                 help="Use IMPL to send and receive")
+                                 help="Use IMPL to send and receive " \
+                                 "(default {})".format(DEFAULT_ARROW_IMPL))
         self.parser.add_argument("--sender", metavar="IMPL",
-                                 help="Use IMPL to send")
+                                 help="Use IMPL to send (default {})".format(DEFAULT_ARROW_IMPL))
         self.parser.add_argument("--receiver", metavar="IMPL",
-                                 help="Use IMPL to receive")
+                                 help="Use IMPL to receive (default {})".format(DEFAULT_ARROW_IMPL))
         self.parser.add_argument("--impl", metavar="IMPL",
                                  help="An alias for --arrow")
         self.parser.add_argument("--peer-to-peer", action="store_true",
-                                 help="Test peer-to-peer mode")
+                                 help="Connect the sender directly to the receiver in server mode")
 
         self.add_common_test_arguments()
         self.add_common_tool_arguments()
@@ -111,14 +96,18 @@ class QuiverPairCommand(Command):
         self.init_common_tool_attributes()
 
     def run(self):
-        args = [
-            self.url,
-            "--messages", self.args.messages,
+        args = list()
+
+        if self.duration == 0:
+            args += ["--count", self.args.count]
+        else:
+            args += ["--duration", self.args.duration]
+
+        args += [
             "--body-size", self.args.body_size,
             "--credit", self.args.credit,
             "--transaction-size", self.args.transaction_size,
             "--timeout", self.args.timeout,
-            "--output", self.output_dir,
         ]
 
         if self.durable:
@@ -130,32 +119,38 @@ class QuiverPairCommand(Command):
         if self.verbose:
             args += ["--verbose"]
 
-        sender_args = ["quiver-arrow", "send", "--impl", self.sender_impl.name] + args
-        receiver_args = ["quiver-arrow", "receive", "--impl", self.receiver_impl.name] + args
+        args += ["--output", self.output_dir]
+
+        sender_args = ["quiver-arrow", "send", self.url, "--impl", self.sender_impl.name] + args
+        receiver_args = ["quiver-arrow", "receive", self.url, "--impl", self.receiver_impl.name] + args
 
         if self.peer_to_peer:
             receiver_args += ["--server", "--passive"]
 
         self.start_time = now()
 
+        #_os.environ["DEBUG"] = "*"
         receiver = _plano.start_process(receiver_args)
+        #del _os.environ["DEBUG"]
 
         if self.peer_to_peer:
             _plano.wait_for_port(self.port, host=self.host)
 
+        #_os.environ["PN_TRACE_FRM"] = "1"
         sender = _plano.start_process(sender_args)
+        #del _os.environ["PN_TRACE_FRM"]
 
         try:
             if not self.quiet:
                 self.print_status(sender, receiver)
 
-            _plano.wait_for_process(sender)
-            _plano.wait_for_process(receiver)
-        except:
+            _plano.check_process(receiver)
+            _plano.check_process(sender)
+        except _plano.CalledProcessError as e:
+            _plano.error(e)
+        finally:
             _plano.stop_process(sender)
             _plano.stop_process(receiver)
-
-            raise
 
         if (sender.returncode, receiver.returncode) != (0, 0):
             _plano.exit(1)
@@ -268,12 +263,13 @@ class QuiverPairCommand(Command):
         v = "{} {} ({})".format(self.args.impl, self.url, self.output_dir)
         print("Subject: {}".format(v))
 
-        _print_numeric_field("Messages", self.messages, "messages")
+        _print_numeric_field("Count", self.count, "messages")
         _print_numeric_field("Body size", self.body_size, "bytes")
         _print_numeric_field("Credit window", self.credit_window, "messages")
 
         start_time = sender["results"]["first_send_time"]
         end_time = receiver["results"]["last_receive_time"]
+
         duration = (end_time - start_time) / 1000
         rate = None
 
@@ -289,26 +285,19 @@ class QuiverPairCommand(Command):
         _print_numeric_field("Receiver rate", v, "messages/s")
         _print_numeric_field("End-to-end rate", rate, "messages/s")
 
-        print("Latency:")
-
-        v = receiver["results"]["latency_quartiles"][0]
-        _print_numeric_field("    0%", v, "ms", "{:,.0f}")
-        v = receiver["results"]["latency_quartiles"][1]
-        _print_numeric_field("   25%", v, "ms", "{:,.0f}")
-        v = receiver["results"]["latency_quartiles"][2]
-        _print_numeric_field("   50%", v, "ms", "{:,.0f}")
-        v = receiver["results"]["latency_nines"][0]
-        _print_numeric_field("   90%", v, "ms", "{:,.0f}")
-        v = receiver["results"]["latency_nines"][1]
-        _print_numeric_field("   99%", v, "ms", "{:,.0f}")
-        v = receiver["results"]["latency_nines"][2]
-        _print_numeric_field("   99.9%", v, "ms", "{:,.0f}")
-        v = receiver["results"]["latency_nines"][3]
-        _print_numeric_field("   99.99%", v, "ms", "{:,.0f}")
-        v = receiver["results"]["latency_nines"][4]
-        _print_numeric_field("   99.999%", v, "ms", "{:,.0f}")
-        v = receiver["results"]["latency_quartiles"][4]
-        _print_numeric_field("  100%", v, "ms", "{:,.0f}")
+        print("Latencies by percentile:")
+        lv = receiver["results"]["latency_quartiles"][0]
+        rv = receiver["results"]["latency_nines"][0]
+        print("          0%: {:>8} ms                90.00%: {:>8} ms".format(lv, rv))
+        lv = receiver["results"]["latency_quartiles"][1]
+        rv = receiver["results"]["latency_nines"][1]
+        print("         25%: {:>8} ms                99.00%: {:>8} ms".format(lv, rv))
+        lv = receiver["results"]["latency_quartiles"][2]
+        rv = receiver["results"]["latency_nines"][2]
+        print("         50%: {:>8} ms                99.90%: {:>8} ms".format(lv, rv))
+        lv = receiver["results"]["latency_quartiles"][4]
+        rv = receiver["results"]["latency_nines"][3]
+        print("        100%: {:>8} ms                99.99%: {:>8} ms".format(lv, rv))
 
         print("-" * 80)
 

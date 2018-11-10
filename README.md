@@ -62,7 +62,7 @@ transmission of messages.
 | Java 8 JDK            | openjdk-8-jdk         | java-1.8.0-openjdk-devel
 | Maven                 | maven                 | maven
 | Node.js               | nodejs                | nodejs
-| NumPy                 | python3-numpy         | python3-numpy
+| NumPy                 | python-numpy, python3-numpy | python-numpy, python3-numpy
 | Python 2.7            | python                | python
 | Python 3              | python3               | python3
 | Qpid Messaging C++    | libqpidmessaging-dev, libqpidtypes-dev, libqpidcommon-dev | qpid-cpp-client-devel

@@ -29,10 +29,10 @@ sys.path.insert(0, os.path.join(home, "python"))
 from plano import *
 
 def main():
-    set_message_threshold("warn")
+    enable_logging("warn")
 
     if "QUIVER_VERBOSE" in ENV:
-        set_message_threshold("notice")
+        enable_logging("notice")
 
     jar_file = join(home, "java", "quiver-vertx-proton.jar")
     pom_file = join("META-INF", "maven", "io.vertx", "vertx-proton", "pom.properties")

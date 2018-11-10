@@ -20,6 +20,7 @@
 
 import os
 import sys
+import time
 import uuid
 
 from proton import Message, VERSION, __file__ as proton_module_file
@@ -43,29 +44,39 @@ class Handler(MessagingHandler):
         self.host = None
         self.port = None
         self.path = None
-        self.messages = None
+        self.desired_duration = None
+        self.desired_count = None
         self.body_size = None
-
         self.durable = False
 
+        self.connection = None
         self.listener = None
         self.body = None
 
+        self.start_time = None
         self.sent = 0
         self.received = 0
         self.accepted = 0
 
     def on_start(self, event):
-        domain = "{}:{}".format(self.host, self.port)
+        self.body = b"x" * self.body_size
+
+        server = "{}:{}".format(self.host, self.port)
 
         if self.connection_mode == "client":
-            event.container.connect(domain, allowed_mechs="ANONYMOUS")
+            self.connection = event.container.connect(server, allowed_mechs="ANONYMOUS")
         elif self.connection_mode == "server":
-            self.listener = event.container.listen(domain)
+            self.listener = event.container.listen(server)
         else:
             raise Exception()
 
-        self.body = b"x" * self.body_size
+        self.start_time = time.time()
+
+        if self.desired_duration > 0:
+            event.container.schedule(self.desired_duration, self)
+
+    def on_timer_task(self, event):
+        self.stop(event)
 
     def on_connection_opened(self, event):
         if self.channel_mode == "active":
@@ -80,11 +91,10 @@ class Handler(MessagingHandler):
         # XXX Seems like this should happen by default
         event.connection.container = event.container.container_id
 
-    # XXX Should this be necessary?
     def on_link_opening(self, event):
         if event.link.is_sender:
             if event.link.remote_source.dynamic:
-                address = str(uuid.uuid4())
+                address = "{}/{}".format(event.connection.remote_container, event.link.name)
             else:
                 address = event.link.remote_source.address
 
@@ -102,14 +112,19 @@ class Handler(MessagingHandler):
     def on_sendable(self, event):
         assert self.operation == "send"
 
-        while event.sender.credit > 0 and self.sent < self.messages:
-            id = self.sent + 1
+        message = Message()
+
+        while event.sender.credit > 0:
+            if (self.desired_count > 0 and self.sent == self.desired_count):
+                break
+
+            id = str(self.sent + 1)
             stime = now()
 
-            message = Message(self.body)
+            message.clear()
+            message.body = self.body
             message.id = id
-            message.properties = dict() # XXX Obnoxious
-            message.properties["SendTime"] = stime
+            message.properties = {"SendTime": stime}
 
             if self.durable:
                 message.durable = True
@@ -122,19 +137,11 @@ class Handler(MessagingHandler):
     def on_accepted(self, event):
         self.accepted += 1
 
-        if self.accepted == self.messages:
-            if self.connection_mode == "client":
-                event.connection.close()
-            elif self.connection_mode == "server":
-                self.listener.close()
-            else:
-                raise Exception()
+        if self.accepted == self.desired_count:
+            self.stop(event)
 
     def on_message(self, event):
         assert self.operation == "receive"
-
-        if self.received == self.messages:
-            return
 
         self.received += 1
 
@@ -144,16 +151,18 @@ class Handler(MessagingHandler):
 
         sys.stdout.write("{},{},{}\n".format(message.id, stime, rtime))
 
-        if self.received == self.messages:
-            if self.connection_mode == "client":
-                event.connection.close()
-            elif self.connection_mode == "server":
-                self.listener.close()
-            else:
-                raise Exception()
+        if self.received == self.desired_count:
+            self.stop(event)
+
+    def stop(self, event):
+        if self.connection is not None:
+            self.connection.close()
+
+        if self.connection_mode == "server":
+            self.listener.close()
 
 def main():
-    set_message_threshold("warn")
+    enable_logging("warn")
 
     if len(ARGS) == 1:
         print("Qpid Proton Python {}.{}.{}".format(*VERSION))
@@ -162,12 +171,12 @@ def main():
 
         exit()
 
-    transaction_size = int(ARGS[11])
+    transaction_size = int(ARGS[12])
 
     if transaction_size > 0:
         exit("This impl doesn't support transactions yet")
 
-    credit_window = int(ARGS[10])
+    credit_window = int(ARGS[11])
 
     handler = Handler(prefetch=credit_window)
     handler.connection_mode = ARGS[1]
@@ -176,10 +185,11 @@ def main():
     handler.host = ARGS[5]
     handler.port = ARGS[6]
     handler.path = ARGS[7]
-    handler.messages = int(ARGS[8])
-    handler.body_size = int(ARGS[9])
+    handler.desired_duration = int(ARGS[8])
+    handler.desired_count = int(ARGS[9])
+    handler.body_size = int(ARGS[10])
 
-    flags = ARGS[12].split(",")
+    flags = ARGS[13].split(",")
 
     if "durable" in flags:
         handler.durable = True

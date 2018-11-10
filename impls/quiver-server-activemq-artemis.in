@@ -65,7 +65,7 @@ java -version
 """
 
 def main():
-    set_message_threshold("warn")
+    enable_logging("warn")
 
     if which("artemis") is None:
         exit("The 'artemis' command is not on the path")

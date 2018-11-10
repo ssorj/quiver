@@ -17,12 +17,6 @@
 # under the License.
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import with_statement
-
 import argparse as _argparse
 import json as _json
 import numpy as _numpy
@@ -35,6 +29,9 @@ import time as _time
 
 from .common import *
 from .common import __version__
+from .common import _epilog_address_urls
+from .common import _epilog_arrow_impls
+from .common import _epilog_count_and_duration_formats
 from .common import _urlparse
 
 _description = """
@@ -50,24 +47,11 @@ operations:
   send                  Send messages
   receive               Receive messages
 
-URLs:
-  [amqp://DOMAIN/]PATH            The default domain is 'localhost'
-  amqp://example.net/jobs
-  amqp://10.0.0.10:5672/jobs/alpha
-  amqp://localhost/q0
-  q0
+{_epilog_address_urls}
 
-implementations:
-  activemq-artemis-jms            Client mode only; requires Artemis server
-  activemq-jms                    Client mode only; ActiveMQ or Artemis server
-  qpid-jms [jms]                  Client mode only
-  qpid-messaging-cpp              Client mode only
-  qpid-messaging-python           Client mode only
-  qpid-proton-cpp [cpp]
-  qpid-proton-c [c]
-  qpid-proton-python [python]
-  rhea [javascript]
-  vertx-proton [java]             Client mode only
+{_epilog_count_and_duration_formats}
+
+{_epilog_arrow_impls}
 
 server and passive modes:
   By default quiver-arrow operates in client and active modes, meaning
@@ -82,7 +66,7 @@ example usage:
   $ qdrouterd &                   # Start a message server
   $ quiver-arrow receive q0 &     # Start receiving
   $ quiver-arrow send q0          # Start sending
-"""
+""".format(**globals())
 
 class QuiverArrowCommand(Command):
     def __init__(self, home_dir):
@@ -94,15 +78,17 @@ class QuiverArrowCommand(Command):
         self.parser.add_argument("operation", metavar="OPERATION",
                                  choices=["send", "receive"],
                                  help="Either 'send' or 'receive'")
-        self.parser.add_argument("url", metavar="URL",
-                                 help="The location of a message queue")
+        self.parser.add_argument("url", metavar="ADDRESS-URL",
+                                 help="The location of a message source or target")
         self.parser.add_argument("--output", metavar="DIR",
                                  help="Save output files to DIR")
         self.parser.add_argument("--impl", metavar="NAME",
                                  help="Use NAME implementation",
                                  default=DEFAULT_ARROW_IMPL)
-        self.parser.add_argument("--impl-info", action="store_true",
+        self.parser.add_argument("--info", action="store_true",
                                  help="Print implementation details and exit")
+        self.parser.add_argument("--impl-info", action="store_true", dest="info",
+                                 help=_argparse.SUPPRESS)
         self.parser.add_argument("--id", metavar="ID",
                                  help="Use ID as the client or server identity")
         self.parser.add_argument("--server", action="store_true",
@@ -110,13 +96,13 @@ class QuiverArrowCommand(Command):
         self.parser.add_argument("--passive", action="store_true",
                                  help="Operate in passive mode")
         self.parser.add_argument("--prelude", metavar="PRELUDE", default="",
-                                 help="Commands to precede the impl invocation")
+                                 help="Commands to precede the implementation invocation")
 
         self.add_common_test_arguments()
         self.add_common_tool_arguments()
 
     def init(self):
-        self.intercept_impl_info_request(DEFAULT_ARROW_IMPL)
+        self.intercept_info_request(DEFAULT_ARROW_IMPL)
 
         super(QuiverArrowCommand, self).init()
 
@@ -137,7 +123,7 @@ class QuiverArrowCommand(Command):
             raise Exception()
 
         if self.id_ is None:
-            self.id_ = "quiver-{}".format(_plano.unique_id(4))
+            self.id_ = "quiver-{}-{}".format(self.role, _plano.unique_id(4))
 
         if self.args.server:
             self.connection_mode = "server"
@@ -188,7 +174,8 @@ class QuiverArrowCommand(Command):
             self.host,
             self.port,
             self.path,
-            str(self.messages),
+            str(self.duration),
+            str(self.count),
             str(self.body_size),
             str(self.credit_window),
             str(self.transaction_size),
@@ -220,7 +207,9 @@ class QuiverArrowCommand(Command):
         self.compute_results()
         self.save_summary()
 
-        _plano.remove("{}.xz".format(self.transfers_file))
+        if _plano.exists("{}.xz".format(self.transfers_file)):
+            _plano.remove("{}.xz".format(self.transfers_file))
+
         _plano.call("xz --compress -0 --threads 0 {}", self.transfers_file)
 
     def monitor_subprocess(self, proc):
@@ -254,6 +243,8 @@ class QuiverArrowCommand(Command):
     def check_timeout(self, snap):
         checkpoint = self.timeout_checkpoint
         since = (snap.timestamp - checkpoint.timestamp) / 1000
+
+        #print("check_timeout", snap.count, "==", checkpoint.count, "and", since, ">", self.timeout)
 
         if snap.count == checkpoint.count and since > self.timeout:
             raise CommandError("{} timed out", self.role)
@@ -324,7 +315,8 @@ class QuiverArrowCommand(Command):
                 "channel_mode": self.channel_mode,
                 "operation": self.operation,
                 "id": self.id_,
-                "messages": self.messages,
+                "count": self.count,
+                "duration": self.duration,
                 "body_size": self.body_size,
                 "credit_window": self.credit_window,
                 "transaction_size": self.transaction_size,

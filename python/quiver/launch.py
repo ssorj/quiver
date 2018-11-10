@@ -17,12 +17,6 @@
 # under the License.
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import with_statement
-
 import os as _os
 import plano as _plano
 import shlex as _shlex
@@ -46,8 +40,8 @@ class QuiverLaunchCommand(Command):
 
         self.parser.description = _description.lstrip()
 
-        self.parser.add_argument("url", metavar="URL",
-                                 help="The location of a message queue")
+        self.parser.add_argument("url", metavar="ADDRESS-URL",
+                                 help="The location of a message source or target")
         self.parser.add_argument("--count", metavar="COUNT", default=1, type=int)
         self.parser.add_argument("--impl", metavar="IMPL", default="qpid-proton-python")
         self.parser.add_argument("--options", metavar="OPTIONS", default="")
@@ -63,14 +57,13 @@ class QuiverLaunchCommand(Command):
     def init(self):
         super(QuiverLaunchCommand, self).init()
 
-        _plano.set_message_output(_sys.stdout)
-        _plano.set_message_threshold("notice")
+        _plano.enable_logging(level="notice", output=_sys.stdout)
 
         if self.quiet:
-            _plano.set_message_threshold("warn")
+            _plano.enable_logging("warn", output=_sys.stdout)
 
         if self.verbose:
-            _plano.set_message_threshold("debug")
+            _plano.enable_logging("debug", output=_sys.stdout)
 
         def nvl(value, fallback):
             if value is None:
