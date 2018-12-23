@@ -87,7 +87,9 @@ func (a *Arrow) sender(s electron.Sender) {
 		id := i + 1
 		m.SetMessageId(strconv.Itoa(id))
 		t := now()
+                fmt.Fprintln(os.Stderr, 111, t) // XXX
 		m.ApplicationProperties()["SendTime"] = t
+                fmt.Fprintln(os.Stderr, 222, m.ApplicationProperties()["SendTime"]) // XXX
 		fmt.Printf("%v,%v\n", id, t)
 		s.SendAsync(m, out, nil) // May block for credit. Errors reported via outcomes
 	}
@@ -205,7 +207,7 @@ func main() {
 		fmt.Printf("Qpid Electron Go")
 		os.Exit(0)
 	}
-	want := 13
+	want := 14
 	if len(os.Args) != want {
 		fail("incorrect number of arguments: want %v, got %v", want, len(os.Args))
 	}
@@ -216,11 +218,11 @@ func main() {
 		id:              os.Args[4],
 		netAddr:         fmt.Sprintf("%v:%v", os.Args[5], os.Args[6]),
 		path:            os.Args[7],
-		messages:        intArg(8),
-		bodySize:        intArg(9),
-		creditWindow:    intArg(10),
-		transactionSize: intArg(11),
-		flags:           flagArg(12),
+		messages:        intArg(9),
+		bodySize:        intArg(10),
+		creditWindow:    intArg(11),
+		transactionSize: intArg(12),
+		flags:           flagArg(13),
 
 		connectionOptions: []electron.ConnectionOption{electron.SASLAllowedMechs("ANONYMOUS")},
 	}

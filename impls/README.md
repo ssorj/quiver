@@ -39,11 +39,12 @@ Implementations must process the following positional arguments.
      [5] host              The socket name
      [6] port              The socket port (or '-')
      [7] path              A named source or target for a message, often a queue
-     [8] messages          Number of messages to transfer
-     [9] body-size         Length of generated message body
-    [10] credit-window     Size of credit window to maintain
-    [11] transaction-size  Size of transaction batches; 0 for no transactions
-    [12] flags             Comma-separated list of named tokens
+     [8] duration          
+     [9] count             Number of messages to transfer
+    [10] body-size         Length of generated message body
+    [11] credit-window     Size of credit window to maintain
+    [12] transaction-size  Size of transaction batches; 0 for no transactions
+    [13] flags             Comma-separated list of named tokens
 
 If an implementation does not support a particular `connection-mode`
 or `channel-mode`, for instance `server`, it should raise an error at

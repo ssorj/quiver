@@ -52,6 +52,9 @@ def test_arrow_activemq_artemis_jms(session):
 def test_arrow_activemq_jms(session):
     _test_arrow("activemq-jms")
 
+def test_arrow_qpid_electron_go(session):
+    _test_arrow("qpid-electron-go")
+
 def test_arrow_qpid_jms(session):
     _test_arrow("qpid-jms")
 
