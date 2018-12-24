@@ -6,8 +6,8 @@
 %global debug_package %{nil}
 
 Name:           quiver
-Version:        0
-Release:        0.1.%{_timestamp}.%{_short_commit}%{?dist}
+Version:        0.2.0
+Release:        0.%{_timestamp}.%{_short_commit}%{?dist}
 Summary:        Tools to test the performance of message servers and APIs
 License:        ASL 2.0
 URL:            https://github.com/%{_user}/%{name}
