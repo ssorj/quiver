@@ -4,6 +4,7 @@
 %global _timestamp %(date +"%Y%m%d")
 
 %global debug_package %{nil}
+%global _python_bytecompile_errors_terminate_build 0
 
 Name:           quiver
 Version:        0.2.0
