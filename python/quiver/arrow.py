@@ -140,6 +140,8 @@ class QuiverArrowCommand(Command):
             if self.impl.name in ("activemq-jms", "activemq-artemis-jms"):
                 self.port = "61616"
 
+        # XXX Drop the flags stuff
+
         flags = list()
 
         if self.durable:
@@ -167,22 +169,20 @@ class QuiverArrowCommand(Command):
     def run(self):
         args = self.prelude + [
             self.impl.file,
-            self.connection_mode,
-            self.channel_mode,
-            self.operation,
-            self.id_,
-            self.host,
-            self.port,
-            self.path,
-            str(self.duration),
-            str(self.count),
-            str(self.body_size),
-            str(self.credit_window),
-            str(self.transaction_size),
-            self.flags,
+            "connection-mode={}".format(self.connection_mode),
+            "channel-mode={}".format(self.channel_mode),
+            "operation={}".format(self.operation),
+            "id={}".format(self.id_),
+            "host={}".format(self.host),
+            "port={}".format(self.port),
+            "path={}".format(self.path),
+            "duration={}".format(self.duration),
+            "count={}".format(self.count),
+            "body-size={}".format(self.body_size),
+            "credit-window={}".format(self.credit_window),
+            "transaction-size={}".format(self.transaction_size),
+            "durable={}".format(1 if self.durable else 0),
         ]
-
-        assert None not in args, args
 
         with open(self.transfers_file, "wb") as fout:
             env = _plano.ENV
@@ -338,7 +338,7 @@ class QuiverArrowCommand(Command):
         with open(self.summary_file, "w") as f:
             _json.dump(props, f, indent=2)
 
-class _StatusSnapshot(object):
+class _StatusSnapshot:
     def __init__(self, command, previous):
         self.command = command
         self.previous = previous

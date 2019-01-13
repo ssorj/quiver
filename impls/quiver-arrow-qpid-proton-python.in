@@ -32,7 +32,7 @@ home = os.environ.get("QUIVER_HOME", default_home)
 sys.path.insert(0, os.path.join(home, "python"))
 
 from plano import *
-from quiver.common import now
+from quiver.common import *
 
 class Handler(MessagingHandler):
     def __init__(self, **kwargs):
@@ -171,31 +171,25 @@ def main():
 
         exit()
 
-    transaction_size = int(ARGS[12])
+    kwargs = parse_keyword_args(ARGS[1:])
 
-    if transaction_size > 0:
+    if int(kwargs["transaction-size"]) > 0:
         exit("This impl doesn't support transactions yet")
 
-    credit_window = int(ARGS[11])
-
-    handler = Handler(prefetch=credit_window)
-    handler.connection_mode = ARGS[1]
-    handler.channel_mode = ARGS[2]
-    handler.operation = ARGS[3]
-    handler.host = ARGS[5]
-    handler.port = ARGS[6]
-    handler.path = ARGS[7]
-    handler.desired_duration = int(ARGS[8])
-    handler.desired_count = int(ARGS[9])
-    handler.body_size = int(ARGS[10])
-
-    flags = ARGS[13].split(",")
-
-    if "durable" in flags:
-        handler.durable = True
+    handler = Handler(prefetch=int(kwargs["credit-window"]))
+    handler.connection_mode = kwargs["connection-mode"]
+    handler.channel_mode = kwargs["channel-mode"]
+    handler.operation = kwargs["operation"]
+    handler.host = kwargs["host"]
+    handler.port = kwargs["port"]
+    handler.path = kwargs["path"]
+    handler.desired_duration = int(kwargs["duration"])
+    handler.desired_count = int(kwargs["count"])
+    handler.body_size = int(kwargs["body-size"])
+    handler.durable = int(kwargs["durable"]) == 1
 
     container = Container(handler)
-    container.container_id = ARGS[4]
+    container.container_id = kwargs["id"] # XXX Pass this in the constructor?
 
     container.run()
 

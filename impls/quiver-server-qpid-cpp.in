@@ -41,15 +41,17 @@ def main():
         call("qpidd --version")
         exit()
 
-    host = ARGS[1]
-    port = ARGS[2]
-    path = ARGS[3]
-    ready_file = ARGS[4]
+    kwargs = parse_keyword_args(ARGS[1:])
+
+    host = kwargs["host"]
+    port = kwargs["port"]
+    path = kwargs["path"]
+    ready_file = kwargs["ready-file"]
 
     data_dir = make_temp_dir()
 
-    server = start_process("qpidd --interface {} --port {} --auth no --default-queue-limit 0 --data-dir {}",
-                           host, port, data_dir)
+    start_process("qpidd --interface {} --port {} --auth no --default-queue-limit 0 --data-dir {}",
+                  host, port, data_dir)
 
     wait_for_port(port)
 

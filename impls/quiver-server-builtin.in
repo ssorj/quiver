@@ -25,11 +25,12 @@ default_home = os.path.normpath("@quiver_home@")
 home = os.environ.get("QUIVER_HOME", default_home)
 sys.path.insert(0, os.path.join(home, "python"))
 
-import collections as collections
-import uuid as uuid
+import collections
+import uuid
 
 from plano import *
-from quiver.server import BuiltinBroker, __version__
+from quiver.server import *
+from quiver.server import __version__
 
 def main():
     enable_logging("warn")
@@ -40,10 +41,12 @@ def main():
         print("Python {}".format(" ".join(sys.version.split())))
         exit()
 
-    host = ARGS[1]
-    port = ARGS[2]
-    path = ARGS[3]
-    ready_file = ARGS[4]
+    kwargs = parse_keyword_args(ARGS[1:])
+
+    host = kwargs["host"]
+    port = kwargs["port"]
+    path = kwargs["path"]
+    ready_file = kwargs["ready-file"]
 
     broker = BuiltinBroker(host, port, path, ready_file)
     broker.run()

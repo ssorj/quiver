@@ -5,51 +5,57 @@ implementations, arrows and servers.  An arrow usually plays the role
 of a client, though it can be used in peer-to-peer mode as well.  A
 server is a message broker or router.
 
+## Files
+
+Implementations live under `impls/` in the source tree, with a name
+starting with `quiver-arrow-` or `quiver-server-`.  Any build or
+install logic should be placed in the project `Makefile`.
+
+The details of new implementations should be added by adding an
+`_Impl` instance to `python/quiver/common.py.in`.
+
 ## Arrow implementations
 
 The `quiver-arrow` command is a wrapper that invokes an implementation
-executable using standard arguments.  `quiver-arrow` tries to take
+executable using standard arguments.  `quiver-arrow` takes
 responsibility for "cooking" its inputs so implementations can focus
 on mechanics.  By the same token, implementation outputs are
 intentionally left raw so `quiver` and `quiver-arrow` can do the work
 of presenting the results.
 
-An arrow implementation terminates when it has sent or received its
-expected number of messages.  Each invocation uses a single connection
-to a single queue, meaning that a sending and a receiving
-implementation together constitute a pair of communicating endpoints.
-
-### Files
-
-Implementations live under `impls/` in the source tree, with a name
-starting with `quiver-arrow-`.  Any build or install logic should be
-placed in the project `Makefile`.
-
-The details of new implementations should be added by adding an
-`_Impl` instance to `python/quiver/common.py.in`.
+An arrow implementation terminates when it has run longer than the
+requested duration or it has sent or received the expected number of
+messages.  Each invocation uses a single connection to a single queue,
+meaning that a sending and a receiving implementation together
+constitute a pair of communicating endpoints.
 
 ### Input
 
-Implementations must process the following positional arguments.
+The implementations take named arguments, with key and value separated
+by `=`.  They must process the following arguments.
 
-     [1] connection-mode   'client' or 'server'
-     [2] channel-mode      'active' or 'passive'
-     [3] operation         'send' or 'receive'
-     [4] id                A unique identifier for the application
-     [5] host              The socket name
-     [6] port              The socket port (or '-')
-     [7] path              A named source or target for a message, often a queue
-     [8] messages          Number of messages to transfer
-     [9] body-size         Length of generated message body
-    [10] credit-window     Size of credit window to maintain
-    [11] transaction-size  Size of transaction batches; 0 for no transactions
-    [12] flags             Comma-separated list of named tokens
+    connection-mode   string   'client' or 'server'
+    channel-mode      string   'active' or 'passive'
+    operation         string   'send' or 'receive'
+    id                string   A unique identifier for the application
+    host              string   The socket name
+    port              string   The socket port (or '-')
+    path              string   A named source or target for a message, often a queue
+    messages          integer  Number of messages to transfer
+    body-size         integer  Length of generated message body
+    credit-window     integer  Size of credit window to maintain
+    transaction-size  integer  Size of transaction batches; 0 for no transactions
+    durable           integer  1 if messages are durable; 0 if non-durable
 
-If an implementation does not support a particular `connection-mode`
-or `channel-mode`, for instance `server`, it should raise an error at
-start time.
+If an implementation does not support a particular option, for
+instance connection mode `server`, it should raise an error at start
+time.
 
 Each unit of `credit-window` represents one message (not one byte).
+
+Implementations should avoid validating inputs.  That's the job of the
+wrapper.  The wrapper and the implementation are closely coupled by
+design.
 
 ### Output
 
@@ -139,5 +145,14 @@ auto-acknowledge).
 <!--
 ## Server implementations
 
-*XXX*
+### Input
+
+The implementations take named arguments, with key and value separated
+by `=`.  They must process the following arguments.
+
+    host        string  The listening socket name
+    port        string  The listening socket port
+    path        string  A named source or target for a message, often a queue
+    ready-file  string  A file used to indicate the server is ready
+
 -->

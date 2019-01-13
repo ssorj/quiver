@@ -27,6 +27,7 @@ home = os.environ.get("QUIVER_HOME", default_home)
 sys.path.insert(0, os.path.join(home, "python"))
 
 from plano import *
+from quiver.common import *
 
 def main():
     enable_logging("warn")
@@ -42,17 +43,14 @@ def main():
         call("java -version")
         exit()
 
-    id_ = ARGS[4]
-    host = ARGS[5]
-    port = ARGS[6]
-    credit_window = ARGS[11]
+    kwargs = parse_keyword_args(ARGS[1:])
 
     params = (
-        "jms.clientID={}".format(id_),
-        "jms.prefetchPolicy.all={}".format(credit_window),
+        "jms.clientID={}".format(kwargs["id"]),
+        "jms.prefetchPolicy.all={}".format(kwargs["credit-window"]),
     )
 
-    url = "tcp://{}:{}?{}".format(host, port, "&".join(params))
+    url = "tcp://{}:{}?{}".format(kwargs["host"], kwargs["port"], "&".join(params))
 
     args = ["/usr/bin/env", "--", "java"]
 

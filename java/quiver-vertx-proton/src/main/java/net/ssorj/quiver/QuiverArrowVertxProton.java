@@ -64,21 +64,26 @@ public class QuiverArrowVertxProton {
     }
 
     private static void doMain(final String[] args) throws Exception {
-        final String connectionMode = args[0];
-        final String channelMode = args[1];
-        final String operation = args[2];
-        final String id = args[3];
-        final String host = args[4];
-        final int port = Integer.parseInt(args[5]);
-        final String path = args[6];
-        final int desiredDuration = Integer.parseInt(args[7]);
-        final int desiredCount = Integer.parseInt(args[8]);
-        final int bodySize = Integer.parseInt(args[9]);
-        final int creditWindow = Integer.parseInt(args[10]);
-        final int transactionSize = Integer.parseInt(args[11]);
-        final String[] flags = args[12].split(",");
+        final HashMap<String, String> kwargs = new HashMap<>();
 
-        final boolean durable = Arrays.asList(flags).contains("durable");
+        for (String arg : args) {
+            final String[] elems = arg.split("=", 2);
+            kwargs.put(elems[0], elems[1]);
+        }
+
+        final String connectionMode = kwargs.get("connection-mode");
+        final String channelMode = kwargs.get("channel-mode");
+        final String operation = kwargs.get("operation");
+        final String id = kwargs.get("id");
+        final String host = kwargs.get("host");
+        final int port = Integer.parseInt(kwargs.get("port"));
+        final String path = kwargs.get("path");
+        final int desiredDuration = Integer.parseInt(kwargs.get("duration"));
+        final int desiredCount = Integer.parseInt(kwargs.get("count"));
+        final int bodySize = Integer.parseInt(kwargs.get("body-size"));
+        final int creditWindow = Integer.parseInt(kwargs.get("credit-window"));
+        final int transactionSize = Integer.parseInt(kwargs.get("transaction-size"));
+        final boolean durable = Integer.parseInt(kwargs.get("durable")) == 1;
 
         if (!CLIENT.equalsIgnoreCase(connectionMode)) {
             throw new RuntimeException("This impl currently supports client mode only");

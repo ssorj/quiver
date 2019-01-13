@@ -36,22 +36,27 @@ if (process.argv.length === 2) {
     process.exit(0);
 }
 
-const container = rhea.create_container({id: process.argv[5]});
+const kwargs = {};
 
-const connection_mode = process.argv[2];
-const channel_mode = process.argv[3];
-const operation = process.argv[4];
-const host = process.argv[6];
-const port = process.argv[7];
-const path = process.argv[8];
-const desired_duration = process.argv[9];
-const desired_count = process.argv[10];
-const body_size = process.argv[11];
-const credit_window = process.argv[12];
-const transaction_size = process.argv[13];
-const flags = process.argv[14].split(",");
+for (let arg of process.argv.slice(2)) {
+    let elems = arg.split("=", 2);
+    kwargs[elems[0]] = elems[1];
+}
 
-const durable = flags.indexOf("durable") > -1;
+const container = rhea.create_container({id: kwargs["id"]});
+
+const connection_mode = kwargs["connection-mode"];
+const channel_mode = kwargs["channel-mode"];
+const operation = kwargs["operation"];
+const host = kwargs["host"];
+const port = kwargs["port"];
+const path = kwargs["path"];
+const desired_duration = parseInt(kwargs["duration"]);
+const desired_count = parseInt(kwargs["count"]);
+const body_size = parseInt(kwargs["body-size"]);
+const credit_window = parseInt(kwargs["credit-window"]);
+const transaction_size = parseInt(kwargs["transaction-size"]);
+const durable = new Boolean(parseInt(kwargs["durable"]));
 
 let a = new Array(body_size);
 

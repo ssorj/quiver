@@ -22,7 +22,6 @@
 #include <proton/connection.hpp>
 #include <proton/connection_options.hpp>
 #include <proton/container.hpp>
-#include <proton/default_container.hpp>
 #include <proton/delivery.hpp>
 #include <proton/duration.hpp>
 #include <proton/link.hpp>
@@ -43,6 +42,7 @@
 #include <assert.h>
 #include <chrono>
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -56,15 +56,16 @@ void eprint(std::string message) {
     std::cerr << "quiver-arrow: error: " << message << std::endl;
 }
 
-std::vector<std::string> split(const std::string &s, char delim) {
+std::vector<std::string> split(const std::string& s, char delim, int max) {
     std::stringstream ss;
     std::string elem;
     std::vector<std::string> elems;
 
     ss.str(s);
 
-    while (std::getline(ss, elem, delim)) {
+    for (int i = 0; std::getline(ss, elem, delim); i++) {
         elems.push_back(elem);
+        if (max != 0 && i == max) break;
     }
 
     return elems;
@@ -228,34 +229,37 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    int transaction_size = std::atoi(argv[12]);
+    std::map<std::string, std::string> kwargs {};
+
+    for (int i = 1; i < argc; i++) {
+        auto pair = split(argv[i], '=', 1);
+        kwargs[pair[0]] = pair[1];
+    }
+
+    int transaction_size = std::stoi(kwargs["transaction-size"]);
 
     if (transaction_size > 0) {
         eprint("This impl doesn't support transactions");
         return 1;
     }
 
-    handler h;
+    handler h {};
 
-    h.connection_mode = argv[1];
-    h.channel_mode = argv[2];
-    h.operation = argv[3];
-    h.id = argv[4];
-    h.host = argv[5];
-    h.port = argv[6];
-    h.path = argv[7];
-
-    h.desired_duration = std::atoi(argv[8]);
-    h.desired_count = std::atoi(argv[9]);
-    h.body_size = std::atoi(argv[10]);
-    h.credit_window = std::atoi(argv[11]);
-
-    std::vector<std::string> flags = split(argv[13], ',');
-
-    h.durable = std::any_of(flags.begin(), flags.end(), [](std::string &s) { return s == "durable"; });
+    h.connection_mode = kwargs["connection-mode"];
+    h.channel_mode = kwargs["channel-mode"];
+    h.operation = kwargs["operation"];
+    h.id = kwargs["id"];
+    h.host = kwargs["host"];
+    h.port = kwargs["port"];
+    h.path = kwargs["path"];
+    h.desired_duration = std::stoi(kwargs["duration"]);
+    h.desired_count = std::stoi(kwargs["count"]);
+    h.body_size = std::stoi(kwargs["body-size"]);
+    h.credit_window = std::stoi(kwargs["credit-window"]);
+    h.durable = std::stoi(kwargs["durable"]);
 
     try {
-        proton::default_container(h, h.id).run();
+        proton::container(h, h.id).run();
     } catch (const std::exception& e) {
         eprint(e.what());
         return 1;

@@ -39,10 +39,12 @@ def main():
         call("activemq --version", shell=True)
         exit()
 
-    host = ARGS[1]
-    port = ARGS[2]
-    path = ARGS[3]
-    ready_file = ARGS[4]
+    kwargs = parse_keyword_args(ARGS[1:])
+
+    host = kwargs["host"]
+    port = kwargs["port"]
+    path = kwargs["path"]
+    ready_file = kwargs["ready-file"]
 
     assert host in ("localhost", "127.0.0.1")
     assert port in ("5672", "61616")
@@ -59,7 +61,6 @@ def main():
         exit()
 
     signal.signal(signal.SIGTERM, signal_handler)
-
     wait_for_port(port)
 
     if ready_file != "-":

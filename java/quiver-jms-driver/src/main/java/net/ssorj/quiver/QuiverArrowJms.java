@@ -36,15 +36,22 @@ public class QuiverArrowJms {
     }
 
     public static void doMain(final String[] args) throws Exception {
-        final String connectionMode = args[0];
-        final String channelMode = args[1];
-        final String operation = args[2];
-        final String path = args[6];
-        final int desiredDuration = Integer.parseInt(args[7]);
-        final int desiredCount = Integer.parseInt(args[8]);
-        final int bodySize = Integer.parseInt(args[9]);
-        final int transactionSize = Integer.parseInt(args[11]);
-        final String[] flags = args[12].split(",");
+        final HashMap<String, String> kwargs = new HashMap<>();
+
+        for (String arg : args) {
+            final String[] elems = arg.split("=", 2);
+            kwargs.put(elems[0], elems[1]);
+        }
+
+        final String connectionMode = kwargs.get("connection-mode");
+        final String channelMode = kwargs.get("channel-mode");
+        final String operation = kwargs.get("operation");
+        final String path = kwargs.get("path");
+        final int desiredDuration = Integer.parseInt(kwargs.get("duration"));
+        final int desiredCount = Integer.parseInt(kwargs.get("count"));
+        final int bodySize = Integer.parseInt(kwargs.get("body-size"));
+        final int transactionSize = Integer.parseInt(kwargs.get("transaction-size"));
+        final boolean durable = Integer.parseInt(kwargs.get("durable")) == 1;
 
         if (!connectionMode.equals("client")) {
             throw new RuntimeException("This impl supports client mode only");
@@ -67,7 +74,7 @@ public class QuiverArrowJms {
         final Destination queue = (Destination) context.lookup("queueLookup");
 
         final Client client = new Client(factory, queue, operation, desiredDuration, desiredCount, bodySize,
-                                         transactionSize, flags);
+                                         transactionSize, durable);
 
         client.run();
     }
@@ -90,7 +97,7 @@ class Client {
 
     Client(final ConnectionFactory factory, final Destination queue, final String operation,
            final int desiredDuration, final int desiredCount, final int bodySize,
-           final int transactionSize, final String[] flags) {
+           final int transactionSize, final boolean durable) {
         this.factory = factory;
         this.queue = queue;
         this.operation = operation;
@@ -98,8 +105,7 @@ class Client {
         this.desiredCount = desiredCount;
         this.bodySize = bodySize;
         this.transactionSize = transactionSize;
-
-        this.durable = Arrays.asList(flags).contains("durable");
+        this.durable = durable;
     }
 
     void run() {

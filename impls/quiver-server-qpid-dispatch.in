@@ -53,16 +53,17 @@ def main():
         call("qdrouterd --version")
         exit()
 
-    host = ARGS[1]
-    port = ARGS[2]
-    path = ARGS[3]
-    ready_file = ARGS[4]
+    kwargs = parse_keyword_args(ARGS[1:])
+
+    host = kwargs["host"]
+    port = kwargs["port"]
+    path = kwargs["path"]
+    ready_file = kwargs["ready-file"]
 
     config = config_template.format(host, port)
     config_file = write(make_temp_file(), config)
 
-    server = start_process("qdrouterd --config {}", config_file)
-
+    start_process("qdrouterd --config {}", config_file)
     wait_for_port(port)
 
     if ready_file != "-":

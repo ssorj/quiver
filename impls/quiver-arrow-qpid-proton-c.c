@@ -397,15 +397,6 @@ void run(struct arrow* a) {
     }
 }
 
-bool find_flag(const char* want, const char* flags) {
-    size_t len = strlen(want);
-    const char* found = strstr(want, flags);
-    // Return true only if what we found is ',' delimited or at start/end of flags
-    return (found &&
-            (found == flags || *(found - 1) == ',') &&
-            (*(found + len) == '\0' || *(found + len) == ','));
-}
-
 int token(const char* names[], const char* name) {
     size_t i = 0;
     for (; names[i] && strcmp(names[i], name); i++)
@@ -416,36 +407,47 @@ int token(const char* names[], const char* name) {
     return i;
 }
 
-int main(int argc, char** argv) {
+char* find_arg(size_t kwargc, char* kwargv[][2], char* key) {
+    for (int i = 0; i < kwargc; i++) {
+        if (strcmp(kwargv[i][0], key) == 0) return kwargv[i][1];
+    }
+
+    return NULL;
+}
+
+int main(size_t argc, char** argv) {
     if (argc == 1) {
         printf("Qpid Proton C %d.%d.%d\n", PN_VERSION_MAJOR, PN_VERSION_MINOR, PN_VERSION_POINT);
         return 0;
     }
 
-    int transaction_size = atoi(argv[12]);
+    size_t kwargc = argc - 1;
+    char* kwargv[kwargc][2];
+    char* arg;
 
-    if (transaction_size > 0) {
+    for (int i = 0; i < kwargc; i++) {
+        arg = strdup(argv[i + 1]);
+        kwargv[i][0] = strsep(&arg, "=");
+        kwargv[i][1] = arg;
+    }
+
+    if (atoi(find_arg(kwargc, kwargv, "transaction-size")) > 0) {
         FAIL("this impl doesn't support transactions");
     }
 
     struct arrow a = { 0 };
-    a.connection_mode = (connection_mode)token(connection_mode_names, (argv[1]));
-    a.channel_mode = (channel_mode)token(channel_mode_names, (argv[2]));
-    a.operation = (operation)token(operation_names, (argv[3]));
-    a.id = argv[4];
-    a.host = argv[5];
-    a.port = argv[6];
-    a.path = argv[7];
-    a.desired_duration = atoi(argv[8]);
-    a.desired_count = atoi(argv[9]);
-    a.body_size = atoi(argv[10]);
-    a.credit_window = atoi(argv[11]);
-    a.durable = false;
-
-    if (argc > 13) {
-        const char* flags = argv[13];
-        a.durable = find_flag("durable", flags);
-    }
+    a.connection_mode = (connection_mode)token(connection_mode_names, find_arg(kwargc, kwargv, "connection-mode"));
+    a.channel_mode = (channel_mode)token(channel_mode_names, find_arg(kwargc, kwargv, "channel-mode"));
+    a.operation = (operation)token(operation_names, find_arg(kwargc, kwargv, "operation"));
+    a.id = find_arg(kwargc, kwargv, "id");
+    a.host = find_arg(kwargc, kwargv, "host");
+    a.port = find_arg(kwargc, kwargv, "port");
+    a.path = find_arg(kwargc, kwargv, "path");
+    a.desired_duration = atoi(find_arg(kwargc, kwargv, "duration"));
+    a.desired_count = atoi(find_arg(kwargc, kwargv, "count"));
+    a.body_size = atoi(find_arg(kwargc, kwargv, "body-size"));
+    a.credit_window = atoi(find_arg(kwargc, kwargv, "credit-window"));
+    a.durable = atoi(find_arg(kwargc, kwargv, "durable")) == 1;
 
     // Set up the fixed parts of the message
     a.message = pn_message();

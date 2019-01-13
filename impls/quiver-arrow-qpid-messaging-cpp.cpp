@@ -29,6 +29,7 @@
 #include <atomic>
 #include <chrono>
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -49,15 +50,16 @@ void eprint(std::string message) {
     std::cerr << "quiver-arrow: error: " << message << std::endl;
 }
 
-std::vector<std::string> split(const std::string &s, char delim) {
+std::vector<std::string> split(const std::string& s, char delim, int max) {
     std::stringstream ss;
     std::string elem;
     std::vector<std::string> elems;
 
     ss.str(s);
 
-    while (std::getline(ss, elem, delim)) {
+    for (int i = 0; std::getline(ss, elem, delim); i++) {
         elems.push_back(elem);
+        if (max != 0 && i == max) break;
     }
 
     return elems;
@@ -211,8 +213,15 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    std::string connection_mode = argv[1];
-    std::string channel_mode = argv[2];
+    std::map<std::string, std::string> kwargs {};
+
+    for (int i = 1; i < argc; i++) {
+        auto pair = split(argv[i], '=', 1);
+        kwargs[pair[0]] = pair[1];
+    }
+
+    std::string connection_mode = kwargs["connection-mode"];
+    std::string channel_mode = kwargs["channel-mode"];
 
     if (connection_mode != "client") {
         eprint("This impl supports client mode only");
@@ -226,20 +235,17 @@ int main(int argc, char** argv) {
 
     Client client;
 
-    client.operation = argv[3];
-    client.id = argv[4];
-    client.host = argv[5];
-    client.port = argv[6];
-    client.path = argv[7];
-    client.desired_duration = std::chrono::seconds(std::atoi(argv[8]));
-    client.desired_count = std::atoi(argv[9]);
-    client.body_size = std::atoi(argv[10]);
-    client.credit_window = std::atoi(argv[11]);
-    client.transaction_size = std::atoi(argv[12]);
-
-    std::vector<std::string> flags = split(argv[13], ',');
-
-    client.durable = std::any_of(flags.begin(), flags.end(), [](std::string &s) { return s == "durable"; });
+    client.operation = kwargs["operation"];
+    client.id = kwargs["id"];
+    client.host = kwargs["host"];
+    client.port = kwargs["port"];
+    client.path = kwargs["path"];
+    client.desired_duration = std::chrono::seconds(std::stoi(kwargs["duration"]));
+    client.desired_count = std::stoi(kwargs["count"]);
+    client.body_size = std::stoi(kwargs["body-size"]);
+    client.credit_window = std::stoi(kwargs["credit-window"]);
+    client.transaction_size = std::stoi(kwargs["transaction-size"]);
+    client.durable = std::stoi(kwargs["durable"]);
 
     try {
         client.run();

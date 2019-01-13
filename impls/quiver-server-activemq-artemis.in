@@ -77,16 +77,17 @@ def main():
         call(_info_script, profile_file, shell=True)
         exit()
 
-    host = ARGS[1]
-    port = ARGS[2]
-    path = ARGS[3]
-    ready_file = ARGS[4]
+    kwargs = parse_keyword_args(ARGS[1:])
+
+    host = kwargs["host"]
+    port = kwargs["port"]
+    path = kwargs["path"]
+    ready_file = kwargs["ready-file"]
 
     config = config_template.format(host, port, path, path).lstrip()
     config_file = write(make_temp_file(), config)
 
-    server = start_process("artemis run --broker {}", config_file)
-
+    start_process("artemis run --broker {}", config_file)
     wait_for_port(port)
 
     if ready_file != "-":

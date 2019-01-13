@@ -317,7 +317,7 @@ def test_bench(session):
 
         call(command)
 
-class _TestServer(object):
+class _TestServer:
     def __init__(self, impl="builtin", **kwargs):
         port = random_port()
 
