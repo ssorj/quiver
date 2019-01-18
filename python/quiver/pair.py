@@ -72,6 +72,8 @@ class QuiverPairCommand(Command):
                                  help="An alias for --arrow")
         self.parser.add_argument("--peer-to-peer", action="store_true",
                                  help="Connect the sender directly to the receiver in server mode")
+        self.parser.add_argument("--send-url", metavar="URL",
+                                 help="Use a separate URL for sending")
 
         self.add_common_test_arguments()
         self.add_common_tool_arguments()
@@ -121,8 +123,11 @@ class QuiverPairCommand(Command):
 
         args += ["--output", self.output_dir]
 
-        sender_args = ["quiver-arrow", "send", self.url, "--impl", self.sender_impl.name] + args
-        receiver_args = ["quiver-arrow", "receive", self.url, "--impl", self.receiver_impl.name] + args
+        recv_url = self.url
+        send_url = self.args.send_url or self.url
+
+        sender_args = ["quiver-arrow", "send", send_url, "--impl", self.sender_impl.name] + args
+        receiver_args = ["quiver-arrow", "receive", recv_url, "--impl", self.receiver_impl.name] + args
 
         if self.peer_to_peer:
             receiver_args += ["--server", "--passive"]
