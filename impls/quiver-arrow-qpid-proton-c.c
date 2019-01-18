@@ -29,6 +29,7 @@
 #include <proton/sasl.h>
 #include <proton/types.h>
 #include <proton/version.h>
+#include <proton/object.h>
 
 #include <memory.h>
 #include <stdarg.h>
@@ -299,6 +300,12 @@ static bool handle(struct arrow* a, pn_event_t* e) {
 
         if (pn_link_is_sender(link)) {
             // Message acknowledged
+            if (PN_ACCEPTED != pn_delivery_remote_state(delivery)) {
+                // Not accepted: rejected, released or modified.
+                pn_string_t *s = pn_string(NULL);
+                pn_inspect(delivery, s);
+                FAIL("bad delivery: %s", pn_string_get(s));
+            }
 
             pn_delivery_settle(delivery);
 
