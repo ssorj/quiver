@@ -256,16 +256,39 @@ class QuiverPairCommand(Command):
         with open(_join(self.output_dir, "receiver-summary.json")) as f:
             receiver = _json.load(f)
 
-        print("-" * 80)
+        _print_heading("Configuration")
 
-        # XXX Get impl info from json config of arrow output
+        _print_field("Sender", self.sender_impl.name)
+        _print_field("Receiver", self.receiver_impl.name)
+        _print_field("Address URL", self.url)
+        _print_field("Output files", self.output_dir)
 
-        v = "{} {} ({})".format(self.args.impl, self.url, self.output_dir)
-        print("Subject: {}".format(v))
+        if self.count != 0:
+            _print_numeric_field("Count", self.count, _plano.plural("message", self.count))
 
-        _print_numeric_field("Count", self.count, "messages")
-        _print_numeric_field("Body size", self.body_size, "bytes")
-        _print_numeric_field("Credit window", self.credit_window, "messages")
+        if self.duration != 0:
+            _print_numeric_field("Duration", self.duration, _plano.plural("second", self.duration))
+
+        _print_numeric_field("Body size", self.body_size, _plano.plural("byte", self.body_size))
+        _print_numeric_field("Credit window", self.credit_window, _plano.plural("message", self.credit_window))
+
+        if self.transaction_size != 0:
+            _print_numeric_field("Transaction size", self.transaction_size, _plano.plural("message", self.transaction_size))
+
+        flags = list()
+
+        if self.durable:
+            flags.append("durable")
+
+        if self.peer_to_peer:
+            flags.append("peer-to-peer")
+
+        if flags:
+            _print_field("Flags", ", ".join(flags))
+
+        _print_heading("Results")
+
+        count = receiver["results"]["message_count"]
 
         start_time = sender["results"]["first_send_time"]
         end_time = receiver["results"]["last_receive_time"]
@@ -274,42 +297,55 @@ class QuiverPairCommand(Command):
         rate = None
 
         if duration > 0:
-            rate = receiver["results"]["message_count"] / duration
+            rate = count / duration
 
         # XXX Sender and receiver CPU, RSS
 
-        _print_numeric_field("Duration", duration, "s", "{:,.1f}")
-        v = sender["results"]["message_rate"]
-        _print_numeric_field("Sender rate", v, "messages/s")
-        v = receiver["results"]["message_rate"]
-        _print_numeric_field("Receiver rate", v, "messages/s")
+        _print_numeric_field("Count", count, _plano.plural("message", self.count))
+        _print_numeric_field("Duration", duration, "seconds", "{:,.1f}")
+        _print_numeric_field("Sender rate", sender["results"]["message_rate"], "messages/s")
+        _print_numeric_field("Receiver rate", receiver["results"]["message_rate"], "messages/s")
         _print_numeric_field("End-to-end rate", rate, "messages/s")
 
+        print()
         print("Latencies by percentile:")
-        lv = receiver["results"]["latency_quartiles"][0]
-        rv = receiver["results"]["latency_nines"][0]
-        print("          0%: {:>8} ms                90.00%: {:>8} ms".format(lv, rv))
-        lv = receiver["results"]["latency_quartiles"][1]
-        rv = receiver["results"]["latency_nines"][1]
-        print("         25%: {:>8} ms                99.00%: {:>8} ms".format(lv, rv))
-        lv = receiver["results"]["latency_quartiles"][2]
-        rv = receiver["results"]["latency_nines"][2]
-        print("         50%: {:>8} ms                99.90%: {:>8} ms".format(lv, rv))
-        lv = receiver["results"]["latency_quartiles"][4]
-        rv = receiver["results"]["latency_nines"][3]
-        print("        100%: {:>8} ms                99.99%: {:>8} ms".format(lv, rv))
+        print()
 
-        print("-" * 80)
+        _print_latency_fields("0%", receiver["results"]["latency_quartiles"][0],
+                              "90.00%", receiver["results"]["latency_nines"][0])
+        _print_latency_fields("25%", receiver["results"]["latency_quartiles"][1],
+                              "99.00%", receiver["results"]["latency_nines"][1])
+        _print_latency_fields("50%", receiver["results"]["latency_quartiles"][2],
+                              "99.90%", receiver["results"]["latency_nines"][2])
+        _print_latency_fields("100%", receiver["results"]["latency_quartiles"][4],
+                              "99.99%", receiver["results"]["latency_nines"][3])
+
+def _print_heading(name):
+    print()
+    print(name.upper())
+    print()
+
+def _print_field(name, value):
+    name = "{} ".format(name)
+    value = " {}".format(value)
+    print("{:.<19}{:.>42}".format(name, value))
 
 def _print_numeric_field(name, value, unit, fmt="{:,.0f}"):
-    name = "{}:".format(name)
+    name = "{} ".format(name)
 
     if value is None:
         value = "-"
     elif fmt is not None:
         value = fmt.format(value)
 
-    print("{:<28} {:>28} {}".format(name, value, unit))
+    value = " {}".format(value)
+
+    print("{:.<24}{:.>37} {}".format(name, value, unit))
+
+def _print_latency_fields(lname, lvalue, rname, rvalue):
+    lvalue = " {}".format(lvalue)
+    rvalue = " {}".format(rvalue)
+    print("{:>12} {:.>10} ms {:>12} {:.>10} ms".format(lname, lvalue, rname, rvalue))
 
 def _read_line(file_):
     fpos = file_.tell()

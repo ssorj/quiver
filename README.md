@@ -4,43 +4,47 @@
 
 Tools for testing the performance of messaging clients and servers.
 
-    [Start an AMQP server with a queue called 'q0']
-    $ quiver q0
+    $ quiver --duration 10 --peer-to-peer q0
     ---------------------- Sender -----------------------  --------------------- Receiver ----------------------  --------
     Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Lat [ms]
     -----------------------------------------------------  -----------------------------------------------------  --------
-         2.1         16,529       8,256       89     37.6       2.1         15,746       7,865       98     31.8       112
-         4.1         32,504       7,984       87     37.6       4.1         31,769       8,003       99     31.8       116
-    [...]
-       122.2        988,135       8,476       90     38.2     122.2        987,384       8,534       99     31.8       109
-       124.2      1,000,000       5,927       65      0.0     124.2      1,000,000       6,302       75      0.0       111
-    --------------------------------------------------------------------------------
-    Subject: qpid-proton-python //localhost:5672/q0 (/tmp/quiver-9rWyTd)
-    Messages:                                       1,000,000 messages
-    Body size:                                            100 bytes
-    Credit window:                                      1,000 messages
-    Duration:                                           123.6 s
-    Sender rate:                                        8,099 messages/s
-    Receiver rate:                                      8,096 messages/s
-    End-to-end rate:                                    8,092 messages/s
-    Latency:
-      Average:                                          115.1 ms
-      Min:                                                 63 ms
-      50%:                                                112 ms
-      90%:                                                126 ms
-      99%:                                                157 ms
-      99.9%:                                              196 ms
-      99.99%:                                             223 ms
-      99.999%:                                            227 ms
-      Max:                                                228 ms
-    --------------------------------------------------------------------------------
+         2.3      1,202,970     600,884      188     22.2       2.1      1,210,056     604,726      188      5.5         1
+         5.2      1,791,304     209,297       67     27.2       5.4      1,982,039     237,241       68      5.5         1
+         7.2      2,420,785     314,583      102     32.7       7.8      2,690,078     291,134       88      5.5         1
+        11.2      3,032,565      16,826        4      0.0      10.1      3,032,565     146,237       38      0.0         1
+
+    CONFIGURATION
+
+    Sender ........................................ qpid-proton-c
+    Receiver ...................................... qpid-proton-c
+    Address URL .............................................. q0
+    Output files ........................... /tmp/quiver-ljt_ztl1
+    Duration ................................................. 10 seconds
+    Body size ............................................... 100 bytes
+    Credit window ......................................... 1,000 messages
+    Flags .......................................... peer-to-peer
+
+    RESULTS
+
+    Count ............................................. 3,032,565 messages
+    Duration ................................................ 9.8 seconds
+    Sender rate ......................................... 310,586 messages/s
+    Receiver rate ....................................... 310,618 messages/s
+    End-to-end rate ..................................... 310,427 messages/s
+
+    Latencies by percentile:
+
+              0% ........ 1 ms       90.00% ........ 2 ms
+             25% ........ 2 ms       99.00% ........ 3 ms
+             50% ........ 2 ms       99.90% ........ 6 ms
+            100% ........ 7 ms       99.99% ........ 6 ms
 
 ## Overview
 
-Quiver implementations are native clients (and sometimes also servers)
-in various languages and APIs that either send or receive messages and
-write raw information about the transfers to standard output.  They
-are deliberately simple.
+Quiver arrow implementations are native clients (and sometimes also
+servers) in various languages and APIs that either send or receive
+messages and write raw information about the transfers to standard
+output.  They are deliberately simple.
 
 The `quiver-arrow` command runs a single implementation in send or
 receive mode and captures its output.  It has options for defining the
@@ -88,7 +92,7 @@ If you don't have `dnf`, use the repo files at
 
 ### Installing on Ubuntu
 
-Quiver requires newer version of the Qpid dependencies than Ubuntu
+Quiver requires newer versions of the Qpid dependencies than Ubuntu
 provides by default.  Use these commands to install them from an
 Ubuntu PPA.
 
@@ -138,7 +142,6 @@ script from the project directory.
     bin/                  # Command-line tools
     impls/                # Arrow and server implementations
     scripts/              # Scripts called by Makefile rules
-    docs/                 # Documentation and notes
     java/                 # Java library code
     javascript/           # JavaScript library code
     python/               # Python library code
@@ -180,9 +183,10 @@ for libraries under `$HOME/.local` and `/usr/local`.
 This command starts a sender-receiver pair.  Each sender or receiver
 is an invocation of the `quiver-arrow` command.
 
-    usage: quiver [-h] [-m COUNT] [--impl NAME] [--body-size COUNT] [--credit COUNT]
-                  [--timeout SECONDS] [--output DIRECTORY] [--init-only] [--quiet]
-                  [--verbose] ADDRESS
+    usage: quiver [-h] [--output DIR] [--arrow IMPL] [--sender IMPL] [--receiver IMPL] [--impl IMPL] [--peer-to-peer] [-c COUNT] [-d DURATION]
+                  [--body-size COUNT] [--credit COUNT] [--transaction-size COUNT] [--durable] [--timeout DURATION] [--quiet] [--verbose]
+                  [--init-only] [--version]
+                  ADDRESS-URL
 
     Start a sender-receiver pair for a particular messaging address.
 
@@ -190,38 +194,59 @@ is an invocation of the `quiver-arrow` command.
     message servers and APIs.
 
     positional arguments:
-      ADDRESS               The location of a message queue
+      ADDRESS-URL           The location of a message source or target
 
     optional arguments:
       -h, --help            show this help message and exit
-      -m COUNT, --messages COUNT
-                            Send or receive COUNT messages (default: 1m)
-      --impl NAME           Use NAME implementation (default: qpid-proton-python)
-      --body-size COUNT     Send message bodies containing COUNT bytes (default: 100)
-      --credit COUNT        Sustain credit for COUNT incoming transfers (default: 1k)
-      --timeout SECONDS     Fail after SECONDS without transfers (default: 10)
-      --output DIRECTORY    Save output files to DIRECTORY (default: None)
-      --init-only           Initialize and immediately exit (default: False)
-      --quiet               Print nothing to the console (default: False)
-      --verbose             Print details to the console (default: False)
+      --output DIR          Save output files to DIR
+      --arrow IMPL          Use IMPL to send and receive (default qpid-proton-c)
+      --sender IMPL         Use IMPL to send (default qpid-proton-c)
+      --receiver IMPL       Use IMPL to receive (default qpid-proton-c)
+      --impl IMPL           An alias for --arrow
+      --peer-to-peer        Connect the sender directly to the receiver in server mode
+      -c COUNT, --count COUNT
+                            Send or receive COUNT messages (default 1m; 0 means no limit)
+      -d DURATION, --duration DURATION
+                            Stop after DURATION, ignoring --count (default 0, disabled)
+      --body-size COUNT     Send message bodies containing COUNT bytes (default 100)
+      --credit COUNT        Sustain credit for COUNT incoming messages (default 1000)
+      --transaction-size COUNT
+                            Transfer batches of COUNT messages inside transactions (default 0, disabled)
+      --durable             Require persistent store-and-forward transfers
+      --timeout DURATION    Fail after DURATION without transfers (default 10s)
+      --quiet               Print nothing to the console
+      --verbose             Print details to the console
+      --init-only           Initialize and exit
+      --version             Print the version and exit
 
-    addresses:
-      [//DOMAIN/]PATH                 The default domain is 'localhost'
-      //example.net/jobs
-      //10.0.0.10:5672/jobs/alpha
-      //localhost/q0
-      q0
+    address URLs:
+      [SCHEME:][//SERVER/]ADDRESS     The default server is 'localhost'
+      queue0
+      //localhost/queue0
+      amqp://example.net:10000/jobs
+      amqps://10.0.0.10/jobs/alpha
 
-    implementations:
+    count format:                     duration format:
+      1 (no unit)    1                  1 (no unit)    1 second
+      1k             1,000              1s             1 second
+      1m             1,000,000          1m             1 minute
+                                        1h             1 hour
+
+    arrow implementations:
       activemq-artemis-jms            Client mode only; requires Artemis server
       activemq-jms                    Client mode only; ActiveMQ or Artemis server
-      qpid-jms [jms]                  Client mode only
+      qpid-jms (jms)                  Client mode only
       qpid-messaging-cpp              Client mode only
       qpid-messaging-python           Client mode only
-      qpid-proton-cpp [cpp]
-      qpid-proton-python [python]
-      rhea [javascript]
-      vertx-proton [java]             Client mode only
+      qpid-proton-c (c)               The default implementation
+      qpid-proton-cpp (cpp)
+      qpid-proton-python (python, py)
+      rhea (javascript, js)
+      vertx-proton (java)             Client mode only
+
+    example usage:
+      $ qdrouterd &                   # Start a message server
+      $ quiver q0                     # Start the test
 
 ### `quiver-arrow`
 
@@ -229,49 +254,18 @@ This command sends or receives AMQP messages as fast as it can.  Each
 invocation creates a single connection.  It terminates when the target
 number of messages are all sent or received.
 
-    usage: quiver-arrow [-h] [-m COUNT] [--impl NAME] [--body-size COUNT] [--credit COUNT]
-                        [--timeout SECONDS] [--output DIRECTORY] [--init-only] [--quiet]
-                        [--verbose] [--id ID] [--server] [--passive]
-                        OPERATION ADDRESS
+    usage: quiver-arrow [-h] [--output DIR] [--impl NAME] [--info] [--id ID] [--server] [--passive] [--prelude PRELUDE]
+                        [-c COUNT] [-d DURATION] [--body-size COUNT] [--credit COUNT] [--transaction-size COUNT]
+                        [--durable] [--timeout DURATION] [--quiet] [--verbose]
+                        OPERATION ADDRESS-URL
 
-    Send or receive a set number of messages as fast as possible using a
-    single connection.
+### `quiver-server`
 
-    'quiver-arrow' is one of the Quiver tools for testing the performance
-    of message servers and APIs.
+This command starts a server implementation and configures it to serve
+the given address.
 
-    positional arguments:
-      OPERATION             Either 'send' or 'receive'
-      ADDRESS               The location of a message queue
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      --id ID               Use ID as the client or server identity (default: None)
-      --server              Operate in server mode (default: False)
-      --passive             Operate in passive mode (default: False)
-      -m COUNT, --messages COUNT
-                            Send or receive COUNT messages (default: 1m)
-      --impl NAME           Use NAME implementation (default: qpid-proton-python)
-      --body-size COUNT     Send message bodies containing COUNT bytes (default: 100)
-      --credit COUNT        Sustain credit for COUNT incoming transfers (default: 1k)
-      --timeout SECONDS     Fail after SECONDS without transfers (default: 10)
-      --output DIRECTORY    Save output files to DIRECTORY (default: None)
-      --init-only           Initialize and immediately exit (default: False)
-      --quiet               Print nothing to the console (default: False)
-      --verbose             Print details to the console (default: False)
-
-    operations:
-      send                  Send messages
-      receive               Receive messages
-
-    server and passive modes:
-      By default quiver-arrow operates in client and active modes, meaning
-      that it creates an outbound connection to a server and actively
-      initiates creation of the protocol entities (sessions and links)
-      required for communication.  The --server option tells quiver-arrow
-      to instead listen for and accept incoming connections.  The
-      --passive option tells it to receive and confirm incoming requests
-      for new protocol entities but not to create them itself.
+    usage: quiver-server [-h] [--impl NAME] [--info] [--ready-file FILE] [--prelude PRELUDE] [--quiet] [--verbose]
+                         [--init-only] [--version] ADDRESS-URL
 
 ## Examples
 

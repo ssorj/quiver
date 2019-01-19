@@ -348,25 +348,70 @@ def write_json(file, obj):
     with _codecs.open(file, encoding="utf-8", mode="w") as f:
         return _json.dump(obj, f, indent=4, separators=(",", ": "), sort_keys=True)
 
-def make_temp_file(suffix=""):
+def parse_json(json):
+    return _json.loads(json)
+
+def emit_json(obj):
+    return _json.dumps(obj, f, indent=4, separators=(",", ": "), sort_keys=True)
+
+def http_get(url, output_file=None, insecure=False):
+    options = [
+        "-sf",
+        "-H", "'Expect:'",
+    ]
+
+    if insecure:
+        options.append("--insecure")
+
+    if output_file is None:
+        return call_for_stdout("curl {0} {1}", " ".join(options), url)
+
+    call("curl {0} {1} -o {2}", " ".join(options), url, output_file)
+
+def http_put(url, input_file, output_file=None, insecure=False):
+    options = [
+        "-sf",
+        "-X", "PUT",
+        "-H", "'Expect:'",
+    ]
+
+    if insecure:
+        options.append("--insecure")
+
+    if output_file is None:
+        return call_for_stdout("curl {0} {1} -d @{2}", " ".join(options), url, input_file)
+
+    call("curl {0} {1} -d @{2} -o {3}", " ".join(options), url, input_file, output_file)
+
+def http_get_json(url, insecure=False):
+    return parse_json(http_get(url, insecure=insecure))
+
+def http_put_json(url, data, insecure=False):
+    with temp_file() as f:
+        write_json(f, data)
+        http_put(url, f, insecure=insecure)
+
+def user_temp_dir():
     try:
-        dir = ENV["XDG_RUNTIME_DIR"]
+        return ENV["XDG_RUNTIME_DIR"]
     except KeyError:
-        dir = None
+        return _tempfile.gettempdir()
+
+def make_temp_file(suffix="", dir=None):
+    if dir is None:
+        dir = user_temp_dir()
 
     return _tempfile.mkstemp(prefix="plano-", suffix=suffix, dir=dir)[1]
 
-def make_temp_dir(suffix=""):
-    try:
-        dir = ENV["XDG_RUNTIME_DIR"]
-    except KeyError:
-        dir = None
+def make_temp_dir(suffix="", dir=None):
+    if dir is None:
+        dir = user_temp_dir()
 
     return _tempfile.mkdtemp(prefix="plano-", suffix=suffix, dir=dir)
 
 class temp_file(object):
-    def __init__(self, suffix=""):
-        self.file = make_temp_file(suffix=suffix)
+    def __init__(self, suffix="", dir=None):
+        self.file = make_temp_file(suffix=suffix, dir=dir)
 
     def __enter__(self):
         return self.file
@@ -374,6 +419,7 @@ class temp_file(object):
     def __exit__(self, exc_type, exc_value, traceback):
         _remove(self.file)
 
+# Length in bytes, renders twice as long in hex
 def unique_id(length=16):
     assert length >= 1
     assert length <= 16
@@ -493,15 +539,35 @@ def find_only_one(dir, *patterns):
     if len(paths) == 0:
         return
 
-    if len(paths) != 1:
+    if len(paths) > 1:
         fail("Found multiple files: {0}", ", ".join(paths))
 
     assert len(paths) == 1
 
     return paths[0]
 
+def find_exactly_one(dir, *patterns):
+    path = find_only_one(dir, *patterns)
+
+    if path is None:
+        fail("Found no matching files")
+
+    return path
+
 def string_replace(string, expr, replacement, count=0):
     return _re.sub(expr, replacement, string, count)
+
+def configure_file(input_file, output_file, **kwargs):
+    notice("Configuring '{0}' for output '{1}'", input_file, output_file)
+
+    content = read(input_file)
+
+    for name, value in kwargs.items():
+        content = content.replace("@{0}@".format(name), value)
+
+    write(output_file, content)
+
+    _shutil.copymode(input_file, output_file)
 
 def make_dir(dir):
     notice("Making directory '{0}'", dir)
@@ -558,15 +624,17 @@ class working_dir(object):
         if not exists(self.dir):
             _make_dir(self.dir)
 
-        self.prev_dir = _change_dir(self.dir)
+        notice("Entering working directory '{0}'", absolute_path(self.dir))
 
-        notice("Using working directory '{0}'", self.dir)
+        self.prev_dir = _change_dir(self.dir)
 
         return self.dir
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.dir is None or self.dir == ".":
             return
+
+        notice("Returning to directory '{0}'", absolute_path(self.prev_dir))
 
         _change_dir(self.prev_dir)
 
@@ -704,6 +772,8 @@ def start_process(command, *args, **kwargs):
     else:
         raise Exception()
 
+    command_string = command_string.replace("\n", "\\n")
+
     notice("Calling '{0}'", command_string)
 
     name = kwargs.get("name", command_args[0])
@@ -740,7 +810,11 @@ def start_process(command, *args, **kwargs):
 
     return proc
 
+# Exits without complaint if proc is null
 def terminate_process(proc):
+    if proc is None:
+        return
+
     notice("Terminating {0}", proc)
 
     if proc.poll() is None:
@@ -882,6 +956,18 @@ def wait_for_port(port, host="", timeout=30):
                 fail("Timed out waiting for port {0} to open", port)
     finally:
         sock.close()
+
+def plural(noun, count=0):
+    if noun is None:
+        return ""
+
+    if count == 1:
+        return noun
+
+    if noun.endswith("s"):
+        return "{}ses".format(noun)
+
+    return "{}s".format(noun)
 
 # Modified copytree impl that allows for already existing destination
 # dirs
