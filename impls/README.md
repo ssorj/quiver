@@ -41,10 +41,11 @@ by `=`.  They must process the following arguments.
     host              string   The socket name
     port              string   The socket port (or '-')
     path              string   A named source or target for a message, often a queue
-    messages          integer  Number of messages to transfer
+    duration          integer  Run time in seconds; 0 means no limit
+    count             integer  Number of messages to transfer; 0 means no limit
     body-size         integer  Length of generated message body
     credit-window     integer  Size of credit window to maintain
-    transaction-size  integer  Size of transaction batches; 0 for no transactions
+    transaction-size  integer  Size of transaction batches; 0 means no transactions
     durable           integer  1 if messages are durable; 0 if non-durable
 
 If an implementation does not support a particular option, for
