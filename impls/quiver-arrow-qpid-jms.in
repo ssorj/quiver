@@ -21,6 +21,8 @@
 import os
 import shlex
 import sys
+import tempfile
+import subprocess
 
 default_home = os.path.normpath("@quiver_home@")
 home = os.environ.get("QUIVER_HOME", default_home)
@@ -28,6 +30,31 @@ sys.path.insert(0, os.path.join(home, "python"))
 
 from plano import *
 from quiver.common import *
+
+def create_keystore(cert, key, password):
+    keystore = None
+
+    with tempfile.NamedTemporaryFile(delete=True) as tmp:
+        keystore = tmp.name
+
+    args = ["/usr/bin/env", "--", "openssl"]
+    args += [
+        "pkcs12",
+        "-export",
+        "-passout",
+        "pass:{}".format(password),
+        "-in",
+        cert,
+        "-inkey",
+        key,
+        "-name",
+        "client",
+        "-out",
+        keystore
+    ]
+
+    subprocess.check_call(args)
+    return keystore
 
 def main():
     enable_logging("warn")
@@ -45,13 +72,38 @@ def main():
 
     kwargs = parse_keyword_args(ARGS[1:])
 
-    params = (
+    keystore = None
+    if "cert" in kwargs and "key" in kwargs:
+        keystore = create_keystore(kwargs["cert"], kwargs["key"], "password")
+
+    params = [
         "jms.clientID={}".format(kwargs["id"]),
         "jms.prefetchPolicy.all={}".format(kwargs["credit-window"]),
-        "amqp.saslMechanisms=ANONYMOUS",
-    )
+    ]
 
-    url = "amqp://{}:{}?{}".format(kwargs["host"], kwargs["port"], "&".join(params))
+    scheme = kwargs["scheme"] if "scheme" in kwargs and kwargs["scheme"] else "amqp"
+    if scheme.endswith("s"):
+        params.append("transport.verifyHost=false")
+        params.append("transport.trustAll=true")
+
+        if keystore:
+            params.append("transport.keyStoreLocation={}".format(keystore))
+            params.append("transport.keyStorePassword=password")
+
+
+    use_sasl_anonymous = True
+    if "username" in kwargs:
+        params.append("jms.username={}".format(kwargs["username"]))
+        use_sasl_anonymous = False
+
+    if "password" in kwargs:
+        params.append("jms.password={}".format(kwargs["password"]))
+        use_sasl_anonymous = False
+
+    if use_sasl_anonymous:
+        params.append("amqp.saslMechanisms=ANONYMOUS")
+
+    url = "{}://{}:{}?{}".format(scheme, kwargs["host"], kwargs["port"], "&".join(params))
 
     args = ["/usr/bin/env", "--", "java"]
 

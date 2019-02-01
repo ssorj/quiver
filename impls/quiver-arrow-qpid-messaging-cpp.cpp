@@ -68,9 +68,12 @@ std::vector<std::string> split(const std::string& s, char delim, int max) {
 struct Client {
     std::string operation;
     std::string id;
+    std::string scheme;
     std::string host;
     std::string port;
     std::string path;
+    std::string username;
+    std::string password;
     std::chrono::seconds desired_duration;
     int desired_count;
     int body_size;
@@ -90,15 +93,30 @@ struct Client {
 
 void Client::run() {
     std::string domain = host + ":" + port;
+    // Qpid Messaging does not support a trust all option (SslSocket.cpp#bad_certificate only
+    // can only disable hostname verification but cannot be configured to ignore an unknown cert.
+    // Client must set QPID_SSL_CERT_DB refering to a cert-database (certutil(1)) containing the server's cert.
+    bool tls = scheme == "amqps";
     std::ostringstream oss;
     oss << "{"
         << "protocol: amqp1.0,"
         << "container_id: " << id << ","
-        << "sasl_mechanisms: ANONYMOUS"
+        << "transport: " << (tls ? "ssl" : "tcp") << ","
+        << "ssl_ignore_hostname_verification_failure: true"
         << "}";
     std::string options = oss.str();
 
     Connection conn(domain, options);
+
+    if (!username.empty()) {
+        conn.setOption("username", username);
+        if (!password.empty()) {
+            conn.setOption("password", password);
+        }
+    } else {
+        conn.setOption("sasl_mechanisms", "ANONYMOUS");
+    }
+
     conn.open();
 
     start_time = now();
@@ -217,11 +235,13 @@ int main(int argc, char** argv) {
 
     for (int i = 1; i < argc; i++) {
         auto pair = split(argv[i], '=', 1);
-        kwargs[pair[0]] = pair[1];
+        kwargs[pair[0]] = pair.size() > 1 ? pair[1] : "";
     }
 
     std::string connection_mode = kwargs["connection-mode"];
     std::string channel_mode = kwargs["channel-mode"];
+    std::string cert = kwargs["cert"];
+    std::string key = kwargs["key"];
 
     if (connection_mode != "client") {
         eprint("This impl supports client mode only");
@@ -233,13 +253,21 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    if (!cert.empty() ||!key.empty()) {
+        eprint("This impl does not support TLS client cert");
+        return 1;
+    }
+
     Client client;
 
     client.operation = kwargs["operation"];
     client.id = kwargs["id"];
+    client.scheme = kwargs["scheme"];
     client.host = kwargs["host"];
     client.port = kwargs["port"];
     client.path = kwargs["path"];
+    client.username = kwargs["username"];
+    client.password = kwargs["password"];
     client.desired_duration = std::chrono::seconds(std::stoi(kwargs["duration"]));
     client.desired_count = std::stoi(kwargs["count"]);
     client.body_size = std::stoi(kwargs["body-size"]);

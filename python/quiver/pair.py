@@ -72,6 +72,10 @@ class QuiverPairCommand(Command):
                                  help="An alias for --arrow")
         self.parser.add_argument("--peer-to-peer", action="store_true",
                                  help="Connect the sender directly to the receiver in server mode")
+        self.parser.add_argument("--cert", metavar="CERT.PEM",
+                                 help="Certificate filename - used for client authentication")
+        self.parser.add_argument("--key", metavar="PRIVATE-KEY.PEM",
+                                 help="Private key filename - - used for client authentication")
 
         self.add_common_test_arguments()
         self.add_common_tool_arguments()
@@ -118,6 +122,16 @@ class QuiverPairCommand(Command):
 
         if self.verbose:
             args += ["--verbose"]
+
+        if self.username:
+            args.append("username={}".format(self.username))
+
+        if self.password:
+            args.append("password={}".format(self.password))
+
+        if self.args.cert and self.args.key:
+            args += ["--key", self.args.key]
+            args += ["--cert", self.args.cert]
 
         args += ["--output", self.output_dir]
 

@@ -45,6 +45,10 @@ def main():
 
     kwargs = parse_keyword_args(ARGS[1:])
 
+    scheme = kwargs["scheme"] if "scheme" in kwargs and kwargs["scheme"] else "tcp"
+    if scheme.endswith("s") or scheme == "ssl" or scheme == "tls":
+        exit("This impl does not support TLS")
+
     params = (
         "jms.clientID={}".format(kwargs["id"]),
         "jms.prefetchPolicy.all={}".format(kwargs["credit-window"]),

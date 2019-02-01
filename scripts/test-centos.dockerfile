@@ -26,6 +26,7 @@ RUN yum -q -y install epel-release \
     && yum -q -y install java-1.8.0-openjdk nodejs python34-numpy python python34 \
         python-qpid-messaging qpid-cpp-client qpid-proton-c qpid-proton-cpp unzip xz gcc-c++ \
         java-1.8.0-openjdk-devel maven make qpid-cpp-client-devel qpid-proton-c-devel qpid-proton-cpp-devel \
+        cyrus-sasl-devel cyrus-sasl-plain cyrus-sasl-md5 openssl \
     && yum -q clean all
 
 COPY . /root/quiver

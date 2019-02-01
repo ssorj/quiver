@@ -30,7 +30,8 @@ RUN apt-get -qq update \
         python3 python-numpy python3-numpy unzip xz-utils
 
 RUN apt-get -qq install libqpidmessaging-dev libqpidtypes-dev libqpidcommon-dev \
-        libqpid-proton-cpp11-dev python-qpid python-qpid-messaging python3-qpid-proton
+        libqpid-proton-cpp11-dev python-qpid python-qpid-messaging python3-qpid-proton \
+        libsasl2-2 libsasl2-dev libsasl2-modules sasl2-bin
 
 RUN cd /usr/bin && ln -s nodejs node
 

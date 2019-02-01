@@ -38,9 +38,12 @@ class Client(object):
     def __init__(self):
         self.operation = None
         self.id_ = None
+        self.scheme = None
         self.host = None
         self.port = None
         self.path = None
+        self.username = None
+        self.password = None
         self.desired_duration = None
         self.desired_count = None
         self.body_size = None
@@ -58,11 +61,24 @@ class Client(object):
     def run(self):
         self.body = b"x" * self.body_size
 
-        domain = "{}:{}".format(self.host, self.port)
+        if self.username or self.password:
+            domain = "{}/{}@{}:{}".format(self.username if self.username else "",
+                                          self.password if self.password else "",
+                                          self.host, self.port)
+        else:
+            domain = "{}:{}".format(self.host, self.port)
+
+        # Qpid Messaging does not support a trust all option (SslSocket.cpp#bad_certificate only
+        # can only disable hostname verification but cannot be configured to ignore an unknown cert.
+        # Client must set QPID_SSL_CERT_DB refering to a cert-database (certutil(1)) containing the server's cert.
+        transport = "ssl" if self.scheme == "amqps" else "tcp"
+        mechs = None if self.username or self.password else b"ANONYMOUS"
         conn = Connection(domain,
                           protocol=b"amqp1.0",
+                          transport=transport,
                           container_id=self.id_,
-                          sasl_mechanisms=b"ANONYMOUS")
+                          sasl_mechanisms=mechs,
+                          ssl_ignore_hostname_verification_failure=True)
 
         conn.open()
 
@@ -168,12 +184,18 @@ def main():
     if kwargs["channel-mode"] != "active":
         exit("This impl supports active mode only")
 
+    if "cert" in kwargs or "key" in kwargs:
+        exit("This impl does not support TLS client cert")
+
     client = Client()
     client.operation = kwargs["operation"]
     client.id_ = kwargs["id"]
+    client.scheme = kwargs["scheme"] if "scheme" in kwargs else "amqp"
     client.host = kwargs["host"]
     client.port = kwargs["port"]
     client.path = kwargs["path"]
+    client.username = kwargs["username"] if "username" in kwargs else None
+    client.password = kwargs["password"] if "password" in kwargs else None
     client.desired_duration = int(kwargs["duration"])
     client.desired_count = int(kwargs["count"])
     client.body_size = int(kwargs["body-size"])

@@ -30,6 +30,7 @@
 #include <proton/message_id.hpp>
 #include <proton/messaging_handler.hpp>
 #include <proton/receiver_options.hpp>
+#include <proton/ssl.hpp>
 #include <proton/target_options.hpp>
 #include <proton/tracker.hpp>
 #include <proton/transfer.hpp>
@@ -76,9 +77,15 @@ struct handler : public proton::messaging_handler {
     std::string channel_mode;
     std::string operation;
     std::string id;
+    std::string scheme;
     std::string host;
     std::string port;
     std::string path;
+    std::string username;
+    std::string password;
+    std::string cert;
+    std::string key;
+    bool tls;
     int desired_duration;
     int desired_count;
     int body_size;
@@ -99,12 +106,31 @@ struct handler : public proton::messaging_handler {
 
         std::string domain = host + ":" + port;
         proton::connection_options opts;
+        opts.sasl_allow_insecure_mechs(true);
 
-        opts.sasl_allowed_mechs("ANONYMOUS");
+        if (username.empty() && password.empty()) {
+            opts.sasl_allowed_mechs("ANONYMOUS");
+        }
 
         if (connection_mode == "client") {
+            if (!username.empty()) opts.user(username);
+            if (!password.empty()) opts.password(password);
+            if (tls) {
+                if (!key.empty() && !cert.empty()) {
+                    proton::ssl_certificate client_cert = proton::ssl_certificate(cert, key);
+                    proton::ssl_client_options ssl_cli(client_cert, cert/*unused*/, proton::ssl::ANONYMOUS_PEER);
+                    opts.ssl_client_options(ssl_cli);
+                }
+                else {
+                    proton::ssl_client_options ssl_cli;
+                    opts.ssl_client_options(ssl_cli);
+                }
+            }
             connection = cont.connect(domain, opts);
         } else if (connection_mode == "server") {
+            if (tls) {
+                throw std::runtime_error("This impl can't be a server and support TLS");
+            }
             listener = cont.listen(domain, opts);
         } else {
             throw std::exception();
@@ -233,7 +259,7 @@ int main(int argc, char** argv) {
 
     for (int i = 1; i < argc; i++) {
         auto pair = split(argv[i], '=', 1);
-        kwargs[pair[0]] = pair[1];
+        kwargs[pair[0]] = pair.size() > 1 ? pair[1] : "";
     }
 
     int transaction_size = std::stoi(kwargs["transaction-size"]);
@@ -249,14 +275,29 @@ int main(int argc, char** argv) {
     h.channel_mode = kwargs["channel-mode"];
     h.operation = kwargs["operation"];
     h.id = kwargs["id"];
+    h.scheme = kwargs["scheme"];
     h.host = kwargs["host"];
     h.port = kwargs["port"];
     h.path = kwargs["path"];
+    h.username = kwargs["username"];
+    h.password = kwargs["password"];
+    h.cert = kwargs["cert"];
+    h.key = kwargs["key"];
     h.desired_duration = std::stoi(kwargs["duration"]);
     h.desired_count = std::stoi(kwargs["count"]);
     h.body_size = std::stoi(kwargs["body-size"]);
     h.credit_window = std::stoi(kwargs["credit-window"]);
     h.durable = std::stoi(kwargs["durable"]);
+
+    if (h.scheme.empty()) {
+        h.scheme = "amqp";
+    }
+    h.tls = h.scheme == "amqps";
+
+    if (h.connection_mode == "server" && h.tls) {
+        eprint("This impl can't be a server and support TLS");
+        return 1;
+    }
 
     try {
         proton::container(h, h.id).run();

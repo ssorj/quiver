@@ -163,6 +163,7 @@ address URLs:
   //localhost/queue0
   amqp://example.net:10000/jobs
   amqps://10.0.0.10/jobs/alpha
+  amqps://username:password@10.0.0.10/jobs/alpha
 """
 
 _epilog_count_and_duration_formats = """
@@ -272,9 +273,12 @@ class Command:
         if url.path is None:
             raise CommandError("The URL has no path")
 
+        self.scheme = url.scheme
         self.host = url.hostname
         self.port = url.port
         self.path = url.path
+        self.username = url.username
+        self.password = url.password
 
         if self.host is None:
             # XXX Should be "localhost" - a workaround for a proton issue
@@ -282,6 +286,9 @@ class Command:
 
         if self.port is None:
             self.port = "5672"
+
+        if self.scheme is None:
+            self.port = "amqp"
 
         self.port = str(self.port)
 
