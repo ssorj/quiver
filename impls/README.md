@@ -54,6 +54,14 @@ time.
 
 Each unit of `credit-window` represents one message (not one byte).
 
+The follow arguments are options.
+
+    scheme            string   protocol scheme
+    username          string   username used to connect to the peer
+    password          string   password used to connect to the peer
+    cert              string   certificate file that identifies the arrow to the peer 
+    key               string   private key file associated with the certificate
+
 Implementations should avoid validating inputs.  That's the job of the
 wrapper.  The wrapper and the implementation are closely coupled by
 design.

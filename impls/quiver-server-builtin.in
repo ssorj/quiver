@@ -43,12 +43,26 @@ def main():
 
     kwargs = parse_keyword_args(ARGS[1:])
 
+    scheme = kwargs["scheme"] if "scheme" in kwargs and kwargs["scheme"] else "amqp"
     host = kwargs["host"]
     port = kwargs["port"]
     path = kwargs["path"]
     ready_file = kwargs["ready-file"]
+    cert = kwargs["cert"] if "cert" in kwargs else None
+    key = kwargs["key"] if "key" in kwargs else None
+    key_password = kwargs["key-password"] if "key-password" in kwargs else None
+    trusted_db = kwargs["trusted-db"] if "trusted-db" in kwargs else None
+    user = kwargs["user"] if "user" in kwargs else None
+    password = kwargs["password"] if "password" in kwargs else None
 
-    broker = BuiltinBroker(host, port, path, ready_file)
+    broker = BuiltinBroker(scheme, host, port, path, ready_file,
+                           cert=cert,
+                           key=key,
+                           key_password=key_password,
+                           trusted_db=trusted_db,
+                           user=user,
+                           password=password)
+    broker.init()
     broker.run()
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-#!/usr/bin/node
+#!/usr/bin/node 
 
 //
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -20,6 +20,8 @@
 //
 
 "use strict";
+
+var fs = require('fs');
 
 let home = "@quiver_home@";
 
@@ -48,9 +50,14 @@ const container = rhea.create_container({id: kwargs["id"]});
 const connection_mode = kwargs["connection-mode"];
 const channel_mode = kwargs["channel-mode"];
 const operation = kwargs["operation"];
+const scheme = kwargs["scheme"] ? kwargs["scheme"] : "amqp";
 const host = kwargs["host"];
 const port = kwargs["port"];
 const path = kwargs["path"];
+const username = kwargs["username"] ? kwargs["username"] : "anonymous";
+const password = kwargs["password"];
+const cert = kwargs["cert"];
+const key = kwargs["key"];
 const desired_duration = parseInt(kwargs["duration"]);
 const desired_count = parseInt(kwargs["count"]);
 const body_size = parseInt(kwargs["body-size"]);
@@ -213,9 +220,23 @@ if (desired_duration > 0) {
     setTimeout(function() { stop(); }, desired_duration * 1000);
 }
 
-if (connection_mode == "client") {
-    connection = container.connect({username: "anonymous", host: host, port: port});
-} else if (connection_mode == "server") {
+let tls = scheme === "amqps"
+if (connection_mode === "client") {
+    connection = container.connect({
+        username: username,
+        password: password,
+        host: host,
+        port: port,
+        scheme: scheme,
+        transport: tls ? "tls" : "tcp",
+        rejectUnauthorized: false, // don't verify tls peer
+        key: key && cert ? fs.readFileSync(key) : null,
+        cert: key && cert ? fs.readFileSync(cert) : null
+    });
+} else if (connection_mode === "server") {
+    if (tls) {
+        throw new Error("This impl can't be a server and support TLS");
+    }
     container.sasl_server_mechanisms.enable_anonymous();
     listener = container.listen({host: host, port: port});
 } else {

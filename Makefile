@@ -67,7 +67,11 @@ JAVASCRIPT_TARGETS := ${JAVASCRIPT_SOURCES:%=build/quiver/%}
 PYTHON_SOURCES := $(shell find python -type f -name \*.py -o -name \*.py.in)
 PYTHON_TARGETS := ${PYTHON_SOURCES:%=build/quiver/%} ${PYTHON_SOURCES:%.in=build/quiver/%} 
 
+TESTDATA_SOURCES := $(shell find python -type f -name \*.pem)
+TESTDATA_TARGETS := ${TESTDATA_SOURCES:%=build/quiver/%} ${TESTDATA_SOURCES:%.in=build/quiver/%} 
+
 TARGETS := ${BIN_TARGETS} ${JAVASCRIPT_TARGETS} ${PYTHON_TARGETS} \
+	${TESTDATA_TARGETS} \
 	build/quiver/impls/quiver-arrow-qpid-proton-python \
 	build/quiver/impls/quiver-server-activemq \
 	build/quiver/impls/quiver-server-activemq-artemis \
@@ -228,6 +232,10 @@ build/quiver/python/quiver/%: python/quiver/% python/commandant.py python/pencil
 
 build/quiver/python/%: python/%
 	@mkdir -p ${@D}
+	cp $< $@
+
+build/quiver/python/quiver/test_tls_certs/%: python/quiver/test_tls_certs/%
+	mkdir -p $(@D)
 	cp $< $@
 
 .PHONY: update-rhea

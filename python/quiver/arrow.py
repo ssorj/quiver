@@ -97,6 +97,10 @@ class QuiverArrowCommand(Command):
                                  help="Operate in passive mode")
         self.parser.add_argument("--prelude", metavar="PRELUDE", default="",
                                  help="Commands to precede the implementation invocation")
+        self.parser.add_argument("--cert", metavar="CERT.PEM",
+                                 help="Certificate filename - used for client authentication")
+        self.parser.add_argument("--key", metavar="PRIVATE-KEY.PEM",
+                                 help="Private key filename - used for client authentication")
 
         self.add_common_test_arguments()
         self.add_common_tool_arguments()
@@ -130,6 +134,9 @@ class QuiverArrowCommand(Command):
 
         if self.args.passive:
             self.channel_mode = "passive"
+
+        self.cert = self.args.cert
+        self.key = self.args.key
 
         self.init_url_attributes()
         self.init_common_test_attributes()
@@ -173,6 +180,7 @@ class QuiverArrowCommand(Command):
             "channel-mode={}".format(self.channel_mode),
             "operation={}".format(self.operation),
             "id={}".format(self.id_),
+            "scheme={}".format(self.scheme),
             "host={}".format(self.host),
             "port={}".format(self.port),
             "path={}".format(self.path),
@@ -183,6 +191,16 @@ class QuiverArrowCommand(Command):
             "transaction-size={}".format(self.transaction_size),
             "durable={}".format(1 if self.durable else 0),
         ]
+
+        if self.username:
+            args.append("username={}".format(self.username))
+
+        if self.password:
+            args.append("password={}".format(self.password))
+
+        if self.args.cert and self.args.key:
+            args.append("key={}".format(self.key))
+            args.append("cert={}".format(self.cert))
 
         with open(self.transfers_file, "wb") as fout:
             env = _plano.ENV

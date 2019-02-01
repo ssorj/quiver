@@ -33,15 +33,22 @@ import subprocess as _subprocess
 import sys as _sys
 import time as _time
 import tempfile as _tempfile
+import pathlib as _pathlib
 
 class Broker(object):
-    def __init__(self, host, port, id=None, user=None, password=None, ready_file=None):
+    def __init__(self, scheme, host, port, id=None, user=None, password=None, ready_file=None,
+                 cert=None, key=None, key_password=None, trusted_db=None):
+        self.scheme = scheme
         self.host = host
         self.port = port
         self.id = id
         self.user = user
         self.password = password
         self.ready_file = ready_file
+        self.cert = cert
+        self.key = key
+        self.key_password = key_password
+        self.trusted_db = trusted_db
 
         if self.id is None:
             self.id = "broker-{0}".format(_uuid.uuid4())
@@ -56,6 +63,16 @@ class Broker(object):
                 self.fail("A password is required for user authentication")
 
             self._init_sasl_config()
+
+        if self.scheme == "amqps":
+            if self.key is None or self.cert is None:
+                self.fail("if scheme is amqps, key and cert files must be specified")
+            if not _pathlib.Path(self.key).is_file():
+                self.fail("key file %s does not exist" % (self.key))
+            if not _pathlib.Path(self.cert).is_file():
+                self.fail("cert file %s does not exist" % (self.cert))
+            if self.trusted_db and not _pathlib.Path(self.trusted_db).is_file():
+                self.fail("trusted db file %s does not exist" % (self.trusted_db))
 
     def _init_sasl_config(self):
         self._config_dir = _tempfile.mkdtemp(prefix="brokerlib-", suffix="")
@@ -169,7 +186,16 @@ class _Handler(_handlers.MessagingHandler):
         self.verbose = False
 
     def on_start(self, event):
-        interface = "{0}:{1}".format(self.broker.host, self.broker.port)
+        interface = "{0}://{1}:{2}".format(self.broker.scheme, self.broker.host, self.broker.port)
+
+        if self.broker.scheme == "amqps":
+            server_ssl_domain = event.container.ssl.server
+            server_ssl_domain.set_credentials(self.broker.cert, self.broker.key, self.broker.key_password)
+            if self.broker.trusted_db:
+                server_ssl_domain.set_trusted_ca_db(self.broker.trusted_db)
+                server_ssl_domain.set_peer_authentication(_proton.SSLDomain.VERIFY_PEER, self.broker.trusted_db)
+            else:
+                server_ssl_domain.set_peer_authentication(_proton.SSLDomain.ANONYMOUS_PEER)
 
         self.acceptor = event.container.listen(interface)
 
@@ -210,6 +236,9 @@ class _Handler(_handlers.MessagingHandler):
         if event.link.is_sender:
             queue = self.queues[event.link.source.address]
             queue.remove_consumer(event.link)
+
+    def on_connection_init(self, event):
+        event.transport.sasl().allow_insecure_mechs=True
 
     def on_connection_opening(self, event):
         # XXX I think this should happen automatically
@@ -273,6 +302,10 @@ class _Handler(_handlers.MessagingHandler):
         queue = self.get_queue(address)
         queue.store_message(delivery, message)
         queue.forward_messages()
+    #
+    # def on_unhandled(self, name, event):
+    #     _sys.stderr.write("{0} {1}\n".format(name, event))
+    #     _sys.stderr.flush()
 
 if __name__ == "__main__":
     def _print(message, *args):

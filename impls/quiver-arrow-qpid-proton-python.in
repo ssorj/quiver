@@ -25,7 +25,7 @@ import uuid
 
 from proton import Message, VERSION, __file__ as proton_module_file
 from proton.handlers import MessagingHandler
-from proton.reactor import Container
+from proton.reactor import Container, SSLDomain
 
 default_home = os.path.normpath("@quiver_home@")
 home = os.environ.get("QUIVER_HOME", default_home)
@@ -61,10 +61,18 @@ class Handler(MessagingHandler):
     def on_start(self, event):
         self.body = b"x" * self.body_size
 
-        server = "{}:{}".format(self.host, self.port)
+        server = "{}://{}:{}".format(self.scheme, self.host, self.port)
 
         if self.connection_mode == "client":
-            self.connection = event.container.connect(server, allowed_mechs="ANONYMOUS")
+            if self.username or self.password:
+                self.connection = event.container.connect(server,
+                                                          user = self.username,
+                                                          password = self.password,
+                                                          ssl_domain = self.ssl_domain)
+            else:
+                self.connection = event.container.connect(server,
+                                                          allowed_mechs = "ANONYMOUS",
+                                                          ssl_domain = self.ssl_domain)
         elif self.connection_mode == "server":
             self.listener = event.container.listen(server)
         else:
@@ -180,13 +188,28 @@ def main():
     handler.connection_mode = kwargs["connection-mode"]
     handler.channel_mode = kwargs["channel-mode"]
     handler.operation = kwargs["operation"]
+    handler.scheme = kwargs["scheme"] if "scheme" in kwargs and kwargs["scheme"] else "amqp"
     handler.host = kwargs["host"]
     handler.port = kwargs["port"]
     handler.path = kwargs["path"]
+    handler.username = kwargs["username"] if "username" in kwargs else None
+    handler.password = kwargs["password"] if "password" in kwargs else None
+    handler.cert = kwargs["cert"] if "cert" in kwargs else None
+    handler.key = kwargs["key"] if "key" in kwargs else None
     handler.desired_duration = int(kwargs["duration"])
     handler.desired_count = int(kwargs["count"])
     handler.body_size = int(kwargs["body-size"])
     handler.durable = int(kwargs["durable"]) == 1
+    handler.ssl_domain = None
+
+    if handler.scheme == 'amqps':
+        if handler.connection_mode == 'client':
+            handler.ssl_domain = SSLDomain(SSLDomain.MODE_CLIENT)
+            handler.ssl_domain.set_peer_authentication(SSLDomain.ANONYMOUS_PEER)
+            if handler.cert and handler.key:
+                handler.ssl_domain.set_credentials(handler.cert, handler.key, None)
+        else:
+            exit("This impl can't be a server and support TLS")
 
     container = Container(handler)
     container.container_id = kwargs["id"] # XXX Pass this in the constructor?

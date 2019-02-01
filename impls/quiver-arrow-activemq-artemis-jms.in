@@ -45,10 +45,26 @@ def main():
 
     kwargs = parse_keyword_args(ARGS[1:])
 
-    params = (
+    if "cert" in kwargs or "key" in kwargs:
+        exit("This impl does not support TLS client cert")
+
+    params = [
         "jms.clientID={}".format(kwargs["id"]),
         "jms.prefetchPolicy.all={}".format(kwargs["credit-window"]),
-    )
+    ]
+
+    scheme = kwargs["scheme"] if "scheme" in kwargs and kwargs["scheme"] else "tcp"
+    if scheme.endswith("s") or scheme == "ssl" or scheme == "tls":
+        params.append("verifyHost=true")
+        params.append("trustAll=true")
+        params.append("sslEnabled=true")
+
+    if "username" in kwargs:
+        params.append("user={}".format(kwargs["username"]))
+
+    if "password" in kwargs:
+        params.append("password={}".format(kwargs["password"]))
+
 
     url = "tcp://{}:{}?{}".format(kwargs["host"], kwargs["port"], "&".join(params))
 

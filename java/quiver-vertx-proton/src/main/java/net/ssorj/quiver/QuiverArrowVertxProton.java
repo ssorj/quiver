@@ -27,21 +27,20 @@ import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.qpid.proton.amqp.Binary;
-import org.apache.qpid.proton.amqp.UnsignedLong;
 import org.apache.qpid.proton.amqp.messaging.Accepted;
 import org.apache.qpid.proton.amqp.messaging.ApplicationProperties;
 import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.message.Message;
 
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.proton.ProtonClient;
+import io.vertx.proton.ProtonClientOptions;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonReceiver;
 import io.vertx.proton.ProtonSender;
@@ -75,9 +74,14 @@ public class QuiverArrowVertxProton {
         final String channelMode = kwargs.get("channel-mode");
         final String operation = kwargs.get("operation");
         final String id = kwargs.get("id");
+        final String scheme = kwargs.get("scheme");
         final String host = kwargs.get("host");
         final int port = Integer.parseInt(kwargs.get("port"));
         final String path = kwargs.get("path");
+        final String username = kwargs.get("username");
+        final String password = kwargs.get("password");
+        final String cert = kwargs.get("cert");
+        final String key = kwargs.get("key");
         final int desiredDuration = Integer.parseInt(kwargs.get("duration"));
         final int desiredCount = Integer.parseInt(kwargs.get("count"));
         final int bodySize = Integer.parseInt(kwargs.get("body-size"));
@@ -111,7 +115,22 @@ public class QuiverArrowVertxProton {
         final Vertx vertx = Vertx.vertx(new VertxOptions().setPreferNativeTransport(true));
         final ProtonClient client = ProtonClient.create(vertx);
 
-        client.connect(host, port, (res) -> {
+
+        final ProtonClientOptions options = new ProtonClientOptions();
+
+        if ("amqps".equals(scheme)) {
+            options.setSsl(true)
+                   .setTrustAll(true)
+                   .setHostnameVerificationAlgorithm("");
+
+            if (cert != null && key != null) {
+                options.setPemKeyCertOptions(new PemKeyCertOptions()
+                                                     .setCertPath(cert)
+                                                     .setKeyPath(key));
+            }
+        }
+
+        client.connect(options, host, port, username, password, (res) -> {
                 if (res.succeeded()) {
                     final ProtonConnection connection = res.result();
 

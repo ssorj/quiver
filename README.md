@@ -55,6 +55,9 @@ The `quiver` command launches a pair of `quiver-arrow` instances, one
 sender and one receiver, and produces a summary of the end-to-end
 transmission of messages.
 
+Some client quiver arrows can authenticate to their peer using username
+password or a client certificate.
+
 ## Installation
 
 ### Dependencies
@@ -67,6 +70,7 @@ transmission of messages.
 | Maven                 | maven                 | maven
 | Node.js               | nodejs                | nodejs
 | NumPy                 | python-numpy, python3-numpy | python-numpy, python3-numpy
+| Openssl               | openssl               | openssl
 | Python 2.7            | python                | python
 | Python 3              | python3               | python3
 | Qpid Messaging C++    | libqpidmessaging-dev, libqpidtypes-dev, libqpidcommon-dev | qpid-cpp-client-devel
@@ -74,6 +78,7 @@ transmission of messages.
 | Qpid Proton C         | libqpid-proton-proactor1-dev | qpid-proton-c-devel
 | Qpid Proton C++       | libqpid-proton-cpp11-dev | qpid-proton-cpp-devel
 | Qpid Proton Python    | python3-qpid-proton   | python3-qpid-proton
+| SASL                  | cyrus-sasl-devel cyrus-sasl-plain cyrus-sasl-md5 | libsasl2-2 libsasl2-dev libsasl2-modules sasl2-bin
 | Unzip                 | unzip                 | unzip
 | XZ                    | xz-utils              | xz
 
@@ -104,7 +109,7 @@ Ubuntu PPA.
         libqpidmessaging-dev libqpidtypes-dev libqpidcommon-dev \
         libqpid-proton-proactor1-dev libqpid-proton-cpp11-dev \
         python-qpid python-qpid-messaging python3-qpid-proton \
-        unzip xz-utils
+        openssl unzip xz-utils
 
 After this you can install from source.
 
@@ -203,15 +208,25 @@ is an invocation of the `quiver-arrow` command.
       --sender IMPL         Use IMPL to send (default qpid-proton-c)
       --receiver IMPL       Use IMPL to receive (default qpid-proton-c)
       --impl IMPL           An alias for --arrow
-      --peer-to-peer        Connect the sender directly to the receiver in server mode
+      --peer-to-peer        Connect the sender directly to the receiver in server
+                            mode
+      --cert CERT.PEM       Certificate filename - used for client authentication
+      --key PRIVATE-KEY.PEM
+                            Private key filename - - used for client
+                            authentication
       -c COUNT, --count COUNT
-                            Send or receive COUNT messages (default 1m; 0 means no limit)
+                            Send or receive COUNT messages (default 1m; 0 means no
+                            limit)
       -d DURATION, --duration DURATION
-                            Stop after DURATION, ignoring --count (default 0, disabled)
-      --body-size COUNT     Send message bodies containing COUNT bytes (default 100)
-      --credit COUNT        Sustain credit for COUNT incoming messages (default 1000)
+                            Stop after DURATION, ignoring --count (default 0,
+                            disabled)
+      --body-size COUNT     Send message bodies containing COUNT bytes (default
+                            100)
+      --credit COUNT        Sustain credit for COUNT incoming messages (default
+                            1000)
       --transaction-size COUNT
-                            Transfer batches of COUNT messages inside transactions (default 0, disabled)
+                            Transfer batches of COUNT messages inside transactions
+                            (default 0, disabled)
       --durable             Require persistent store-and-forward transfers
       --timeout DURATION    Fail after DURATION without transfers (default 10s)
       --quiet               Print nothing to the console
@@ -225,6 +240,7 @@ is an invocation of the `quiver-arrow` command.
       //localhost/queue0
       amqp://example.net:10000/jobs
       amqps://10.0.0.10/jobs/alpha
+      amqps://user:password&10.0.0.10/jobs/alpha
 
     count format:                     duration format:
       1 (no unit)    1                  1 (no unit)    1 second
@@ -254,9 +270,13 @@ This command sends or receives AMQP messages as fast as it can.  Each
 invocation creates a single connection.  It terminates when the target
 number of messages are all sent or received.
 
-    usage: quiver-arrow [-h] [--output DIR] [--impl NAME] [--info] [--id ID] [--server] [--passive] [--prelude PRELUDE]
-                        [-c COUNT] [-d DURATION] [--body-size COUNT] [--credit COUNT] [--transaction-size COUNT]
-                        [--durable] [--timeout DURATION] [--quiet] [--verbose]
+    usage: quiver-arrow [-h] [--output DIR] [--impl NAME] [--info] [--id ID]
+                        [--server] [--passive] [--prelude PRELUDE]
+                        [--cert CERT.PEM] [--key PRIVATE-KEY.PEM] [-c COUNT]
+                        [-d DURATION] [--body-size COUNT] [--credit COUNT]
+                        [--transaction-size COUNT] [--durable]
+                        [--timeout DURATION] [--quiet] [--verbose] [--init-only]
+                        [--version]
                         OPERATION ADDRESS-URL
 
 ### `quiver-server`

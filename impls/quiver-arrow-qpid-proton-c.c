@@ -27,6 +27,7 @@
 #include <proton/message.h>
 #include <proton/proactor.h>
 #include <proton/sasl.h>
+#include <proton/ssl.h>
 #include <proton/types.h>
 #include <proton/version.h>
 
@@ -54,9 +55,15 @@ struct arrow {
     channel_mode channel_mode;
     operation operation;
     const char* id;
+    const char* scheme;
     const char* host;
     const char* port;
     const char* path;
+    const char* username;
+    const char* password;
+    const char* cert;
+    const char* key;
+    bool tls;
     uint32_t desired_duration;
     size_t desired_count;
     size_t body_size;
@@ -73,6 +80,7 @@ struct arrow {
     size_t sent;
     size_t received;
     size_t acknowledged;
+    pn_ssl_domain_t *ssl_domain;
 };
 
 void fail_(const char* file, int line, const char* fmt, ...) {
@@ -232,6 +240,13 @@ static bool handle(struct arrow* a, pn_event_t* e) {
     case PN_CONNECTION_INIT:
         pn_connection_set_container(pn_event_connection(e), a->id);
         if (a->channel_mode == ACTIVE) {
+            if (a->username) {
+                pn_connection_set_user(a->connection, a->username);
+            }
+            if (a->password) {
+                pn_connection_set_password(a->connection, a->password);
+            }
+
             pn_session_t* ssn = pn_session(pn_event_connection(e));
             pn_session_open(ssn);
             pn_link_t* l = NULL;
@@ -255,8 +270,21 @@ static bool handle(struct arrow* a, pn_event_t* e) {
     case PN_CONNECTION_BOUND: {
         // Turn off security
         pn_transport_t* t = pn_event_transport(e);
-        pn_transport_require_auth(t, false);
-        pn_sasl_allowed_mechs(pn_sasl(t), "ANONYMOUS");
+
+        if (a->tls) {
+            int err =  pn_ssl_init(pn_ssl(t), a->ssl_domain, NULL);
+            if (err) {
+                FAIL("error initializing SSL: %s\n", pn_code(err));
+            }
+        }
+
+        bool require_auth = a->username || a->password;
+        pn_transport_require_auth(t, require_auth);
+        if (!require_auth) {
+            pn_sasl_allowed_mechs(pn_sasl(t), "ANONYMOUS");
+        } else {
+            pn_sasl_set_allow_insecure_mechs(pn_sasl(t), true);
+        }
         break;
     }
     case PN_CONNECTION_REMOTE_OPEN: {
@@ -440,14 +468,25 @@ int main(size_t argc, char** argv) {
     a.channel_mode = (channel_mode)token(channel_mode_names, find_arg(kwargc, kwargv, "channel-mode"));
     a.operation = (operation)token(operation_names, find_arg(kwargc, kwargv, "operation"));
     a.id = find_arg(kwargc, kwargv, "id");
+    a.scheme = find_arg(kwargc, kwargv, "scheme");
     a.host = find_arg(kwargc, kwargv, "host");
     a.port = find_arg(kwargc, kwargv, "port");
     a.path = find_arg(kwargc, kwargv, "path");
+    a.username = find_arg(kwargc, kwargv, "username");
+    a.password = find_arg(kwargc, kwargv, "password");
+    a.cert = find_arg(kwargc, kwargv, "cert");
+    a.key = find_arg(kwargc, kwargv, "key");
     a.desired_duration = atoi(find_arg(kwargc, kwargv, "duration"));
     a.desired_count = atoi(find_arg(kwargc, kwargv, "count"));
     a.body_size = atoi(find_arg(kwargc, kwargv, "body-size"));
     a.credit_window = atoi(find_arg(kwargc, kwargv, "credit-window"));
     a.durable = atoi(find_arg(kwargc, kwargv, "durable")) == 1;
+    a.ssl_domain = pn_ssl_domain(PN_SSL_MODE_CLIENT);
+
+    if (a.scheme == NULL) {
+        a.scheme = "amqp";
+    }
+    a.tls = strcmp(a.scheme, "amqps") == 0;
 
     // Set up the fixed parts of the message
     a.message = pn_message();
@@ -461,14 +500,25 @@ int main(size_t argc, char** argv) {
     char addr[PN_MAX_ADDR];
     pn_proactor_addr(addr, sizeof(addr), a.host, a.port);
     a.proactor = pn_proactor();
+
     switch (a.connection_mode) {
     case CLIENT:
         a.connection = pn_connection();
         pn_proactor_connect(a.proactor, a.connection, addr);
+        if (a.tls) {
+            // PN_SSL_ANONYMOUS_PEER is default
+            a.ssl_domain = pn_ssl_domain(PN_SSL_MODE_CLIENT);
+            if (a.cert && a.key) {
+                pn_ssl_domain_set_credentials(a.ssl_domain, a.cert, a.key, NULL);
+            }
+        }
         break;
     case SERVER:
         a.listener = pn_listener();
         pn_proactor_listen(a.proactor, a.listener, addr, 32);
+        if (a.tls) {
+            FAIL("This impl can't be a server and support TLS");
+        }
         break;
     }
 
@@ -476,6 +526,7 @@ int main(size_t argc, char** argv) {
 
     run(&a);
 
+    if (a.ssl_domain) pn_ssl_domain_free(a.ssl_domain);
     if (a.message) pn_message_free(a.message);
     if (a.proactor) pn_proactor_free(a.proactor);
     free(a.buffer.start);

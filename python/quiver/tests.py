@@ -18,10 +18,24 @@
 #
 
 import sys as _sys
+import os as _os
 
 from commandant import *
 from plano import *
 from quiver.common import *
+
+try:
+    from urllib.parse import urlparse as _urlparse
+except ImportError:
+    from urlparse import urlparse as _urlparse
+
+
+SCRIPT_DIR = _os.path.dirname(_os.path.realpath(__file__))
+TCLIENT_CERTIFICATE_PEM = SCRIPT_DIR + "/test_tls_certs/tclient-certificate.pem"
+TCLIENT_PRIVATE_KEY_PEM = SCRIPT_DIR + "/test_tls_certs/tclient-private-key-nopwd.pem"
+TSERVER_CERTIFICATE_PEM = SCRIPT_DIR + "/test_tls_certs/tserver-certificate.pem"
+TSERVER_PRIVATE_KEY_PEM = SCRIPT_DIR + "/test_tls_certs/tserver-private-key.pem"
+
 
 def open_test_session(session):
     enable_logging("warn")
@@ -317,14 +331,71 @@ def test_bench(session):
 
         call(command)
 
+# TLS/SASL
+
+def test_anonymous_tls(session):
+    additional_server_args = []
+    additional_server_args.append("--key={}".format(TSERVER_PRIVATE_KEY_PEM))
+    additional_server_args.append("--key-password={}".format("password"))
+    additional_server_args.append("--cert={}".format(TSERVER_CERTIFICATE_PEM))
+    with _TestServer(additional_server_args = additional_server_args, scheme = "amqps") as server:
+        for impl in AMQP_ARROW_IMPLS:
+            if not impl_available(impl) or impl.startswith("qpid-messaging"):
+                # Note: Qpid-messaging doesn't support anonymous TLS.
+                continue
+
+            call("quiver-arrow send {} --impl {} --count 1 --verbose", server.url, impl)
+            call("quiver-arrow receive {} --impl {} --count 1 --verbose", server.url, impl)
+
+def test_clientauth_tls(session):
+    additional_server_args = []
+    additional_server_args.append("--key={}".format(TSERVER_PRIVATE_KEY_PEM))
+    additional_server_args.append("--key-password={}".format("password"))
+    additional_server_args.append("--cert={}".format(TSERVER_CERTIFICATE_PEM))
+    additional_server_args.append("--trusted-db={}".format(TCLIENT_CERTIFICATE_PEM))
+    with _TestServer(additional_server_args = additional_server_args, scheme = "amqps") as server:
+        for impl in AMQP_ARROW_IMPLS:
+            if not impl_available(impl)or impl.startswith("qpid-messaging"):
+                # Note: Qpid-messaging doesn't support anonymous TLS.
+                continue
+
+            cert = TCLIENT_CERTIFICATE_PEM
+            key = TCLIENT_PRIVATE_KEY_PEM
+            call("quiver-arrow send {} --impl {} --count 1 --verbose --cert {} --key {}", server.url, impl, cert, key)
+            call("quiver-arrow receive {} --impl {} --count 1 --verbose --cert {} --key {}", server.url, impl, cert, key)
+
+
+def test_sasl(session):
+    sasl_user = "myuser"
+    sasl_password = "mypassword"
+    additional_server_args = []
+    additional_server_args.append("--key={}".format(TSERVER_PRIVATE_KEY_PEM))
+    additional_server_args.append("--key-password={}".format("password"))
+    additional_server_args.append("--cert={}".format(TSERVER_CERTIFICATE_PEM))
+    additional_server_args.append("--sasl-user={}".format(sasl_user))
+    additional_server_args.append("--sasl-password={}".format(sasl_password))
+
+    with _TestServer(additional_server_args = additional_server_args, scheme="amqp") as server:
+        server_url = _urlparse(server.url)
+        client_url = "{}://{}:{}@{}{}".format(server_url.scheme,
+                                               sasl_user, sasl_password,
+                                               server_url.netloc, server_url.path)
+
+        for impl in AMQP_ARROW_IMPLS:
+            if not impl_available(impl):
+                continue
+
+            call("quiver-arrow send {} --impl {} --count 1 --verbose", client_url, impl)
+            call("quiver-arrow receive {} --impl {} --count 1 --verbose", client_url, impl)
+
 class _TestServer:
-    def __init__(self, impl="builtin", **kwargs):
+    def __init__(self, impl="builtin", scheme=None, additional_server_args = [], **kwargs):
         port = random_port()
 
         if impl == "activemq":
             port = "5672"
 
-        self.url = "//127.0.0.1:{}/q0".format(port)
+        self.url = "{}//127.0.0.1:{}/q0".format(scheme + ":" if scheme else "", port)
         self.ready_file = make_temp_file()
 
         command = [
@@ -333,6 +404,8 @@ class _TestServer:
             "--ready-file", self.ready_file,
             "--impl", impl,
         ]
+
+        command.extend(additional_server_args)
 
         self.proc = start_process(command, **kwargs)
         self.proc.url = self.url
@@ -349,6 +422,7 @@ class _TestServer:
     def __exit__(self, exc_type, exc_value, traceback):
         stop_process(self.proc)
         remove(self.ready_file)
+
 
 def _test_url():
     return "//127.0.0.1:{}/q0".format(random_port())
