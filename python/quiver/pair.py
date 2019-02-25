@@ -123,12 +123,6 @@ class QuiverPairCommand(Command):
         if self.verbose:
             args += ["--verbose"]
 
-        if self.username:
-            args.append("username={}".format(self.username))
-
-        if self.password:
-            args.append("password={}".format(self.password))
-
         if self.args.cert and self.args.key:
             args += ["--key", self.args.key]
             args += ["--cert", self.args.cert]
