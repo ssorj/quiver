@@ -247,6 +247,10 @@ static bool handle(struct arrow* a, pn_event_t* e) {
                 pn_connection_set_password(a->connection, a->password);
             }
 
+            char domain[strlen(a->host)  + (a->port ? (strlen(a->port) + 1) : 0) + 1];
+            sprintf(domain, (a->port ? "%s:%d" : "%s"), a->host, a->port);
+            pn_connection_set_hostname(a->connection, domain);
+
             pn_session_t* ssn = pn_session(pn_event_connection(e));
             pn_session_open(ssn);
             pn_link_t* l = NULL;
