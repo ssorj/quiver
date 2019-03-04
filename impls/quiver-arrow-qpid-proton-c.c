@@ -241,15 +241,18 @@ static bool handle(struct arrow* a, pn_event_t* e) {
         pn_connection_set_container(pn_event_connection(e), a->id);
         if (a->channel_mode == ACTIVE) {
             if (a->username) {
-                pn_connection_set_user(a->connection, a->username);
+                pn_connection_set_user(pn_event_connection(e), a->username);
             }
             if (a->password) {
-                pn_connection_set_password(a->connection, a->password);
+                pn_connection_set_password(pn_event_connection(e), a->password);
             }
 
-            char domain[strlen(a->host)  + (a->port ? (strlen(a->port) + 1) : 0) + 1];
-            sprintf(domain, (a->port ? "%s:%d" : "%s"), a->host, a->port);
-            pn_connection_set_hostname(a->connection, domain);
+            if (a->host) {
+                bool has_port = a->port && strlen(a->port) > 0;
+                char domain[strlen(a->host) + (has_port ? (strlen(a->port) + 1) : 0) + 1];
+                sprintf(domain, (has_port ? "%s:%s" : "%s"), a->host, a->port);
+                pn_connection_set_hostname(pn_event_connection(e), domain);
+            }
 
             pn_session_t* ssn = pn_session(pn_event_connection(e));
             pn_session_open(ssn);
