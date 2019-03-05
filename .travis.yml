@@ -6,3 +6,7 @@ services:
 
 script:
  - make test-fedora test-ubuntu
+
+cache:
+  directories:
+  - $HOME/.m2
