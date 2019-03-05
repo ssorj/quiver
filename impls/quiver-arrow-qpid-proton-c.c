@@ -19,6 +19,9 @@
  *
  */
 
+#define _BSD_SOURCE
+#define _POSIX_C_SOURCE 200112L
+
 #include <proton/codec.h>
 #include <proton/delivery.h>
 #include <proton/engine.h>
