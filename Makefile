@@ -108,7 +108,7 @@ TARGETS += build/quiver/impls/quiver-arrow-qpid-proton-cpp
 endif
 
 CCFLAGS := -g -Os -std=c++11 -lstdc++ -lpthread
-CFLAGS  := -g -Os
+CFLAGS  := -g -Os -std=c99
 
 .PHONY: default
 default: build
