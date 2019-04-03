@@ -314,7 +314,7 @@ the given address.
 
 ### Running Quiver peer-to-peer
 
-    $ quiver --peer-to-peer --sender qpid-jms --receiver qpid-proton-python
+    $ quiver --peer-to-peer --sender qpid-jms --receiver qpid-proton-python q0
 
 ## More information
 
