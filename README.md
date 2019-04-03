@@ -107,7 +107,7 @@ Ubuntu PPA.
     $ sudo apt-get install build-essential make openjdk-8-jdk maven nodejs \
         python python-numpy python3 python3-numpy \
         libqpidmessaging-dev libqpidtypes-dev libqpidcommon-dev \
-        libqpid-proton-proactor1-dev libqpid-proton-cpp11-dev \
+        libqpid-proton-proactor1-dev libqpid-proton-cpp12-dev \
         python-qpid python-qpid-messaging python3-qpid-proton \
         openssl unzip xz-utils
 
