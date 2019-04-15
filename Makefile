@@ -124,6 +124,7 @@ help:
 clean:
 	rm -rf build
 	rm -rf install
+	rm -rf python/__pycache__
 	find java -name target -type d -exec rm -rf {} +
 
 .PHONY: build

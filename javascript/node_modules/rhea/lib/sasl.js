@@ -72,7 +72,7 @@ var PlainClient = function(username, password) {
 };
 
 PlainClient.prototype.start = function(callback) {
-    var response = new Buffer(1 + this.username.length + 1 + this.password.length);
+    var response = Buffer.alloc(1 + this.username.length + 1 + this.password.length);
     response.writeUInt8(0, 0);
     response.write(this.username, 1);
     response.writeUInt8(0, 1 + this.username.length);
@@ -95,7 +95,7 @@ var AnonymousClient = function(name) {
 };
 
 AnonymousClient.prototype.start = function(callback) {
-    var response = new Buffer(1 + this.username.length);
+    var response = Buffer.alloc(1 + this.username.length);
     response.writeUInt8(0, 0);
     response.write(this.username, 1);
     callback(undefined, response);
@@ -128,7 +128,7 @@ var XOAuth2Client = function(username, token) {
 };
 
 XOAuth2Client.prototype.start = function(callback) {
-    var response = new Buffer(this.username.length + this.token.length + 5 + 12 + 3);
+    var response = Buffer.alloc(this.username.length + this.token.length + 5 + 12 + 3);
     var count = 0;
     response.write('user=', count);
     count += 5;
@@ -224,8 +224,14 @@ var SaslClient = function (connection, mechanisms, hostname) {
 };
 
 SaslClient.prototype.on_sasl_mechanisms = function (frame) {
-    for (var i = 0; this.mechanism === undefined && i < frame.performative.sasl_server_mechanisms.length; i++) {
-        var mech = frame.performative.sasl_server_mechanisms[i];
+    var offered_mechanisms = [];
+    if (Array.isArray(frame.performative.sasl_server_mechanisms)) {
+        offered_mechanisms = frame.performative.sasl_server_mechanisms;
+    } else if (frame.performative.sasl_server_mechanisms) {
+        offered_mechanisms = [frame.performative.sasl_server_mechanisms];
+    }
+    for (var i = 0; this.mechanism === undefined && i < offered_mechanisms.length; i++) {
+        var mech = offered_mechanisms[i];
         var f = this.mechanisms[mech];
         if (f) {
             this.mechanism = typeof f === 'function' ? f() : f;
