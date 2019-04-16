@@ -298,7 +298,7 @@ the given address.
 ### Running Quiver with ActiveMQ Artemis
 
     $ <instance-dir>/bin/artemis run &
-    $ <instance-dir>/bin/artemis destination create --name q0 --type core-queue
+    $ <instance-dir>/bin/artemis queue create --name q0 --address q0 --anycast --no-durable --auto-create-address --preserve-on-no-consumers
     $ quiver q0
 
 ### Running Quiver with the Qpid C++ broker
