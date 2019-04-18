@@ -19,12 +19,14 @@ RUN dnf install -y dnf-plugins-core && \
      dnf install -y quiver && \
      dnf clean all
 
-ADD fix-permissions /fix-permissions
+# Create a directory for anyone who wants to use vertx
+RUN mkdir -p /tmp/vertx-cache
+
+ADD fix-permissions /usr/bin/fix-permissions
 
 # Fix folder permissions
-RUN chmod +x /fix-permissions && \
-     mkdir /.vertx && \
-     /fix-permissions /usr/lib/quiver && \
-     /fix-permissions /.vertx
+RUN chmod +x /usr/bin/fix-permissions && \
+     /usr/bin/fix-permissions /usr/lib/quiver && \
+     /usr/bin/fix-permissions /tmp/vertx-cache
 
 CMD ["quiver", "--help"]
