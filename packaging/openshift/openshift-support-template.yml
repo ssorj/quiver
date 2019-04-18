@@ -4,7 +4,7 @@ kind: Template
 metadata:
   labels:
     project: quiver
-    version: 1.0.0
+    version: 1.0.1
   name: quiver-support
 objects:
 - apiVersion: v1
@@ -16,34 +16,24 @@ objects:
   spec:
     tags:
     - annotations:
-        openshift.io/imported-from: fedora:24
+        openshift.io/imported-from: fedora:29
       from:
         kind: DockerImage
-        name: fedora:24
-      generation: 2
-      importPolicy: {}
-      name: "24"
-    - annotations:
-        openshift.io/imported-from: fedora:25
-      from:
-        kind: DockerImage
-        name: fedora:25
-      generation: 2
-      importPolicy: {}
-      name: "25"
+        name: fedora:29
+      name: "29"
 - apiVersion: v1
   kind: ImageStream
   metadata:
     labels:
       app: quiver
-      version: 1.0.0
+      version: 1.0.1
     name: quiver
 - apiVersion: v1
   kind: BuildConfig
   metadata:
     labels:
       build: quiver
-      version: 1.0.0
+      version: 1.0.1
     name: quiver
   spec:
     output:
@@ -52,7 +42,7 @@ objects:
         name: quiver:latest
     runPolicy: Serial
     source:
-      contextDir: /openshift
+      contextDir: /packaging/openshift
       git:
         uri: https://github.com/ssorj/quiver.git
       type: Git
@@ -60,7 +50,7 @@ objects:
       dockerStrategy:
         from:
           kind: ImageStreamTag
-          name: fedora:24
+          name: fedora:29
       type: Docker
     triggers:
     - type: ConfigChange

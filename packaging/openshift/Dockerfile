@@ -1,4 +1,4 @@
-FROM fedora:24
+FROM fedora:29
 
 LABEL Name="quiver" \
     Vendor="ssorj/Justin Ross" \
