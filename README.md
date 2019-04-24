@@ -240,7 +240,7 @@ is an invocation of the `quiver-arrow` command.
       //localhost/queue0
       amqp://example.net:10000/jobs
       amqps://10.0.0.10/jobs/alpha
-      amqps://user:password&10.0.0.10/jobs/alpha
+      amqps://user:password@10.0.0.10/jobs/alpha
 
     count format:                     duration format:
       1 (no unit)    1                  1 (no unit)    1 second
