@@ -122,9 +122,11 @@ class QuiverArrowCommand(Command):
             self.transfers_parse_func = _parse_send
         elif self.operation == "receive":
             self.role = "receiver"
+
             self.transfers_parse_func = _parse_receive
         else:
             raise Exception()
+        self.is_receiver = self.role == "receiver"
 
         if self.id_ is None:
             self.id_ = "quiver-{}-{}".format(self.role, _plano.unique_id(4))
@@ -172,6 +174,9 @@ class QuiverArrowCommand(Command):
         self.latency_average = None
         self.latency_quartiles = None
         self.latency_nines = None
+        self.latency_average_settlement = None
+        self.latency_quartiles_settlement = None
+        self.latency_nines_settlement = None
 
     def run(self):
         args = self.prelude + [
@@ -190,6 +195,7 @@ class QuiverArrowCommand(Command):
             "credit-window={}".format(self.credit_window),
             "transaction-size={}".format(self.transaction_size),
             "durable={}".format(1 if self.durable else 0),
+            "settlement={}".format(1 if self.settlement else 0)
         ]
 
         if self.username:
@@ -270,18 +276,36 @@ class QuiverArrowCommand(Command):
         if snap.count > checkpoint.count:
             self.timeout_checkpoint = snap
 
+    def is_settlement_record(self, line):
+        return line[0] == ord('S')
+
     def compute_results(self):
         transfers = list()
-
+        settlements = list()
+        unsettleds = dict()
         with open(self.transfers_file, "rb") as f:
             for line in f:
                 try:
-                    transfer = self.transfers_parse_func(line)
+                    if not self.settlement or self.is_receiver:
+                        transfer = self.transfers_parse_func(line)
+                        transfers.append(transfer)
+                    else:
+                        if self.is_settlement_record(line):
+                            settlement = self.transfers_parse_func(line[1:])
+                            if settlement[0] in unsettleds:
+                                transfer = settlement[0], unsettleds[settlement[0]], settlement[1]
+                                settlements.append(transfer)
+                                del unsettleds[settlement[0]]
+                            else:
+                                _plano.error("Failed to match results message with settlement id '{}'",
+                                                settlement[0])
+                        else:
+                            transfer = self.transfers_parse_func(line)
+                            transfers.append(transfer)
+                            unsettleds[transfer[0]] = transfer[1]
                 except Exception as e:
-                    _plano.error("Failed to parse line '{}': {}", line, e)
+                    _plano.error("Failed to process results line '{}': {}", line, e)
                     continue
-
-                transfers.append(transfer)
 
         self.message_count = len(transfers)
 
@@ -293,6 +317,10 @@ class QuiverArrowCommand(Command):
             self.last_send_time = transfers[-1][1]
 
             duration = (self.last_send_time - self.first_send_time) / 1000
+
+            if self.settlement and (len(settlements) > 0):
+                self.compute_latencies(settlements, True)
+
         elif self.operation == "receive":
             self.first_receive_time = transfers[0][2]
             self.last_receive_time = transfers[-1][2]
@@ -306,7 +334,7 @@ class QuiverArrowCommand(Command):
         if duration > 0:
             self.message_rate = int(round(self.message_count / duration))
 
-    def compute_latencies(self, transfers):
+    def compute_latencies(self, transfers, settlement_latencies=False):
         latencies = list()
 
         for id_, send_time, receive_time in transfers:
@@ -319,9 +347,14 @@ class QuiverArrowCommand(Command):
         percentiles = _numpy.percentile(latencies, q)
         percentiles = [int(x) for x in percentiles]
 
-        self.latency_average = _numpy.mean(latencies)
-        self.latency_quartiles = percentiles[:5]
-        self.latency_nines = percentiles[5:]
+        if settlement_latencies:
+            self.latency_average_settlement = _numpy.mean(latencies)
+            self.latency_quartiles_settlement = percentiles[:5]
+            self.latency_nines_settlement = percentiles[5:]
+        else:
+            self.latency_average = _numpy.mean(latencies)
+            self.latency_quartiles = percentiles[:5]
+            self.latency_nines = percentiles[5:]
 
     def save_summary(self):
         props = {
@@ -343,6 +376,7 @@ class QuiverArrowCommand(Command):
                 "credit_window": self.credit_window,
                 "transaction_size": self.transaction_size,
                 "durable": self.durable,
+                "settlement": self.settlement,
             },
             "results": {
                 "first_send_time": self.first_send_time,
@@ -354,6 +388,9 @@ class QuiverArrowCommand(Command):
                 "latency_average": self.latency_average,
                 "latency_quartiles": self.latency_quartiles,
                 "latency_nines": self.latency_nines,
+                "latency_average_settlement": self.latency_average_settlement,
+                "latency_quartiles_settlement": self.latency_quartiles_settlement,
+                "latency_nines_settlement": self.latency_nines_settlement,
             },
         }
 
@@ -375,6 +412,8 @@ class _StatusSnapshot:
         self.cpu_time = 0
         self.period_cpu_time = 0
         self.rss = 0
+
+        self.unsettleds = dict() if previous is None else previous.unsettleds
 
     def capture(self, transfers_file, proc):
         self.timestamp = now()
@@ -407,27 +446,53 @@ class _StatusSnapshot:
 
     def capture_transfers(self, transfers_file):
         transfers = list()
+        settlements = list()
+        do_settlement = self.command.settlement and not self.command.is_receiver
 
         for line in _read_lines(transfers_file):
             try:
-                record = self.command.transfers_parse_func(line)
+                if do_settlement:
+                    if self.command.is_settlement_record(line):
+                        settlement = self.command.transfers_parse_func(line[1:])
+                        if settlement[0] in self.unsettleds:
+                            record = settlement[0], self.unsettleds[settlement[0]], settlement[1]
+                            settlements.append(record)
+                            del self.unsettleds[settlement[0]]
+                        else:
+                            _plano.error("Failed to match capture message with settlement id '{}'",
+                                            settlement[0])
+                    else:
+                        record = self.command.transfers_parse_func(line)
+                        transfers.append(record)
+                        self.unsettleds[record[0]] = record[1]
+                else:
+                    record = self.command.transfers_parse_func(line)
+                    transfers.append(record)
+
             except Exception as e:
-                _plano.error("Failed to parse line '{}': {}", line, e)
+                _plano.error("Failed to process capture line '{}': {}", line, e)
                 continue
 
-            transfers.append(record)
-
-        self.period_count = len(transfers)
+        self.period_count = len(settlements) if do_settlement else len(transfers)
         self.count = self.previous.count + self.period_count
 
-        if self.period_count > 0 and self.command.operation == "receive":
+        if self.period_count > 0:
             latencies = list()
+            if self.command.is_receiver:
+                for id_, send_time, receive_time in transfers:
+                    latency = receive_time - send_time
+                    latencies.append(latency)
 
-            for id_, send_time, receive_time in transfers:
-                latency = receive_time - send_time
-                latencies.append(latency)
+                self.latency = int(_numpy.mean(latencies))
+            else:
+                if do_settlement:
+                    for id_, send_time, receive_time in settlements:
+                        latency = receive_time - send_time
+                        latencies.append(latency)
 
-            self.latency = int(_numpy.mean(latencies))
+                    self.latency = int(_numpy.mean(latencies))
+                else:
+                    self.latency = 0
 
     def marshal(self):
         fields = (self.timestamp,

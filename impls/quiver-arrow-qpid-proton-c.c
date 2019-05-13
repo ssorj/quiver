@@ -69,6 +69,7 @@ struct arrow {
     size_t body_size;
     size_t credit_window;
     bool durable;
+    bool settlement;
 
     pn_proactor_t* proactor;
     pn_listener_t* listener;
@@ -337,6 +338,17 @@ static bool handle(struct arrow* a, pn_event_t* e) {
 
             pn_delivery_settle(delivery);
 
+            if (a->settlement) {
+                pn_delivery_tag_t dtag = pn_delivery_tag(delivery);
+                ASSERT(dtag.size == 8);
+                uint8_t* p = (uint8_t*)dtag.start;
+                int64_t tag = 0;
+                for (int i=0; i<64; i+=8) {
+                    tag |= *p++ << i;
+                }
+                printf("S%" PRId64 ",%" PRId64 "\n", tag, now());
+            }
+
             a->acknowledged++;
 
             if (a->acknowledged == a->desired_count) {
@@ -488,6 +500,7 @@ int main(size_t argc, char** argv) {
     a.body_size = atoi(find_arg(kwargc, kwargv, "body-size"));
     a.credit_window = atoi(find_arg(kwargc, kwargv, "credit-window"));
     a.durable = atoi(find_arg(kwargc, kwargv, "durable")) == 1;
+    a.settlement = atoi(find_arg(kwargc, kwargv, "settlement")) == 1;
     a.ssl_domain = pn_ssl_domain(PN_SSL_MODE_CLIENT);
 
     if (a.scheme == NULL) {

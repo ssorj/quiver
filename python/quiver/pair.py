@@ -123,6 +123,9 @@ class QuiverPairCommand(Command):
         if self.verbose:
             args += ["--verbose"]
 
+        if self.settlement:
+            args += ["--settlement"]
+
         if self.args.cert and self.args.key:
             args += ["--key", self.args.key]
             args += ["--cert", self.args.cert]
@@ -196,6 +199,9 @@ class QuiverPairCommand(Command):
                 if rsnap is None:
                     continue
 
+                if self.settlement and ssnap is None:
+                    continue
+
                 if i % 20 == 0:
                     self.print_status_headings()
 
@@ -204,15 +210,15 @@ class QuiverPairCommand(Command):
                 ssnap, rsnap = None, None
                 i += 1
 
-    column_groups = "{:-^53}  {:-^53}  {:-^8}"
+    column_groups = "{:-^53}  {:-^53}  {:-^18}"
     columns = "{:>8}  {:>13}  {:>10}  {:>7}  {:>7}  " \
               "{:>8}  {:>13}  {:>10}  {:>7}  {:>7}  " \
-              "{:>8}"
-    heading_row_1 = column_groups.format(" Sender ", " Receiver ", "")
+              "{:>8}  {:>8}"
+    heading_row_1 = column_groups.format(" Sender ", " Receiver ", "Latency")
     heading_row_2 = columns.format \
         ("Time [s]", "Count [m]", "Rate [m/s]", "CPU [%]", "RSS [M]",
          "Time [s]", "Count [m]", "Rate [m/s]", "CPU [%]", "RSS [M]",
-         "Lat [ms]")
+         "Rcv [ms]", "Stl [ms]")
     heading_row_3 = column_groups.format("", "", "")
 
     def print_status_headings(self):
@@ -251,10 +257,11 @@ class QuiverPairCommand(Command):
             rrss = "{:,.1f}".format(rrss)
 
             latency = "{:,.0f}".format(rsnap.latency)
+            slatency= "{:,.0f}".format(ssnap.latency) if self.settlement else ""
 
         row = self.columns.format(stime, scount, srate, scpu, srss,
                                   rtime, rcount, rrate, rcpu, rrss,
-                                  latency)
+                                  latency, slatency)
         print(row)
 
     def print_summary(self):
@@ -291,6 +298,9 @@ class QuiverPairCommand(Command):
         if self.peer_to_peer:
             flags.append("peer-to-peer")
 
+        if self.settlement:
+            flags.append("settlement")
+
         if flags:
             _print_field("Flags", ", ".join(flags))
 
@@ -316,7 +326,7 @@ class QuiverPairCommand(Command):
         _print_numeric_field("End-to-end rate", rate, "messages/s")
 
         print()
-        print("Latencies by percentile:")
+        print("Receive latencies by percentile:")
         print()
 
         _print_latency_fields("0%", receiver["results"]["latency_quartiles"][0],
@@ -327,6 +337,20 @@ class QuiverPairCommand(Command):
                               "99.90%", receiver["results"]["latency_nines"][2])
         _print_latency_fields("100%", receiver["results"]["latency_quartiles"][4],
                               "99.99%", receiver["results"]["latency_nines"][3])
+
+        if self.settlement and sender["results"]["latency_quartiles_settlement"] is not None:
+            print()
+            print("Settlement latencies by percentile:")
+            print()
+
+            _print_latency_fields("0%", sender["results"]["latency_quartiles_settlement"][0],
+                                "90.00%", sender["results"]["latency_nines_settlement"][0])
+            _print_latency_fields("25%", sender["results"]["latency_quartiles_settlement"][1],
+                                "99.00%", sender["results"]["latency_nines_settlement"][1])
+            _print_latency_fields("50%", sender["results"]["latency_quartiles_settlement"][2],
+                                "99.90%", sender["results"]["latency_nines_settlement"][2])
+            _print_latency_fields("100%", sender["results"]["latency_quartiles_settlement"][4],
+                                "99.99%", sender["results"]["latency_nines_settlement"][3])
 
 def _print_heading(name):
     print()

@@ -230,6 +230,8 @@ class Command:
         self.parser.add_argument("--timeout", metavar="DURATION",
                                  help="Fail after DURATION without transfers (default 10s)",
                                  default="10")
+        self.parser.add_argument("--settlement", action="store_true",
+                                 help="Monitor and report settlement latencies")
 
     def add_common_tool_arguments(self):
         self.parser.add_argument("--quiet", action="store_true",
@@ -250,6 +252,7 @@ class Command:
         self.transaction_size = self.parse_count(self.args.transaction_size)
         self.durable = self.args.durable
         self.timeout = self.parse_duration(self.args.timeout)
+        self.settlement = self.args.settlement
 
         if self.duration != 0:
             self.count = 0
