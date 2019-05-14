@@ -5,9 +5,9 @@
 Tools for testing the performance of messaging clients and servers.
 
     $ quiver --duration 10 --peer-to-peer q0
-    ---------------------- Sender -----------------------  --------------------- Receiver ----------------------  --------
-    Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Lat [ms]
-    -----------------------------------------------------  -----------------------------------------------------  --------
+    ---------------------- Sender -----------------------  --------------------- Receiver ----------------------  -----Latency------
+    Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Rcv [ms]  Stl [ms]
+    -----------------------------------------------------  -----------------------------------------------------  ------------------
          2.3      1,202,970     600,884      188     22.2       2.1      1,210,056     604,726      188      5.5         1
          5.2      1,791,304     209,297       67     27.2       5.4      1,982,039     237,241       68      5.5         1
          7.2      2,420,785     314,583      102     32.7       7.8      2,690,078     291,134       88      5.5         1
@@ -189,8 +189,8 @@ This command starts a sender-receiver pair.  Each sender or receiver
 is an invocation of the `quiver-arrow` command.
 
     usage: quiver [-h] [--output DIR] [--arrow IMPL] [--sender IMPL] [--receiver IMPL] [--impl IMPL] [--peer-to-peer] [-c COUNT] [-d DURATION]
-                  [--body-size COUNT] [--credit COUNT] [--transaction-size COUNT] [--durable] [--timeout DURATION] [--quiet] [--verbose]
-                  [--init-only] [--version]
+                  [--body-size COUNT] [--credit COUNT] [--transaction-size COUNT] [--durable] [--timeout DURATION] [--settlement]
+                  [--quiet] [--verbose] [--init-only] [--version]
                   ADDRESS-URL
 
     Start a sender-receiver pair for a particular messaging address.
@@ -229,6 +229,7 @@ is an invocation of the `quiver-arrow` command.
                             (default 0, disabled)
       --durable             Require persistent store-and-forward transfers
       --timeout DURATION    Fail after DURATION without transfers (default 10s)
+      --settlement          Monitor and report settlement latencies
       --quiet               Print nothing to the console
       --verbose             Print details to the console
       --init-only           Initialize and exit
@@ -275,7 +276,7 @@ number of messages are all sent or received.
                         [--cert CERT.PEM] [--key PRIVATE-KEY.PEM] [-c COUNT]
                         [-d DURATION] [--body-size COUNT] [--credit COUNT]
                         [--transaction-size COUNT] [--durable]
-                        [--timeout DURATION] [--quiet] [--verbose] [--init-only]
+                        [--timeout DURATION] [--settlement] [--quiet] [--verbose] [--init-only]
                         [--version]
                         OPERATION ADDRESS-URL
 

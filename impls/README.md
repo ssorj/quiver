@@ -47,6 +47,7 @@ by `=`.  They must process the following arguments.
     credit-window     integer  Size of credit window to maintain
     transaction-size  integer  Size of transaction batches; 0 means no transactions
     durable           integer  1 if messages are durable; 0 if non-durable
+    settlement        integer  1 if message settlement latency is tracked; 0 if not tracked
 
 If an implementation does not support a particular option, for
 instance connection mode `server`, it should raise an error at start
@@ -77,6 +78,12 @@ Implementations must print received transfers to standard output, one
 transfer per line.
 
     <message-id>,<send-time>,<receive-time>\n
+
+Sender implementations that support settlement tracking must print message settlement
+times to standard out, one settlement per line. These lines are printer together
+with message sender send times and are identified by a prefix letter 'S'.
+
+    S<message-id>,<settlement-time>\n
 
 Time values are unix epoch milliseconds.
 
@@ -130,6 +137,20 @@ By convention, message bodies are filled with as many `x`s as
 indicated by the `body-size` parameter.  The `x` must be a single
 byte, not a multi-byte Unicode character.
 
+### Message Settlement
+
+Message settlement tracking requires that a client library provides
+access to settlement disposition tags. Not all libraries have an
+this capability.
+
+Implementations that support message settlement tracking must print
+settlement records for the first message and for every 256th message
+thereafter.
+
+The following clients currently support message settlement tracking:
+
+- qpid-proton-c
+- qpid-proton-python
 <!--
 XXX message format
 
