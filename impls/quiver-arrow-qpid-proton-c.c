@@ -342,11 +342,13 @@ static bool handle(struct arrow* a, pn_event_t* e) {
                 pn_delivery_tag_t dtag = pn_delivery_tag(delivery);
                 ASSERT(dtag.size == 8);
                 uint8_t* p = (uint8_t*)dtag.start;
-                int64_t tag = 0;
-                for (int i=0; i<64; i+=8) {
-                    tag |= *p++ << i;
+                if ((a->acknowledged & 255) == 0) {
+                    int64_t tag = 0;
+                    for (int i=0; i<64; i+=8) {
+                        tag |= *p++ << i;
+                    }
+                    printf("S%" PRId64 ",%" PRId64 "\n", tag, now());
                 }
-                printf("S%" PRId64 ",%" PRId64 "\n", tag, now());
             }
 
             a->acknowledged++;

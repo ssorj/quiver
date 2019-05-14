@@ -277,7 +277,12 @@ class QuiverArrowCommand(Command):
             self.timeout_checkpoint = snap
 
     def is_settlement_record(self, line):
+        # Settlement lines start with 'S'
         return line[0] == ord('S')
+
+    def is_settle_tag_candidate(self, id):
+        # Settlement latency calculated on first message and every 256 messages thereafter
+        return (int(id) & 255) == 1
 
     def compute_results(self):
         transfers = list()
@@ -291,18 +296,19 @@ class QuiverArrowCommand(Command):
                         transfers.append(transfer)
                     else:
                         if self.is_settlement_record(line):
-                            settlement = self.transfers_parse_func(line[1:])
-                            if settlement[0] in unsettleds:
-                                transfer = settlement[0], unsettleds[settlement[0]], settlement[1]
-                                settlements.append(transfer)
-                                del unsettleds[settlement[0]]
+                            settle_tag, settle_time = self.transfers_parse_func(line[1:])
+                            if settle_tag in unsettleds:
+                                settlement = settle_tag, unsettleds[settle_tag], settle_time
+                                settlements.append(settlement)
+                                del unsettleds[settle_tag]
                             else:
                                 _plano.error("Failed to match results message with settlement id '{}'",
-                                                settlement[0])
+                                                settle_tag)
                         else:
                             transfer = self.transfers_parse_func(line)
                             transfers.append(transfer)
-                            unsettleds[transfer[0]] = transfer[1]
+                            if self.is_settle_tag_candidate(transfer[0]):
+                                unsettleds[transfer[0]] = transfer[1]
                 except Exception as e:
                     _plano.error("Failed to process results line '{}': {}", line, e)
                     continue
@@ -453,18 +459,19 @@ class _StatusSnapshot:
             try:
                 if do_settlement:
                     if self.command.is_settlement_record(line):
-                        settlement = self.command.transfers_parse_func(line[1:])
-                        if settlement[0] in self.unsettleds:
-                            record = settlement[0], self.unsettleds[settlement[0]], settlement[1]
+                        settle_tag, settle_time = self.command.transfers_parse_func(line[1:])
+                        if settle_tag in self.unsettleds:
+                            record = settle_tag, self.unsettleds[settle_tag], settle_time
                             settlements.append(record)
-                            del self.unsettleds[settlement[0]]
+                            del self.unsettleds[settle_tag]
                         else:
                             _plano.error("Failed to match capture message with settlement id '{}'",
-                                            settlement[0])
+                                            settle_tag)
                     else:
                         record = self.command.transfers_parse_func(line)
                         transfers.append(record)
-                        self.unsettleds[record[0]] = record[1]
+                        if self.command.is_settle_tag_candidate(record[0]):
+                            self.unsettleds[record[0]] = record[1]
                 else:
                     record = self.command.transfers_parse_func(line)
                     transfers.append(record)
@@ -473,7 +480,7 @@ class _StatusSnapshot:
                 _plano.error("Failed to process capture line '{}': {}", line, e)
                 continue
 
-        self.period_count = len(settlements) if do_settlement else len(transfers)
+        self.period_count = len(transfers)
         self.count = self.previous.count + self.period_count
 
         if self.period_count > 0:
