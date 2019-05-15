@@ -80,10 +80,15 @@ transfer per line.
     <message-id>,<send-time>,<receive-time>\n
 
 Sender implementations that support settlement tracking must print message settlement
-times to standard out, one settlement per line. These lines are printer together
-with message sender send times and are identified by a prefix letter 'S'.
+times to standard out, one settlement per line. Settlement lines are interleaved with
+with sender sent transfer records. Settlement times and are identified by a prefix letter
+'S' or by a prefix letter 's'. Settlement lines beginning with 'S' are included in the
+run time average settlement latency calculations while lines beginning with 's' are not.
+All settlement latency records are included in the summary latency computations and 
+reports.
 
     S<message-id>,<settlement-time>\n
+    s<message-id>,<settlement-time>\n
 
 Time values are unix epoch milliseconds.
 
@@ -145,9 +150,10 @@ this capability.
 
 Implementations that support message settlement tracking must print
 settlement records for the first message and for every 256th message
-thereafter.
+thereafter prefixed with 'S'. Other settlement records are prefixed
+with 's'.
 
-The following clients currently support message settlement tracking:
+The following clients support message settlement tracking:
 
 - qpid-proton-c
 - qpid-proton-python

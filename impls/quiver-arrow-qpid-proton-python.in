@@ -145,8 +145,9 @@ class Handler(MessagingHandler):
 
     def on_accepted(self, event):
         if self.settlement:
-            if (self.accepted & 255) == 0:
-                sys.stdout.write("S{},{}\n".format(event.delivery.tag, now()))
+            tag = int(event.delivery.tag)
+            sys.stdout.write("{}{},{}\n".format(
+                'S' if (tag & 255) == 1 else 's', tag, now()))
         self.accepted += 1
 
         if self.accepted == self.desired_count:

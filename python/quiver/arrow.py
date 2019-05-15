@@ -161,6 +161,7 @@ class QuiverArrowCommand(Command):
         self.snapshots_file = _join(self.output_dir, "{}-snapshots.csv".format(self.role))
         self.summary_file = _join(self.output_dir, "{}-summary.json".format(self.role))
         self.transfers_file = _join(self.output_dir, "{}-transfers.csv".format(self.role))
+        self.settlement_file = _join(self.output_dir, "{}-settlement.csv".format(self.role))
 
         self.start_time = None
         self.timeout_checkpoint = None
@@ -177,6 +178,8 @@ class QuiverArrowCommand(Command):
         self.latency_average_settlement = None
         self.latency_quartiles_settlement = None
         self.latency_nines_settlement = None
+        self.summary_transfers = None
+        self.summary_settlements = None
 
     def run(self):
         args = self.prelude + [
@@ -277,7 +280,11 @@ class QuiverArrowCommand(Command):
             self.timeout_checkpoint = snap
 
     def is_settlement_record(self, line):
-        # Settlement lines start with 'S'
+        # Settlement lines start with 'S' or 's'
+        return line[0] == ord('s') or line[0] == ord('S')
+
+    def is_runtime_settlement_record(self, line):
+        # Runtime settlement lines start with 'S'
         return line[0] == ord('S')
 
     def is_settle_tag_candidate(self, id):
@@ -285,55 +292,54 @@ class QuiverArrowCommand(Command):
         return (int(id) & 255) == 1
 
     def compute_results(self):
-        transfers = list()
-        settlements = list()
+        self.summary_transfers = list()
+        self.summary_settlements = list()
         unsettleds = dict()
         with open(self.transfers_file, "rb") as f:
             for line in f:
                 try:
                     if not self.settlement or self.is_receiver:
                         transfer = self.transfers_parse_func(line)
-                        transfers.append(transfer)
+                        self.summary_transfers.append(transfer)
                     else:
                         if self.is_settlement_record(line):
                             settle_tag, settle_time = self.transfers_parse_func(line[1:])
                             if settle_tag in unsettleds:
                                 settlement = settle_tag, unsettleds[settle_tag], settle_time
-                                settlements.append(settlement)
+                                self.summary_settlements.append(settlement)
                                 del unsettleds[settle_tag]
                             else:
                                 _plano.error("Failed to match results message with settlement id '{}'",
                                                 settle_tag)
                         else:
                             transfer = self.transfers_parse_func(line)
-                            transfers.append(transfer)
-                            if self.is_settle_tag_candidate(transfer[0]):
-                                unsettleds[transfer[0]] = transfer[1]
+                            self.summary_transfers.append(transfer)
+                            unsettleds[transfer[0]] = transfer[1]
                 except Exception as e:
                     _plano.error("Failed to process results line '{}': {}", line, e)
                     continue
 
-        self.message_count = len(transfers)
+        self.message_count = len(self.summary_transfers)
 
         if self.message_count == 0:
             return
 
         if self.operation == "send":
-            self.first_send_time = transfers[0][1]
-            self.last_send_time = transfers[-1][1]
+            self.first_send_time = self.summary_transfers[0][1]
+            self.last_send_time = self.summary_transfers[-1][1]
 
             duration = (self.last_send_time - self.first_send_time) / 1000
 
-            if self.settlement and (len(settlements) > 0):
-                self.compute_latencies(settlements, True)
+            if self.settlement and (len(self.summary_settlements) > 0):
+                self.compute_latencies(self.summary_settlements, True)
 
         elif self.operation == "receive":
-            self.first_receive_time = transfers[0][2]
-            self.last_receive_time = transfers[-1][2]
+            self.first_receive_time = self.summary_transfers[0][2]
+            self.last_receive_time = self.summary_transfers[-1][2]
 
             duration = (self.last_receive_time - self.first_receive_time) / 1000
 
-            self.compute_latencies(transfers)
+            self.compute_latencies(self.summary_transfers)
         else:
             raise Exception()
 
@@ -403,6 +409,13 @@ class QuiverArrowCommand(Command):
         with open(self.summary_file, "w") as f:
             _json.dump(props, f, indent=2)
 
+        if self.settlement and len(self.summary_settlements) > 0:
+            with open(self.settlement_file, "w") as f:
+                f.write("id, settle_latency\n")
+                for i in range(len(self.summary_settlements)):
+                    s = self.summary_settlements[i]
+                    f.write("%d, %d\n" % (int(s[0]), (int(s[2]) - int(s[1]))))
+
 class _StatusSnapshot:
     def __init__(self, command, previous):
         self.command = command
@@ -459,14 +472,18 @@ class _StatusSnapshot:
             try:
                 if do_settlement:
                     if self.command.is_settlement_record(line):
-                        settle_tag, settle_time = self.command.transfers_parse_func(line[1:])
-                        if settle_tag in self.unsettleds:
-                            record = settle_tag, self.unsettleds[settle_tag], settle_time
-                            settlements.append(record)
-                            del self.unsettleds[settle_tag]
+                        if self.command.is_runtime_settlement_record(line):
+                            settle_tag, settle_time = self.command.transfers_parse_func(line[1:])
+                            if settle_tag in self.unsettleds:
+                                record = settle_tag, self.unsettleds[settle_tag], settle_time
+                                settlements.append(record)
+                                del self.unsettleds[settle_tag]
+                            else:
+                                _plano.error("Failed to match capture message with settlement id '{}'",
+                                                settle_tag)
                         else:
-                            _plano.error("Failed to match capture message with settlement id '{}'",
-                                            settle_tag)
+                            # ignore bulk of settlement records
+                            pass
                     else:
                         record = self.command.transfers_parse_func(line)
                         transfers.append(record)
