@@ -89,7 +89,7 @@ password or a client certificate.
 ### Installing on Fedora
 
     $ sudo dnf install dnf-plugins-core
-    $ sudo dnf enable jross/ssorj
+    $ sudo dnf copr enable jross/ssorj
     $ sudo dnf install quiver
 
 If you don't have `dnf`, use the repo files at
