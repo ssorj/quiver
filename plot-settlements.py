@@ -25,6 +25,10 @@ import traceback
 
 #
 # Usage: plot-settlements <directory> <plot-title>
+COLOR_RECEIVER = "green"
+COLOR_SENDER = "black"
+COLOR_CREDIT = "magenta"
+LINE_WIDTH = 0.5
 
 def main():
     folder = sys.argv[1] if len(sys.argv) > 1 else 'outfoo'
@@ -94,7 +98,7 @@ def main():
     plot_latencies(v_c, v_r, v_s, v_x, folder, title, w_filebase, credit_values=False)
     plot_latencies(v_c, v_r, v_s, v_x, folder, title, w_filebase, credit_values=True)
 
-    plot_latencies_lines(v_c, v_r, v_s, v_x, folder, title, w_filebase, vertical_lines=False)
+    #plot_latencies_lines(v_c, v_r, v_s, v_x, folder, title, w_filebase, vertical_lines=False)
     plot_latencies_lines(v_c, v_r, v_s, v_x, folder, title, w_filebase, vertical_lines=True)
 
 
@@ -103,7 +107,7 @@ def plot_latencies(_v_c, _v_r, _v_s, _v_x, folder, title, w_filebase, credit_val
     file_suffix = "-credit" if credit_values else ""
 
     # adjust credit array to expose zero credit times with a horizontal floor
-    v_c, v_r, v_s, v_x = expose_zero_credit(_v_c, _v_r, _v_s, _v_x, credit_values)
+    v_c, v_r, v_s, v_x = expose_zero_credit(_v_c, _v_r, _v_s, _v_x, credit_values, False)
 
     # write the plot data as csv
     plot_filename = "{}/plot-data{}.csv".format(folder, file_suffix)
@@ -119,17 +123,17 @@ def plot_latencies(_v_c, _v_r, _v_s, _v_x, folder, title, w_filebase, credit_val
         ax2 = ax1.twinx()
 
     # plot the lines
-    lr = ax1.plot(v_x, v_r, label="receiver latency", color='yellow')
-    ls = ax1.plot(v_x, v_s, label="sender latency", color='g')
+    lr = ax1.plot(v_x, v_r, label="receiver latency", color=COLOR_RECEIVER, linewidth=LINE_WIDTH)
+    ls = ax1.plot(v_x, v_s, label="sender latency", color=COLOR_SENDER, linewidth=LINE_WIDTH)
     if credit_values:
-        lc = ax2.plot(v_x, v_c, label="credit", color='b')
+        lc = ax2.plot(v_x, v_c, label="credit", color=COLOR_CREDIT, linewidth=LINE_WIDTH)
 
         # credit axis and legend
         lns = lc
         labels = [l.get_label() for l in lns]
         ax2.legend(lns, labels, loc="upper right")
     else:
-        lc = ax1.plot(v_x, v_c, label="credit T/F", color='b')
+        lc = ax1.plot(v_x, v_c, label="credit T/F", color=COLOR_CREDIT, linewidth=LINE_WIDTH)
 
     # latency axis and legend
     lns = ls + lr if credit_values else ls + lr + lc
@@ -143,7 +147,7 @@ def plot_latencies(_v_c, _v_r, _v_s, _v_x, folder, title, w_filebase, credit_val
 
     if credit_values:
         ax2.set_yscale('log')
-        ax2.set_ylabel('sender credit', color='b')
+        ax2.set_ylabel('sender credit', color='black')
 
     plt.title(title)
 
@@ -158,11 +162,12 @@ def plot_latencies_lines(_v_c, _v_r, _v_s, _v_x, folder, title, w_filebase, vert
     file_suffix = "-vlines" if vertical_lines else "-hlines"
 
     # adjust credit array to expose zero credit times with a horizontal floor
-    v_c, v_r, v_s, v_x = expose_zero_credit(_v_c, _v_r, _v_s, _v_x, False)
+    v_c, v_r, v_s, v_x = expose_zero_credit(_v_c, _v_r, _v_s, _v_x, False, True)
 
     fig, ax1 = plt.subplots()
-    fig.set_size_inches(20, 6)
+    fig.set_size_inches(20, 20)
 
+    first = True
     # plot the lines
     if vertical_lines:
         for i in range(len(v_x)):
@@ -170,27 +175,33 @@ def plot_latencies_lines(_v_c, _v_r, _v_s, _v_x, folder, title, w_filebase, vert
             x1e = x1s
             y1s = x1s
             y1e = x1s  + v_r[i]
-            ax1.plot((x1s, x1e), (y1s, y1e), color='yellow')
+            if first:
+                lr = ax1.plot((x1s, x1e), (y1s, y1e), label="receiver latency", color=COLOR_RECEIVER, linewidth=LINE_WIDTH)
+            else:
+                ax1.plot((x1s, x1e), (y1s, y1e), color=COLOR_RECEIVER, linewidth=LINE_WIDTH)
             x2s = x1s
             x2e = x1s
             y2s = y1e
             y2e = y1e + v_s[i] - v_r[i]
-            ax1.plot((x2s, x2e), (y2s, y2e), color='g')
+            if first:
+                ls = ax1.plot((x2s, x2e), (y2s, y2e), label="sender latency", color=COLOR_SENDER, linewidth=LINE_WIDTH)
+            else:
+                ax1.plot((x2s, x2e), (y2s, y2e), color=COLOR_SENDER, linewidth=LINE_WIDTH)
     else:
         for i in range(len(v_x)):
             x1s = v_x[i]
             x1e = x1s
             y1s = x1s
             y1e = x1s  + v_r[i]
-            ax1.plot((y1s, y1e), (x1s, x1e), color='yellow')
+            ax1.plot((y1s, y1e), (x1s, x1e), color=COLOR_RECEIVER, linewidth=LINE_WIDTH)
             x2s = x1s
             x2e = x1s
             y2s = y1e
             y2e = y1e + v_s[i] - v_r[i]
-            ax1.plot((y2s, y2e), (x2s, x2e), color='g')
+            ax1.plot((y2s, y2e), (x2s, x2e), color=COLOR_SENDER, linewidth=LINE_WIDTH)
 
-    lc = ax1.plot(v_x, v_c, label="credit T/F", color='b')
-    lns = lc
+    lc = ax1.plot(v_x, v_c, label="credit T/F", color=COLOR_CREDIT, linewidth=LINE_WIDTH)
+    lns = lr + ls + lc
     labels = [l.get_label() for l in lns]
     ax1.legend(lns, labels, loc="upper left")
 
@@ -219,7 +230,7 @@ def _parse_send(line):
     return _message_id, int(_send_time), int(_credit)
 
 
-def expose_zero_credit(c, r, s, x, full_values=True):
+def expose_zero_credit(c, r, s, x, full_values, use_x):
     """
     Given plot values, insert extra points to highlight zero credit
     An insertion should produce
@@ -244,8 +255,9 @@ def expose_zero_credit(c, r, s, x, full_values=True):
     outx = list()
 
     # when not propagating full credit values use these to indicate on/off
-    CREDIT_TRUE = 600
-    CREDIT_FALSE = 200
+    mymax = max(x) if use_x else max(s)
+    CREDIT_TRUE = 0.04 * mymax
+    CREDIT_FALSE = 0.01 * mymax
 
     # copy first entry
     outc.append(c[0] if full_values else CREDIT_TRUE)
