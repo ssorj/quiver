@@ -370,4 +370,11 @@ def parse_keyword_args(args):
     return dict([x.split("=", 1) for x in args])
 
 def now():
-    return int(_time.time() * 1000)
+    return int(_time.time() * 1000000)
+
+# sender record type prefixes
+PREFIX_SETTLEMENT_RUNTIME = 'S'
+PREFIX_SETTLEMENT_BULK = 's'
+
+
+

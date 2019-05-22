@@ -230,9 +230,9 @@ class QuiverPairCommand(Command):
         if ssnap is None:
             stime, scount, srate, scpu, srss = "-", "-", "-", "-", "-"
         else:
-            stime = (ssnap.timestamp - self.start_time) / 1000
-            srate = ssnap.period_count / (ssnap.period / 1000)
-            scpu = (ssnap.period_cpu_time / ssnap.period) * 100
+            stime = (ssnap.timestamp - self.start_time) / 1000000
+            srate = ssnap.period_count / (ssnap.period / 1000000)
+            scpu = (ssnap.period_cpu_time / ssnap.period) * 100000
             srss = ssnap.rss / (1000 * 1024)
 
             stime = "{:,.1f}".format(stime)
@@ -245,9 +245,9 @@ class QuiverPairCommand(Command):
             rtime, rcount, rrate, rcpu, rrss = "-", "-", "-", "-", "-"
             latency = "-"
         else:
-            rtime = (rsnap.timestamp - self.start_time) / 1000
-            rrate = rsnap.period_count / (rsnap.period / 1000)
-            rcpu = (rsnap.period_cpu_time / rsnap.period) * 100
+            rtime = (rsnap.timestamp - self.start_time) / 1000000
+            rrate = rsnap.period_count / (rsnap.period / 1000000)
+            rcpu = (rsnap.period_cpu_time / rsnap.period) * 100000
             rrss = rsnap.rss / (1000 * 1024)
 
             rtime = "{:,.1f}".format(rtime)
@@ -282,7 +282,7 @@ class QuiverPairCommand(Command):
             _print_numeric_field("Count", self.count, _plano.plural("message", self.count))
 
         if self.duration != 0:
-            _print_numeric_field("Duration", self.duration, _plano.plural("second", self.duration))
+            _print_numeric_field("Duration", self.duration, _plano.plural("second", self.duration), "{:,.3f}")
 
         _print_numeric_field("Body size", self.body_size, _plano.plural("byte", self.body_size))
         _print_numeric_field("Credit window", self.credit_window, _plano.plural("message", self.credit_window))
@@ -311,8 +311,11 @@ class QuiverPairCommand(Command):
         start_time = sender["results"]["first_send_time"]
         end_time = receiver["results"]["last_receive_time"]
 
-        duration = (end_time - start_time) / 1000
+        duration = (end_time - start_time) / 1000000
         rate = None
+
+        no_credit_events = sender["results"]["no_credit_events"]
+        no_credit_duration = sender["results"]["no_credit_duration"]
 
         if duration > 0:
             rate = count / duration
@@ -321,6 +324,8 @@ class QuiverPairCommand(Command):
 
         _print_numeric_field("Count", count, _plano.plural("message", self.count))
         _print_numeric_field("Duration", duration, "seconds", "{:,.1f}")
+        _print_numeric_field("No Credit events", no_credit_events, _plano.plural("event", no_credit_events), "{:,.0f}")
+        _print_numeric_field("No Credit duration", no_credit_duration, "uS", "{:,.0f}")
         _print_numeric_field("Sender rate", sender["results"]["message_rate"], "messages/s")
         _print_numeric_field("Receiver rate", receiver["results"]["message_rate"], "messages/s")
         _print_numeric_field("End-to-end rate", rate, "messages/s")
@@ -377,7 +382,7 @@ def _print_numeric_field(name, value, unit, fmt="{:,.0f}"):
 def _print_latency_fields(lname, lvalue, rname, rvalue):
     lvalue = " {}".format(lvalue)
     rvalue = " {}".format(rvalue)
-    print("{:>12} {:.>10} ms {:>12} {:.>10} ms".format(lname, lvalue, rname, rvalue))
+    print("{:>12} {:.>10} uS {:>12} {:.>10} uS".format(lname, lvalue, rname, rvalue))
 
 def _read_line(file_):
     fpos = file_.tell()

@@ -124,10 +124,11 @@ static inline bool bytes_equal(const pn_bytes_t a, const pn_bytes_t b) {
 }
 
 // TODO aconway 2017-06-09: need windows portable version
+// Return microseconds since epoch
 int64_t now() {
     struct timespec t;
     clock_gettime(CLOCK_REALTIME, &t);
-    return t.tv_sec * 1000 + t.tv_nsec / (1000 * 1000);
+    return t.tv_sec * 1000000 + t.tv_nsec / (1000);
 }
 
 static const size_t BUF_MIN = 1024;
@@ -215,7 +216,7 @@ static void send_message(struct arrow* a, pn_link_t* l) {
     pn_delivery(l, pn_dtag((const char* )&a->sent, sizeof(a->sent)));
     ASSERT(size == pn_link_send(l, a->buffer.start, size));
     ASSERT(pn_link_advance(l));
-    printf("%s,%" PRId64 "\n", id_str, stime);
+    printf("%s,%" PRId64 ",%" PRId64 "\n", id_str, stime, pn_link_credit(l)+1);
 }
 
 static void fail_if_condition(pn_event_t* e, pn_condition_t* cond) {
@@ -347,7 +348,7 @@ static bool handle(struct arrow* a, pn_event_t* e) {
                 for (int i=0; i<64; i+=8) {
                     tag |= *p++ << i;
                 }
-                printf("%c%" PRId64 ",%" PRId64 "\n", prefix, tag, now());
+                printf("%c%" PRId64 ",%" PRId64 ",0\n", prefix, tag, now());
             }
 
             a->acknowledged++;

@@ -26,6 +26,7 @@ import resource as _resource
 import shlex as _shlex
 import subprocess as _subprocess
 import time as _time
+import traceback
 
 from .common import *
 from .common import __version__
@@ -122,7 +123,6 @@ class QuiverArrowCommand(Command):
             self.transfers_parse_func = _parse_send
         elif self.operation == "receive":
             self.role = "receiver"
-
             self.transfers_parse_func = _parse_receive
         else:
             raise Exception()
@@ -181,6 +181,10 @@ class QuiverArrowCommand(Command):
         self.summary_transfers = None
         self.summary_settlements = None
 
+        self.no_credit_events = 0
+        self.no_credit_duration = 0
+        self.no_credit_start = 0
+
     def run(self):
         args = self.prelude + [
             self.impl.file,
@@ -237,7 +241,7 @@ class QuiverArrowCommand(Command):
         if _plano.exists("{}.xz".format(self.transfers_file)):
             _plano.remove("{}.xz".format(self.transfers_file))
 
-        _plano.call("xz --compress -0 --threads 0 {}", self.transfers_file)
+        _plano.call("xz --compress -0 --keep --threads 0 {}", self.transfers_file)
 
     def monitor_subprocess(self, proc):
         snap = _StatusSnapshot(self, None)
@@ -281,11 +285,11 @@ class QuiverArrowCommand(Command):
 
     def is_settlement_record(self, line):
         # Settlement lines start with 'S' or 's'
-        return line[0] == ord('s') or line[0] == ord('S')
+        return line[0] == ord(PREFIX_SETTLEMENT_BULK) or line[0] == ord(PREFIX_SETTLEMENT_RUNTIME)
 
     def is_runtime_settlement_record(self, line):
         # Runtime settlement lines start with 'S'
-        return line[0] == ord('S')
+        return line[0] == ord(PREFIX_SETTLEMENT_RUNTIME)
 
     def is_settle_tag_candidate(self, id):
         # Settlement latency calculated on first message and every 256 messages thereafter
@@ -303,7 +307,7 @@ class QuiverArrowCommand(Command):
                         self.summary_transfers.append(transfer)
                     else:
                         if self.is_settlement_record(line):
-                            settle_tag, settle_time = self.transfers_parse_func(line[1:])
+                            settle_tag, settle_time, dummy = self.transfers_parse_func(line[1:])
                             if settle_tag in unsettleds:
                                 settlement = settle_tag, unsettleds[settle_tag], settle_time
                                 self.summary_settlements.append(settlement)
@@ -314,7 +318,17 @@ class QuiverArrowCommand(Command):
                         else:
                             transfer = self.transfers_parse_func(line)
                             self.summary_transfers.append(transfer)
-                            unsettleds[transfer[0]] = transfer[1]
+                            id, s_time, credit = transfer
+                            unsettleds[id] = s_time
+                            if self.no_credit_start == 0:
+                                if credit == 1:
+                                    self.no_credit_start = s_time
+                                else:
+                                    pass # this transfer did not consume the last of the credit
+                            else:
+                                self.no_credit_events += 1
+                                self.no_credit_duration += s_time - self.no_credit_start
+                                self.no_credit_start = 0
                 except Exception as e:
                     _plano.error("Failed to process results line '{}': {}", line, e)
                     continue
@@ -328,7 +342,7 @@ class QuiverArrowCommand(Command):
             self.first_send_time = self.summary_transfers[0][1]
             self.last_send_time = self.summary_transfers[-1][1]
 
-            duration = (self.last_send_time - self.first_send_time) / 1000
+            duration = (self.last_send_time - self.first_send_time) / 1000000
 
             if self.settlement and (len(self.summary_settlements) > 0):
                 self.compute_latencies(self.summary_settlements, True)
@@ -337,7 +351,7 @@ class QuiverArrowCommand(Command):
             self.first_receive_time = self.summary_transfers[0][2]
             self.last_receive_time = self.summary_transfers[-1][2]
 
-            duration = (self.last_receive_time - self.first_receive_time) / 1000
+            duration = (self.last_receive_time - self.first_receive_time) / 1000000
 
             self.compute_latencies(self.summary_transfers)
         else:
@@ -403,6 +417,8 @@ class QuiverArrowCommand(Command):
                 "latency_average_settlement": self.latency_average_settlement,
                 "latency_quartiles_settlement": self.latency_quartiles_settlement,
                 "latency_nines_settlement": self.latency_nines_settlement,
+                "no_credit_events": self.no_credit_events,
+                "no_credit_duration": self.no_credit_duration,
             },
         }
 
@@ -414,6 +430,13 @@ class QuiverArrowCommand(Command):
                 f.write("id, settle_latency\n")
                 for i in range(len(self.summary_settlements)):
                     s = self.summary_settlements[i]
+                    f.write("%d, %d\n" % (int(s[0]), (int(s[2]) - int(s[1]))))
+
+        if self.is_receiver:
+            with open(self.settlement_file, "w") as f:
+                f.write("id, send_latency\n")
+                for i in range(len(self.summary_transfers)):
+                    s = self.summary_transfers[i]
                     f.write("%d, %d\n" % (int(s[0]), (int(s[2]) - int(s[1]))))
 
 class _StatusSnapshot:
@@ -473,7 +496,7 @@ class _StatusSnapshot:
                 if do_settlement:
                     if self.command.is_settlement_record(line):
                         if self.command.is_runtime_settlement_record(line):
-                            settle_tag, settle_time = self.command.transfers_parse_func(line[1:])
+                            settle_tag, settle_time, dummy = self.command.transfers_parse_func(line[1:])
                             if settle_tag in self.unsettleds:
                                 record = settle_tag, self.unsettleds[settle_tag], settle_time
                                 settlements.append(record)
@@ -561,10 +584,11 @@ def _read_lines(file_):
         yield line[:-1]
 
 def _parse_send(line):
-    message_id, send_time = line.split(b",", 1)
+    message_id, send_time, credit = line.split(b",", 2)
     send_time = int(send_time)
+    credit = int(credit)
 
-    return message_id, send_time
+    return message_id, send_time, credit
 
 def _parse_receive(line):
     message_id, send_time, receive_time = line.split(b",", 2)

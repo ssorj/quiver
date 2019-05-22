@@ -122,7 +122,6 @@ class Handler(MessagingHandler):
         assert self.operation == "send"
 
         message = Message()
-
         while event.sender.credit > 0:
             if (self.desired_count > 0 and self.sent == self.desired_count):
                 break
@@ -138,16 +137,16 @@ class Handler(MessagingHandler):
             if self.durable:
                 message.durable = True
 
+            sys.stdout.write("{},{},{}\n".format(id, stime, event.sender.credit))
+
             event.sender.send(message)
             self.sent += 1
-
-            sys.stdout.write("{},{}\n".format(id, stime))
 
     def on_accepted(self, event):
         if self.settlement:
             tag = int(event.delivery.tag)
-            sys.stdout.write("{}{},{}\n".format(
-                'S' if (tag & 255) == 1 else 's', tag, now()))
+            p = PREFIX_SETTLEMENT_RUNTIME if (tag & 255) == 1 else PREFIX_SETTLEMENT_BULK
+            sys.stdout.write("{}{},{},0\n".format(p, tag, now()))
         self.accepted += 1
 
         if self.accepted == self.desired_count:
