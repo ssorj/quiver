@@ -247,4 +247,4 @@ update-rhea:
 
 .PHONY: update-%
 update-%:
-	curl "https://raw.githubusercontent.com/ssorj/$*/master/python/$*.py" -o python/$*.py
+	curl -sfo python/$*.py "https://raw.githubusercontent.com/ssorj/$*/master/python/$*.py"
