@@ -44,7 +44,7 @@ _impls = []
 _impls_by_name = {}
 _impl_names_by_alias = {}
 
-class _Impl:
+class _Impl(object):
     def __init__(self, kind, name, aliases=[], protocols=["amqp"], peer_to_peer=False, executable=None):
         self.kind = kind
         self.name = name
@@ -183,7 +183,7 @@ class CommandError(Exception):
 
         super(CommandError, self).__init__(message)
 
-class Command:
+class Command(object):
     def __init__(self, home_dir):
         self.home_dir = home_dir
 
