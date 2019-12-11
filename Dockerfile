@@ -18,14 +18,16 @@
 #
 
 FROM fedora
-MAINTAINER Justin Ross <jross@apache.org>
 
-RUN dnf -y update && dnf clean all
+RUN dnf -qy update && dnf -q clean all
+
+RUN dnf -qy install gcc-c++ java-1.8.0-openjdk-devel make maven nodejs python2-numpy python3-numpy unzip xz
+
+RUN dnf -y install cyrus-sasl-devel cyrus-sasl-md5 cyrus-sasl-plain python2-qpid-messaging python3-qpid-proton qpid-cpp-client-devel qpid-proton-c-devel qpid-proton-cpp-devel
 
 COPY . /root/quiver
 
-ARG CACHE_BUST=1
-RUN cd /root/quiver && scripts/build-inside-container && rm -rf /root/quiver
+RUN cd /root/quiver && make install PREFIX=/usr
 
 WORKDIR /root
 CMD ["/bin/bash"]

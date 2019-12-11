@@ -65,10 +65,10 @@ JAVASCRIPT_SOURCES := $(shell find javascript -type f)
 JAVASCRIPT_TARGETS := ${JAVASCRIPT_SOURCES:%=build/quiver/%}
 
 PYTHON_SOURCES := $(shell find python -type f -name \*.py -o -name \*.py.in)
-PYTHON_TARGETS := ${PYTHON_SOURCES:%=build/quiver/%} ${PYTHON_SOURCES:%.in=build/quiver/%} 
+PYTHON_TARGETS := ${PYTHON_SOURCES:%=build/quiver/%} ${PYTHON_SOURCES:%.in=build/quiver/%}
 
 TESTDATA_SOURCES := $(shell find python -type f -name \*.pem)
-TESTDATA_TARGETS := ${TESTDATA_SOURCES:%=build/quiver/%} ${TESTDATA_SOURCES:%.in=build/quiver/%} 
+TESTDATA_TARGETS := ${TESTDATA_SOURCES:%=build/quiver/%} ${TESTDATA_SOURCES:%.in=build/quiver/%}
 
 TARGETS := ${BIN_TARGETS} ${JAVASCRIPT_TARGETS} ${PYTHON_TARGETS} \
 	${TESTDATA_TARGETS} \
@@ -141,11 +141,14 @@ test: build
 	quiver-test
 
 .PHONY: big-test
-big-test: test test-fedora test-ubuntu
+big-test: test os-tests
+
+.PHONY: os-tests
+os-tests: test-fedora test-ubuntu
 
 .PHONY: test-centos
 test-centos:
-	sudo docker build -f scripts/test-centos.dockerfile -t quiver-test-centos --build-arg CACHE_BUST=$${RANDOM} .
+	sudo docker build -f scripts/test-centos.dockerfile -t quiver-test-centos .
 	sudo docker run quiver-test-centos
 
 .PHONY: test-fedora
@@ -153,7 +156,7 @@ test-fedora: docker-build docker-test
 
 .PHONY: test-ubuntu
 test-ubuntu:
-	sudo docker build -f scripts/test-ubuntu.dockerfile -t quiver-test-ubuntu --build-arg CACHE_BUST=$${RANDOM} .
+	sudo docker build -f scripts/test-ubuntu.dockerfile -t quiver-test-ubuntu .
 	sudo docker run quiver-test-ubuntu
 
 .PHONY: check-dependencies
@@ -162,7 +165,7 @@ check-dependencies:
 
 .PHONY: docker-build
 docker-build:
-	sudo docker build -t ${DOCKER_TAG} --build-arg CACHE_BUST=$${RANDOM} .
+	sudo docker build -t ${DOCKER_TAG} .
 
 .PHONY: docker-test
 docker-test:

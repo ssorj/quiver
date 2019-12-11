@@ -17,8 +17,7 @@
 # under the License.
 #
 
-FROM ubuntu:latest
-MAINTAINER Justin Ross <jross@apache.org>
+FROM ubuntu
 
 RUN apt-get -qq update && apt-get -qq dist-upgrade
 
@@ -29,13 +28,12 @@ RUN apt-get -qq update \
     && apt-get -qq install build-essential make openjdk-8-jdk maven nodejs python \
         python3 python-numpy python3-numpy unzip xz-utils
 
-RUN apt-get -qq install libqpidmessaging-dev libqpidtypes-dev libqpidcommon-dev \
+RUN apt-get install libqpidmessaging-dev libqpidtypes-dev libqpidcommon-dev \
         libqpid-proton-cpp12-dev python-qpid python-qpid-messaging python3-qpid-proton \
         libsasl2-2 libsasl2-dev libsasl2-modules sasl2-bin
 
 COPY . /root/quiver
 
-ARG CACHE_BUST=1
 RUN cd /root/quiver && make install PREFIX=/usr
 
 CMD ["quiver-test"]
