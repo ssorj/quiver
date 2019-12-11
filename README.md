@@ -70,7 +70,7 @@ password or a client certificate.
 | Maven                 | maven                 | maven
 | Node.js               | nodejs                | nodejs
 | NumPy                 | python-numpy, python3-numpy | python-numpy, python3-numpy
-| Openssl               | openssl               | openssl
+| OpenSSL               | openssl               | openssl
 | Python 2.7            | python                | python
 | Python 3              | python3               | python3
 | Qpid Messaging C++    | libqpidmessaging-dev, libqpidtypes-dev, libqpidcommon-dev | qpid-cpp-client-devel
@@ -78,7 +78,7 @@ password or a client certificate.
 | Qpid Proton C         | libqpid-proton-proactor1-dev | qpid-proton-c-devel
 | Qpid Proton C++       | libqpid-proton-cpp11-dev | qpid-proton-cpp-devel
 | Qpid Proton Python    | python3-qpid-proton   | python3-qpid-proton
-| SASL                  | cyrus-sasl-devel cyrus-sasl-plain cyrus-sasl-md5 | libsasl2-2 libsasl2-dev libsasl2-modules sasl2-bin
+| SASL                  | libsasl2-2 libsasl2-dev libsasl2-modules sasl2-bin | cyrus-sasl-devel cyrus-sasl-plain cyrus-sasl-md5
 | Unzip                 | unzip                 | unzip
 | XZ                    | xz-utils              | xz
 
