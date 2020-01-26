@@ -334,6 +334,8 @@ def test_bench(session):
 # TLS/SASL
 
 def test_anonymous_tls(session):
+    raise TestSkipped("Disabled: https://github.com/ssorj/quiver/issues/70")
+
     additional_server_args = []
     additional_server_args.append("--key={}".format(TSERVER_PRIVATE_KEY_PEM))
     additional_server_args.append("--key-password={}".format("password"))
