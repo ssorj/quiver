@@ -49,7 +49,7 @@
     <geronimo.jms.2.spec.version>1.0-alpha-2</geronimo.jms.2.spec.version>
 
     <!-- Netty Version that is used to grab native transport libraries -->
-    <netty-version>4.1.28.Final</netty-version>
+    <netty-version>4.1.45.Final</netty-version>
 
     <!-- Maven Plugin Versions for this Project -->
     <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
