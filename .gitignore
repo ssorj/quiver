@@ -1,4 +1,5 @@
 build
+java/*/target
 ,class
 
 # Start of IntelliJ IDE files
