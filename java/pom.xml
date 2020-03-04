@@ -30,10 +30,6 @@
     Quiver is a performance testing tool for various AMQP 1.0 clients
   </description>
 
-  <prerequisites>
-    <maven>3.0.4</maven>
-  </prerequisites>
-
   <properties>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
