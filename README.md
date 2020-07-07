@@ -257,6 +257,7 @@ is an invocation of the `quiver-arrow` command.
       qpid-proton-c (c)               The default implementation
       qpid-proton-cpp (cpp)
       qpid-proton-python (python, py)
+      qpid-proton-python2 (python2, py2)
       rhea (javascript, js)
       vertx-proton (java)             Client mode only
 
