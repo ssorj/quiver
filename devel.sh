@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-echo $0
-BASEDIR=$(readlink -f "$(dirname "$0}")")
-echo $BASEDIR
+BASEDIR=$(readlink -f "$(dirname "${BASH_SOURCE[0]:-$0}")")
 export QUIVER_HOME=$BASEDIR/build/quiver
 export PATH=$BASEDIR/build/bin:$BASEDIR/scripts:$PATH
 export PYTHONPATH=$QUIVER_HOME/python:$BASEDIR/python${PYTHONPATH:+:${PYTHONPATH}}
