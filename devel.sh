@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -Eeuxo pipefail
+set -Eexo pipefail
 
 BASEDIR=$(readlink -f "$(dirname "$0")")
 export QUIVER_HOME=$BASEDIR/build/quiver
