@@ -214,6 +214,7 @@ class QuiverArrowCommand(Command):
             if self.verbose:
                 env["QUIVER_VERBOSE"] = "1"
 
+            # proc = _plano.call(args, stdout=fout, env=env)
             proc = _plano.start_process(args, stdout=fout, env=env)
 
             try:
@@ -413,8 +414,12 @@ class _StatusSnapshot:
 
     def capture_transfers(self, transfers_file):
         transfers = list()
+        count = 0
 
-        for line in _read_lines(transfers_file):
+        for count, line in enumerate(_read_lines(transfers_file)):
+            if count % 333 != 0:
+                continue
+
             try:
                 record = self.command.transfers_parse_func(line)
             except Exception as e:
@@ -423,7 +428,7 @@ class _StatusSnapshot:
 
             transfers.append(record)
 
-        self.period_count = len(transfers)
+        self.period_count = count
         self.count = self.previous.count + self.period_count
 
         if self.period_count > 0 and self.command.operation == "receive":

@@ -127,7 +127,7 @@ static inline bool bytes_equal(const pn_bytes_t a, const pn_bytes_t b) {
 }
 
 // TODO aconway 2017-06-09: need windows portable version
-int64_t now() {
+static int64_t now() {
     struct timespec t;
     clock_gettime(CLOCK_REALTIME, &t);
     return t.tv_sec * 1000 + t.tv_nsec / (1000 * 1000);
@@ -167,7 +167,6 @@ static void decode_message(pn_message_t* m, pn_delivery_t* d, pn_rwbytes_t* buf)
     ssize_t size = pn_delivery_pending(d);
     ensure(buf, size);
     ASSERT(size == pn_link_recv(l, buf->start, size));
-    pn_message_clear(m);
     if (pn_message_decode(m, buf->start, size)) {
         FAIL("pn_message_decode: %s", pn_error_text(pn_message_error(m)));
     }
@@ -185,9 +184,9 @@ static void print_message(pn_message_t* m) {
     ASSERT(pn_data_next(props));
     ASSERT(pn_data_type(props) == PN_STRING);
     pn_bytes_t key = pn_data_get_string(props);
-    if (!bytes_equal(key, SEND_TIME)) {
-        FAIL("Unexpected property name: %.*s", key.start, key.size);
-    }
+    // if (!bytes_equal(key, SEND_TIME)) {
+    //     FAIL("Unexpected property name: %.*s", key.start, key.size);
+    // }
     ASSERT(pn_data_next(props));
     ASSERT(pn_data_type(props) == PN_LONG);
     int64_t stime = pn_data_get_long(props);
@@ -199,9 +198,9 @@ static void send_message(struct arrow* a, pn_link_t* l) {
     a->sent++;
     int64_t stime = now();
     pn_atom_t id_atom;
-    int id_len = snprintf(NULL, 0, "%zu", a->sent);
-    char id_str[id_len + 1];
-    snprintf(id_str, id_len + 1, "%zu", a->sent);
+    char id_str[20];
+    int id_len = snprintf(id_str, 20, "%zu", a->sent);
+    ASSERT(id_len > 0 && id_len < 20);
     id_atom.type = PN_STRING;
     id_atom.u.as_bytes = pn_bytes(id_len + 1, id_str);
     pn_message_set_id(a->message, id_atom);
