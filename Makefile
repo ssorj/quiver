@@ -107,8 +107,8 @@ ifeq (${QPID_PROTON_CPP_ENABLED},yes)
 TARGETS += build/quiver/impls/quiver-arrow-qpid-proton-cpp
 endif
 
-CCFLAGS := -g -O2 -std=c++11 -lstdc++ -lpthread -fno-omit-frame-pointer
-CFLAGS  := -g -O2 -fno-omit-frame-pointer
+CCFLAGS := -g -O2 -Winline -std=c++11 -lstdc++ -lpthread -fno-omit-frame-pointer
+CFLAGS  := -g -O2 -Winline -fno-omit-frame-pointer
 
 .PHONY: default
 default: build
