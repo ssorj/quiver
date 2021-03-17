@@ -214,7 +214,6 @@ class QuiverArrowCommand(Command):
             if self.verbose:
                 env["QUIVER_VERBOSE"] = "1"
 
-            # proc = _plano.call(args, stdout=fout, env=env)
             proc = _plano.start_process(args, stdout=fout, env=env)
 
             try:
@@ -417,7 +416,7 @@ class _StatusSnapshot:
         count = 0
 
         for count, line in enumerate(_read_lines(transfers_file)):
-            if count % 333 != 0:
+            if count % 33 != 0:
                 continue
 
             try:
