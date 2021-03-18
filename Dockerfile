@@ -21,9 +21,9 @@ FROM fedora
 
 RUN dnf -qy update && dnf -q clean all
 
-RUN dnf -qy install gcc-c++ java-1.8.0-openjdk-devel make maven nodejs python2-numpy python3-numpy unzip xz
+RUN dnf -qy install gcc-c++ java-11-openjdk-devel make maven nodejs python3-numpy unzip xz
 
-RUN dnf -y install cyrus-sasl-devel cyrus-sasl-md5 cyrus-sasl-plain python2-qpid-messaging python3-qpid-proton qpid-cpp-client-devel qpid-proton-c-devel qpid-proton-cpp-devel
+RUN dnf -y install cyrus-sasl-devel cyrus-sasl-md5 cyrus-sasl-plain python3-qpid-proton qpid-proton-c-devel qpid-proton-cpp-devel
 
 COPY . /root/quiver
 
