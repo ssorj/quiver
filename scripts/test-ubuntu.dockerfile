@@ -28,8 +28,8 @@ RUN apt-get -qq update \
     && apt-get -qq install build-essential make openjdk-8-jdk maven nodejs python \
         python3 python-numpy python3-numpy unzip xz-utils
 
-RUN apt-get -y install libqpidmessaging-dev libqpidtypes-dev libqpidcommon-dev \
-        libqpid-proton-cpp12-dev python-qpid python-qpid-messaging python3-qpid-proton \
+RUN apt-get -y install \
+        libqpid-proton-cpp12-dev python3-qpid-proton \
         libsasl2-2 libsasl2-dev libsasl2-modules sasl2-bin
 
 COPY . /root/quiver
