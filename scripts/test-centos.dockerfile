@@ -17,16 +17,13 @@
 # under the License.
 #
 
-FROM centos
-MAINTAINER Justin Ross <jross@apache.org>
+FROM quay.io/centos/centos
 
 RUN yum -q -y update && yum -q clean all
 
-# java-11-openjdk qpid-proton-c qpid-proton-cpp
-
 RUN yum -q -y install epel-release \
     && yum -y install nodejs python3-numpy python3 unzip xz gcc-c++ \
-        java-11-openjdk-devel maven make qpid-cpp-client-devel qpid-proton-c-devel qpid-proton-cpp-devel \
+        java-11-openjdk-devel maven make qpid-proton-c-devel qpid-proton-cpp-devel python3-qpid-proton \
         cyrus-sasl-devel cyrus-sasl-plain cyrus-sasl-md5 openssl \
     && yum -q clean all
 
