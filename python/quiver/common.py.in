@@ -76,8 +76,6 @@ class _Impl:
 _Impl("arrow", "activemq-artemis-jms", aliases=["artemis-jms"], protocols=["core"])
 _Impl("arrow", "activemq-jms", protocols=["openwire"])
 _Impl("arrow", "qpid-jms", aliases=["jms"])
-_Impl("arrow", "qpid-messaging-cpp", "arrow")
-_Impl("arrow", "qpid-messaging-python", "arrow")
 _Impl("arrow", "qpid-proton-cpp", aliases=["cpp"], peer_to_peer=True)
 _Impl("arrow", "qpid-proton-c", aliases=["c"], peer_to_peer=True)
 _Impl("arrow", "qpid-proton-python", aliases=["python", "py"], peer_to_peer=True)
@@ -138,8 +136,6 @@ arrow implementations:
   activemq-artemis-jms            Client mode only; requires Artemis server
   activemq-jms                    Client mode only; ActiveMQ or Artemis server
   qpid-jms (jms)                  Client mode only
-  qpid-messaging-cpp              Client mode only
-  qpid-messaging-python           Client mode only
   qpid-proton-c (c)               The default implementation
   qpid-proton-cpp (cpp)
   qpid-proton-python (python, py)

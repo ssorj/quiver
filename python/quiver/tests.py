@@ -29,13 +29,11 @@ try:
 except ImportError:
     from urlparse import urlparse as _urlparse
 
-
 SCRIPT_DIR = _os.path.dirname(_os.path.realpath(__file__))
 TCLIENT_CERTIFICATE_PEM = SCRIPT_DIR + "/test_tls_certs/tclient-certificate.pem"
 TCLIENT_PRIVATE_KEY_PEM = SCRIPT_DIR + "/test_tls_certs/tclient-private-key-nopwd.pem"
 TSERVER_CERTIFICATE_PEM = SCRIPT_DIR + "/test_tls_certs/tserver-certificate.pem"
 TSERVER_PRIVATE_KEY_PEM = SCRIPT_DIR + "/test_tls_certs/tserver-private-key.pem"
-
 
 def open_test_session(session):
     enable_logging("warn")
@@ -68,12 +66,6 @@ def test_arrow_activemq_jms(session):
 
 def test_arrow_qpid_jms(session):
     _test_arrow("qpid-jms")
-
-def test_arrow_qpid_messaging_cpp(session):
-    _test_arrow("qpid-messaging-cpp")
-
-def test_arrow_qpid_messaging_python(session):
-    _test_arrow("qpid-messaging-python")
 
 def test_arrow_qpid_proton_c(session):
     raise TestSkipped("Disabled: https://github.com/ssorj/quiver/issues/51")
@@ -116,12 +108,6 @@ def test_server_qpid_dispatch(session):
 def test_pair_qpid_jms_to_qpid_jms(session):
     _test_pair("qpid-jms", "qpid-jms")
 
-def test_pair_qpid_jms_to_qpid_messaging_cpp(session):
-    _test_pair("qpid-jms", "qpid-messaging-cpp")
-
-def test_pair_qpid_jms_to_qpid_messaging_python(session):
-    _test_pair("qpid-jms", "qpid-messaging-python")
-
 def test_pair_qpid_jms_to_qpid_proton_cpp(session):
     _test_pair("qpid-jms", "qpid-proton-cpp")
 
@@ -137,68 +123,10 @@ def test_pair_qpid_jms_to_rhea(session):
 def test_pair_qpid_jms_to_vertx_proton(session):
     _test_pair("qpid-jms", "vertx-proton")
 
-# qpid-messaging-cpp
-
-def test_pair_qpid_messaging_cpp_to_qpid_jms(session):
-    _test_pair("qpid-messaging-cpp", "qpid-jms")
-
-def test_pair_qpid_messaging_cpp_to_qpid_messaging_cpp(session):
-    _test_pair("qpid-messaging-cpp", "qpid-messaging-cpp")
-
-def test_pair_qpid_messaging_cpp_to_qpid_messaging_python(session):
-    _test_pair("qpid-messaging-cpp", "qpid-messaging-python")
-
-def test_pair_qpid_messaging_cpp_to_qpid_proton_cpp(session):
-    _test_pair("qpid-messaging-cpp", "qpid-proton-cpp")
-
-def test_pair_qpid_messaging_cpp_to_qpid_proton_c(session):
-    _test_pair("qpid-messaging-cpp", "qpid-proton-c")
-
-def test_pair_qpid_messaging_cpp_to_qpid_proton_python(session):
-    _test_pair("qpid-messaging-cpp", "qpid-proton-python")
-
-def test_pair_qpid_messaging_cpp_to_rhea(session):
-    _test_pair("qpid-messaging-cpp", "rhea")
-
-def test_pair_qpid_messaging_cpp_to_vertx_proton(session):
-    _test_pair("qpid-messaging-cpp", "vertx-proton")
-
-# qpid-messaging-python
-
-def test_pair_qpid_messaging_python_to_qpid_jms(session):
-    _test_pair("qpid-messaging-python", "qpid-jms")
-
-def test_pair_qpid_messaging_python_to_qpid_messaging_cpp(session):
-    _test_pair("qpid-messaging-python", "qpid-messaging-cpp")
-
-def test_pair_qpid_messaging_python_to_qpid_messaging_python(session):
-    _test_pair("qpid-messaging-python", "qpid-messaging-python")
-
-def test_pair_qpid_messaging_python_to_qpid_proton_cpp(session):
-    _test_pair("qpid-messaging-python", "qpid-proton-cpp")
-
-def test_pair_qpid_messaging_python_to_qpid_proton_c(session):
-    _test_pair("qpid-messaging-python", "qpid-proton-c")
-
-def test_pair_qpid_messaging_python_to_qpid_proton_python(session):
-    _test_pair("qpid-messaging-python", "qpid-proton-python")
-
-def test_pair_qpid_messaging_python_to_rhea(session):
-    _test_pair("qpid-messaging-python", "rhea")
-
-def test_pair_qpid_messaging_python_to_vertx_proton(session):
-    _test_pair("qpid-messaging-python", "vertx-proton")
-
 # qpid-proton-cpp
 
 def test_pair_qpid_proton_cpp_to_qpid_jms(session):
     _test_pair("qpid-proton-cpp", "qpid-jms")
-
-def test_pair_qpid_proton_cpp_to_qpid_messaging_cpp(session):
-    _test_pair("qpid-proton-cpp", "qpid-messaging-cpp")
-
-def test_pair_qpid_proton_cpp_to_qpid_messaging_python(session):
-    _test_pair("qpid-proton-cpp", "qpid-messaging-python")
 
 def test_pair_qpid_proton_cpp_to_qpid_proton_cpp(session):
     _test_pair("qpid-proton-cpp", "qpid-proton-cpp")
@@ -220,12 +148,6 @@ def test_pair_qpid_proton_cpp_to_vertx_proton(session):
 def test_pair_qpid_proton_c_to_qpid_jms(session):
     _test_pair("qpid-proton-c", "qpid-jms")
 
-def test_pair_qpid_proton_c_to_qpid_messaging_cpp(session):
-    _test_pair("qpid-proton-c", "qpid-messaging-cpp")
-
-def test_pair_qpid_proton_c_to_qpid_messaging_python(session):
-    _test_pair("qpid-proton-c", "qpid-messaging-python")
-
 def test_pair_qpid_proton_c_to_qpid_proton_cpp(session):
     _test_pair("qpid-proton-c", "qpid-proton-cpp")
 
@@ -245,12 +167,6 @@ def test_pair_qpid_proton_c_to_vertx_proton(session):
 
 def test_pair_qpid_proton_python_to_qpid_jms(session):
     _test_pair("qpid-proton-python", "qpid-jms")
-
-def test_pair_qpid_proton_python_to_qpid_messaging_cpp(session):
-    _test_pair("qpid-proton-python", "qpid-messaging-cpp")
-
-def test_pair_qpid_proton_python_to_qpid_messaging_python(session):
-    _test_pair("qpid-proton-python", "qpid-messaging-python")
 
 def test_pair_qpid_proton_python_to_qpid_proton_cpp(session):
     _test_pair("qpid-proton-python", "qpid-proton-cpp")
@@ -272,12 +188,6 @@ def test_pair_qpid_proton_python_to_vertx_proton(session):
 def test_pair_rhea_to_qpid_jms(session):
     _test_pair("rhea", "qpid-jms")
 
-def test_pair_rhea_to_qpid_messaging_cpp(session):
-    _test_pair("rhea", "qpid-messaging-cpp")
-
-def test_pair_rhea_to_qpid_messaging_python(session):
-    _test_pair("rhea", "qpid-messaging-python")
-
 def test_pair_rhea_to_qpid_proton_cpp(session):
     _test_pair("rhea", "qpid-proton-cpp")
 
@@ -297,12 +207,6 @@ def test_pair_rhea_to_vertx_proton(session):
 
 def test_pair_vertx_proton_to_qpid_jms(session):
     _test_pair("vertx-proton", "qpid-jms")
-
-def test_pair_vertx_proton_to_qpid_messaging_cpp(session):
-    _test_pair("vertx-proton", "qpid-messaging-cpp")
-
-def test_pair_vertx_proton_to_qpid_messaging_python(session):
-    _test_pair("vertx-proton", "qpid-messaging-python")
 
 def test_pair_vertx_proton_to_qpid_proton_cpp(session):
     _test_pair("vertx-proton", "qpid-proton-cpp")
@@ -342,8 +246,7 @@ def test_anonymous_tls(session):
     additional_server_args.append("--cert={}".format(TSERVER_CERTIFICATE_PEM))
     with _TestServer(additional_server_args = additional_server_args, scheme = "amqps") as server:
         for impl in AMQP_ARROW_IMPLS:
-            if not impl_available(impl) or impl.startswith("qpid-messaging"):
-                # Note: Qpid-messaging doesn't support anonymous TLS.
+            if not impl_available(impl):
                 continue
 
             call("quiver-arrow send {} --impl {} --count 1 --verbose", server.url, impl)
@@ -357,15 +260,13 @@ def test_clientauth_tls(session):
     additional_server_args.append("--trusted-db={}".format(TCLIENT_CERTIFICATE_PEM))
     with _TestServer(additional_server_args = additional_server_args, scheme = "amqps") as server:
         for impl in AMQP_ARROW_IMPLS:
-            if not impl_available(impl)or impl.startswith("qpid-messaging"):
-                # Note: Qpid-messaging doesn't support anonymous TLS.
+            if not impl_available(impl):
                 continue
 
             cert = TCLIENT_CERTIFICATE_PEM
             key = TCLIENT_PRIVATE_KEY_PEM
             call("quiver-arrow send {} --impl {} --count 1 --verbose --cert {} --key {}", server.url, impl, cert, key)
             call("quiver-arrow receive {} --impl {} --count 1 --verbose --cert {} --key {}", server.url, impl, cert, key)
-
 
 def test_sasl(session):
     sasl_user = "myuser"
@@ -424,7 +325,6 @@ class _TestServer:
     def __exit__(self, exc_type, exc_value, traceback):
         stop_process(self.proc)
         remove(self.ready_file)
-
 
 def _test_url():
     return "//127.0.0.1:{}/q0".format(random_port())

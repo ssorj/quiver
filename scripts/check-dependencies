@@ -45,21 +45,21 @@ def check_python_module(module, missing, fedora_package):
 
 def main():
     enable_logging("warn")
-    
+
     missing = list()
 
     check_executable("g++", missing, "gcc-c++")
-    check_executable("java", missing, "java-1.8.0-openjdk-devel")
+    check_executable("java", missing, "java-11-openjdk-devel")
     check_executable("make", missing, "make")
     check_executable("mvn", missing, "maven")
     check_executable("node", missing, "nodejs")
     check_executable("xz", missing, "xz")
 
+    check_header("proton/message.h", missing, "qpid-proton-c-devel")
     check_header("proton/message.hpp", missing, "qpid-proton-cpp-devel")
-    check_header("qpid/messaging/Message.h", missing, "qpid-cpp-client-devel")
 
-    check_python_module("numpy", missing, "numpy")
-    check_python_module("proton", missing, "python-qpid-proton")
+    check_python_module("numpy", missing, "python3-numpy")
+    check_python_module("proton", missing, "python3-qpid-proton")
 
     if missing:
         exit("I need the following Fedora packages: {}".format(" ".join(missing)))
