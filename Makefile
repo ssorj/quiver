@@ -35,10 +35,6 @@ JAVA_ENABLED := \
 	$(shell which mvn 1> /dev/null 2>&1 && echo yes || echo no)
 JAVASCRIPT_ENABLED := \
 	$(shell which node 1> /dev/null 2>&1 && echo yes || echo no)
-QPID_MESSAGING_CPP_ENABLED := \
-	$(shell PYTHONPATH=python scripts/check-cpp-header "qpid/messaging/Message.h" 1> /dev/null 2>&1 && echo yes || echo no)
-QPID_MESSAGING_PYTHON_ENABLED := \
-	$(shell PYTHONPATH=python scripts/check-python2-import "qpid_messaging" 1> /dev/null 2>&1 && echo yes || echo no)
 QPID_PROTON_C_ENABLED := \
 	$(shell PYTHONPATH=python scripts/check-cpp-header "proton/proactor.h" 1> /dev/null 2>&1 && echo yes || echo no)
 QPID_PROTON_CPP_ENABLED := \
@@ -52,8 +48,6 @@ endif
 
 $(info JAVA_ENABLED=${JAVA_ENABLED})
 $(info JAVASCRIPT_ENABLED=${JAVASCRIPT_ENABLED})
-$(info QPID_MESSAGING_CPP_ENABLED=${QPID_MESSAGING_CPP_ENABLED})
-$(info QPID_MESSAGING_PYTHON_ENABLED=${QPID_MESSAGING_PYTHON_ENABLED})
 $(info QPID_PROTON_C_ENABLED=${QPID_PROTON_C_ENABLED})
 $(info QPID_PROTON_CPP_ENABLED=${QPID_PROTON_CPP_ENABLED})
 $(info QPID_PROTON_PYTHON_ENABLED=${QPID_PROTON_PYTHON_ENABLED})
@@ -91,14 +85,6 @@ endif
 
 ifeq (${JAVASCRIPT_ENABLED},yes)
 TARGETS += ${JAVASCRIPT_TARGETS} build/quiver/impls/quiver-arrow-rhea
-endif
-
-ifeq (${QPID_MESSAGING_CPP_ENABLED},yes)
-TARGETS += build/quiver/impls/quiver-arrow-qpid-messaging-cpp
-endif
-
-ifeq (${QPID_MESSAGING_PYTHON_ENABLED},yes)
-TARGETS += build/quiver/impls/quiver-arrow-qpid-messaging-python
 endif
 
 ifeq (${QPID_PROTON_C_ENABLED},yes)
@@ -197,10 +183,6 @@ build/quiver/impls/quiver-arrow-qpid-proton-c: impls/quiver-arrow-qpid-proton-c.
 build/quiver/impls/quiver-arrow-qpid-proton-cpp: impls/quiver-arrow-qpid-proton-cpp.cpp
 	@mkdir -p ${@D}
 	${CXX} $< -o $@ ${CCFLAGS} -lqpid-proton -lqpid-proton-cpp
-
-build/quiver/impls/quiver-arrow-qpid-messaging-cpp: impls/quiver-arrow-qpid-messaging-cpp.cpp
-	@mkdir -p ${@D}
-	${CXX} $< -o $@ ${CCFLAGS} -lqpidmessaging -lqpidtypes
 
 # XXX Use a template for the java rules
 
