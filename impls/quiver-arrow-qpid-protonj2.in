@@ -1,0 +1,64 @@
+#!/usr/bin/python3
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+import os
+import shlex
+import sys
+
+default_home = os.path.normpath("@quiver_home@")
+home = os.environ.get("QUIVER_HOME", default_home)
+sys.path.insert(0, os.path.join(home, "python"))
+
+from plano import *
+
+def main():
+    enable_logging("warn")
+
+    if "QUIVER_VERBOSE" in ENV:
+        enable_logging("notice")
+
+    jar_file = join(home, "java", "quiver-protonj2.jar")
+    pom_file = join("META-INF", "maven", "org.apache.qpid", "protonj2-client", "pom.properties")
+
+    if len(ARGS) == 1:
+        call("unzip -p {} {}", jar_file, pom_file)
+        call("java -version")
+        exit()
+
+    args = ["/usr/bin/env", "--", "java"]
+
+    if "JAVA_OPTS" in ENV:
+        args += shlex.split(ENV["JAVA_OPTS"])
+
+    args += [
+        "-classpath", jar_file,
+        "-Dorg.slf4j.simpleLogger.defaultLogLevel=warn",
+        "net.ssorj.quiver.QuiverArrowProtonJ2",
+    ]
+
+    args += ARGS[1:]
+
+    exec_process(args)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

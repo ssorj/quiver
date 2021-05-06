@@ -39,17 +39,18 @@
     <target-version>1.8</target-version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <slf4j-version>1.7.25</slf4j-version>
+    <slf4j-version>1.7.30</slf4j-version>
 
     <!-- Client Dependencies for Quiver -->
-    <activemq-version>5.15.11</activemq-version>
-    <artemis-version>2.11.0</artemis-version>
-    <qpid-jms-version>0.48.0</qpid-jms-version>
-    <vertx-proton-version>3.8.5</vertx-proton-version>
+    <activemq-version>5.16.1</activemq-version>
+    <artemis-version>2.17.0</artemis-version>
+    <qpid-jms-version>0.59.0-SNAPSHOT</qpid-jms-version>
+    <vertx-proton-version>4.0.2</vertx-proton-version>
     <geronimo.jms.2.spec.version>1.0-alpha-2</geronimo.jms.2.spec.version>
+    <protonj2-client-version>0.1.0-SNAPSHOT</protonj2-client-version>
 
     <!-- Netty Version that is used to grab native transport libraries -->
-    <netty-version>4.1.28.Final</netty-version>
+    <netty-version>4.1.63.Final</netty-version>
 
     <!-- Maven Plugin Versions for this Project -->
     <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
@@ -77,6 +78,7 @@
     <module>quiver-qpid-jms</module>
     <module>quiver-jms-driver</module>
     <module>quiver-vertx-proton</module>
+    <module>quiver-protonj2</module>
   </modules>
 
   <dependencyManagement>
@@ -105,6 +107,11 @@
         <groupId>io.vertx</groupId>
         <artifactId>vertx-proton</artifactId>
         <version>${vertx-proton-version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>protonj2-client</artifactId>
+        <version>${protonj2-client-version}</version>
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>

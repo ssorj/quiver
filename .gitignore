@@ -1,5 +1,11 @@
-build
-,class
+*~
+*.swp
+
+/build/
+*.class
+*.pyc
+*.pyo
+target
 
 # Start of IntelliJ IDE files
 .idea
@@ -18,4 +24,5 @@ build
 .recommenders/
 eclipse-classes
 # End of Eclipse IDE files
+
 

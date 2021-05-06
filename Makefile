@@ -85,6 +85,7 @@ TARGETS += \
 	build/quiver/impls/quiver-arrow-activemq-artemis-jms \
 	build/quiver/impls/quiver-arrow-activemq-jms \
 	build/quiver/impls/quiver-arrow-qpid-jms \
+	build/quiver/impls/quiver-arrow-qpid-protonj2 \
 	build/quiver/impls/quiver-arrow-vertx-proton
 endif
 
@@ -209,6 +210,13 @@ build/quiver/java/quiver-vertx-proton.jar: java/quiver-vertx-proton/pom.xml $(sh
 	@mkdir -p build/quiver/java
 	cd java/quiver-vertx-proton && mvn clean package
 	cp java/quiver-vertx-proton/target/quiver-vertx-proton-1.0.0-SNAPSHOT-jar-with-dependencies.jar $@
+
+build/quiver/impls/quiver-arrow-qpid-protonj2: impls/quiver-arrow-qpid-protonj2.in build/quiver/java/quiver-protonj2.jar
+
+build/quiver/java/quiver-qpid-protonj2.jar: java/quiver-protonj2/pom.xml $(shell find java/quiver-protonj2/src -type f)
+	@mkdir -p build/quiver/java
+	cd java/quiver-protonj2 && mvn clean package
+	cp java/quiver-protonj2/target/quiver-protonj2-1.0.0-SNAPSHOT-jar-with-dependencies.jar $@
 
 build/quiver/impls/quiver-arrow-activemq-jms: impls/quiver-arrow-activemq-jms.in build/quiver/java/quiver-activemq-jms.jar
 

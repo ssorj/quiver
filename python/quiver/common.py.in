@@ -82,6 +82,7 @@ _Impl("arrow", "qpid-proton-cpp", aliases=["cpp"], peer_to_peer=True)
 _Impl("arrow", "qpid-proton-c", aliases=["c"], peer_to_peer=True)
 _Impl("arrow", "qpid-proton-python", aliases=["python", "py"], peer_to_peer=True)
 _Impl("arrow", "qpid-proton-python2", aliases=["python2", "py2"], peer_to_peer=True)
+_Impl("arrow", "qpid-protonj2", aliases=["protonj2"])
 _Impl("arrow", "rhea", aliases=["javascript", "js"], peer_to_peer=True)
 _Impl("arrow", "vertx-proton", aliases=["java"])
 
@@ -145,6 +146,7 @@ arrow implementations:
   qpid-proton-cpp (cpp)
   qpid-proton-python (python, py)
   qpid-proton-python2 (python2, py2)
+  qpid-protonj2 (java)            Client mode only
   rhea (javascript, js)
   vertx-proton (java)             Client mode only
 """
