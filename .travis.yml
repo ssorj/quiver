@@ -1,8 +1,0 @@
-sudo: enabled
-language: generic
-
-services:
- - docker
-
-script:
- - make os-tests

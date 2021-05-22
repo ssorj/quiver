@@ -1,7 +1,5 @@
 # Quiver
 
-[![Build Status](https://travis-ci.org/ssorj/quiver.svg?branch=master)](https://travis-ci.org/ssorj/quiver)
-
 Tools for testing the performance of messaging clients and servers.
 
     $ quiver --duration 10 --peer-to-peer q0
