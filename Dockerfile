@@ -17,7 +17,7 @@
 # under the License.
 #
 
-FROM fedora
+FROM registry.fedoraproject.org/fedora:34
 
 RUN dnf -qy update && dnf -q clean all
 

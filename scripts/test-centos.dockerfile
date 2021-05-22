@@ -17,18 +17,15 @@
 # under the License.
 #
 
-FROM centos
-MAINTAINER Justin Ross <jross@apache.org>
+FROM registry.centos.org/centos/centos:8
 
-RUN yum -q -y update && yum -q clean all
+RUN dnf -qy update && dnf -q clean all
 
-# java-11-openjdk qpid-proton-c qpid-proton-cpp
+RUN dnf -qy install epel-release
 
-RUN yum -q -y install epel-release \
-    && yum -y install nodejs python3-numpy python3 unzip xz gcc-c++ \
-        java-11-openjdk-devel maven make qpid-cpp-client-devel qpid-proton-c-devel qpid-proton-cpp-devel \
-        cyrus-sasl-devel cyrus-sasl-plain cyrus-sasl-md5 openssl \
-    && yum -q clean all
+RUN dnf -qy install gcc-c++ java-11-openjdk-devel make maven nodejs python3-numpy unzip xz
+
+RUN dnf -y install cyrus-sasl-devel cyrus-sasl-md5 cyrus-sasl-plain python3-qpid-proton qpid-proton-c-devel qpid-proton-cpp-devel
 
 COPY . /root/quiver
 

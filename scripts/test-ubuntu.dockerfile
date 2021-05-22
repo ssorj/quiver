@@ -17,7 +17,7 @@
 # under the License.
 #
 
-FROM ubuntu
+FROM ubuntu:focal
 
 RUN apt-get -qq update && apt-get -qq dist-upgrade
 
@@ -25,7 +25,7 @@ RUN apt-get -qq update \
     && apt-get -qq install software-properties-common \
     && add-apt-repository -y ppa:qpid/released \
     && apt-get -qq update \
-    && apt-get -qq install build-essential make openjdk-8-jdk maven nodejs python \
+    && apt-get -qq install build-essential make openjdk-11-jdk maven nodejs python \
         python3 python-numpy python3-numpy unzip xz-utils
 
 RUN apt-get -y install \
