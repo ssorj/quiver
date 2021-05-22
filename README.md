@@ -178,8 +178,8 @@ Set `LD_LIBRARY_PATH` or update `ld.so.conf` to match your
 
     $ export LD_LIBRARY_PATH=$HOME/.local/lib64
 
-Source `misc/local-libs-env.sh` in your shell to set these variables
-for libraries under `$HOME/.local` and `/usr/local`.
+Source `misc/home-local-libs-env.sh` in your shell to set these
+variables for libraries under `$HOME/.local` and `/usr/local`.
 
 ## Command-line interface
 
@@ -253,11 +253,9 @@ is an invocation of the `quiver-arrow` command.
       activemq-jms                    Client mode only; ActiveMQ or Artemis server
       qpid-jms (jms)                  Client mode only
       qpid-messaging-cpp              Client mode only
-      qpid-messaging-python           Client mode only
       qpid-proton-c (c)               The default implementation
       qpid-proton-cpp (cpp)
       qpid-proton-python (python, py)
-      qpid-proton-python2 (python2, py2)
       qpid-protonj2 (java)            Client mode only
       rhea (javascript, js)
       vertx-proton (java)             Client mode only
