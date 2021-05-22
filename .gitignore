@@ -1,13 +1,10 @@
 *~
 *.swp
-
-/build/
 *.pyc
 *.pyo
 
 build
 java/*/target
-,class
 
 # Start of IntelliJ IDE files
 .idea
