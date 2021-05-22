@@ -1,5 +1,7 @@
 # Quiver
 
+![main](https://github.com/ssorj/quiver/actions/workflows/main.yml/badge.svg?branch=master)
+
 Tools for testing the performance of messaging clients and servers.
 
     $ quiver --duration 10 --peer-to-peer q0
