@@ -152,7 +152,7 @@ check-dependencies:
 
 .PHONY: docker-build
 docker-build:
-	sudo docker build -t ${DOCKER_TAG} .
+	sudo docker build --no-cache -t ${DOCKER_TAG} .
 
 .PHONY: docker-test
 docker-test:
