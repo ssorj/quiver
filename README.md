@@ -1,6 +1,6 @@
 # Quiver
 
-![main](https://github.com/ssorj/quiver/actions/workflows/main.yml/badge.svg?branch=master)
+![main](https://github.com/ssorj/quiver/actions/workflows/main.yaml/badge.svg?branch=main)
 
 Tools for testing the performance of messaging clients and servers.
 
