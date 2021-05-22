@@ -189,14 +189,14 @@ build/quiver/impls/quiver-arrow-vertx-proton: impls/quiver-arrow-vertx-proton.in
 
 build/quiver/java/quiver-vertx-proton.jar: java/quiver-vertx-proton/pom.xml $(shell find java/quiver-vertx-proton/src -type f)
 	@mkdir -p build/quiver/java
-	cd java/quiver-vertx-proton && mvn clean package
+	cd java/quiver-vertx-proton && mvn -B clean package
 	cp java/quiver-vertx-proton/target/quiver-vertx-proton-1.0.0-SNAPSHOT-jar-with-dependencies.jar $@
 
 build/quiver/impls/quiver-arrow-qpid-protonj2: impls/quiver-arrow-qpid-protonj2.in build/quiver/java/quiver-protonj2.jar
 
 build/quiver/java/quiver-qpid-protonj2.jar: java/quiver-protonj2/pom.xml $(shell find java/quiver-protonj2/src -type f)
 	@mkdir -p build/quiver/java
-	cd java/quiver-protonj2 && mvn clean package
+	cd java/quiver-protonj2 && mvn -B clean package
 	cp java/quiver-protonj2/target/quiver-protonj2-1.0.0-SNAPSHOT-jar-with-dependencies.jar $@
 
 build/quiver/impls/quiver-arrow-activemq-jms: impls/quiver-arrow-activemq-jms.in build/quiver/java/quiver-activemq-jms.jar
@@ -208,8 +208,8 @@ build/quiver/impls/quiver-arrow-qpid-jms: impls/quiver-arrow-qpid-jms.in build/q
 
 build/quiver/java/%.jar: java/pom.xml java/quiver-jms-driver/pom.xml $(shell find java/quiver-jms-driver/src -type f)
 	@mkdir -p build/quiver/java
-	cd java/quiver-jms-driver && mvn install
-	cd java && mvn clean package
+	cd java/quiver-jms-driver && mvn -B install
+	cd java && mvn -B clean package
 	cp java/$*/target/$*-1.0.0-SNAPSHOT-jar-with-dependencies.jar $@
 
 build/quiver/javascript/%: javascript/%

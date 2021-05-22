@@ -275,6 +275,8 @@ def test_clientauth_tls(session):
             call("quiver-arrow receive {} --impl {} --count 1 --verbose --cert {} --key {}", server.url, impl, cert, key)
 
 def test_sasl(session):
+    raise TestSkipped("Disabled: https://github.com/ssorj/quiver/issues/75")
+
     sasl_user = "myuser"
     sasl_password = "mypassword"
 
