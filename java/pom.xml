@@ -46,7 +46,7 @@
     <protonj2-client-version>1.0.0-M1</protonj2-client-version>
 
     <!-- Netty Version that is used to grab native transport libraries -->
-    <netty-version>4.1.63.Final</netty-version>
+    <netty-version>4.1.65.Final</netty-version>
 
     <!-- Maven Plugin Versions for this Project -->
     <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
