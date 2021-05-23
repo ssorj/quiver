@@ -86,17 +86,11 @@ def test_arrow_vertx_proton(session):
 
 # Servers
 
-def test_server_activemq(session):
-    _test_server("activemq")
-
 def test_server_activemq_artemis(session):
     _test_server("activemq-artemis")
 
 def test_server_builtin(session):
     _test_server("builtin")
-
-def test_server_qpid_cpp(session):
-    _test_server("qpid-cpp")
 
 def test_server_qpid_dispatch(session):
     _test_server("qpid-dispatch")
@@ -361,17 +355,6 @@ def _test_server(impl):
         raise TestSkipped("Server '{}' is unavailable".format(impl))
 
     call("quiver-server --impl {} --info", impl)
-
-    if impl == "activemq-artemis":
-        # quiver-server: Calling '/home/jross/code/quiver/build/quiver/impls/quiver-server-activemq-artemis
-        #     127.0.0.1 49183 q0 /run/user/1000/plano-inagdcaw'
-        # java.lang.reflect.InvocationTargetException
-        #       at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-        #       ...
-        #       at org.apache.activemq.artemis.boot.Artemis.<clinit>(Artemis.java:40)
-        # Caused by: java.io.FileNotFoundException: /var/lib/artemis/log/artemis.log (Permission denied)
-
-        raise TestSkipped("Permissions problem")
 
     with _TestServer(impl=impl) as server:
         call("quiver {} --count 1", server.url)

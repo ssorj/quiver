@@ -33,25 +33,16 @@ config_template = """
 <?xml version="1.0"?>
 <configuration xmlns="urn:activemq" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd">
   <core xmlns="urn:activemq:core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq:core">
+    <persistence-enabled>false</persistence-enabled>
+    <security-enabled>false</security-enabled>
     <acceptors>
       <acceptor name="artemis">tcp://{}:{}?protocols=AMQP,CORE,OPENWIRE</acceptor>
     </acceptors>
-    <addresses>
-      <address name="{}">
-        <anycast>
-          <queue name="{}">
-            <durable>false</durable>
-          </queue>
-        </anycast>
-      </address>
-    </addresses>
-    <security-settings>
-      <security-setting match="#">
-        <permission type="consume" roles="admin"/>
-        <permission type="browse" roles="admin"/>
-        <permission type="send" roles="admin"/>
-      </security-setting>
-    </security-settings>
+    <address-settings>
+      <address-setting match="#">
+        <default-address-routing-type>ANYCAST</default-address-routing-type>
+      </address-setting>
+    </address-settings>
   </core>
 </configuration>
 """
@@ -73,8 +64,10 @@ def main():
     if len(ARGS) == 1:
         executable = real_path(which("artemis"))
         profile_file = join(parent_dir(parent_dir(executable)), "etc", "artemis.profile")
-        
-        call(_info_script, profile_file, shell=True)
+
+        # XXX Strip and replace is a temp fix
+        call(_info_script.strip().replace("\n", ";"), profile_file, shell=True)
+
         exit()
 
     kwargs = parse_keyword_args(ARGS[1:])

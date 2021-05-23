@@ -83,10 +83,8 @@ _Impl("arrow", "qpid-protonj2", aliases=["protonj2"])
 _Impl("arrow", "rhea", aliases=["javascript", "js"], peer_to_peer=True)
 _Impl("arrow", "vertx-proton", aliases=["java"])
 
-_Impl("server", "activemq", protocols=["amqp", "openwire"], executable="activemq")
 _Impl("server", "activemq-artemis", aliases=["artemis"], protocols=["amqp", "openwire", "core"], executable="artemis")
 _Impl("server", "builtin")
-_Impl("server", "qpid-cpp", aliases=["qpidd"], executable="qpidd")
 _Impl("server", "qpid-dispatch", aliases=["qdrouterd", "dispatch"], executable="qdrouterd")
 
 def get_impl(name):
@@ -147,10 +145,8 @@ arrow implementations:
 
 _epilog_server_impls = """
 server implementations:
-  activemq
   activemq-artemis (artemis)
   builtin                         The default implementation
-  qpid-cpp (qpidd)
   qpid-dispatch (dispatch, qdrouterd)
 """
 
