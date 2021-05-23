@@ -67,10 +67,8 @@ TESTDATA_TARGETS := ${TESTDATA_SOURCES:%=build/quiver/%} ${TESTDATA_SOURCES:%.in
 TARGETS := ${BIN_TARGETS} ${JAVASCRIPT_TARGETS} ${PYTHON_TARGETS} \
 	${TESTDATA_TARGETS} \
 	build/quiver/impls/quiver-arrow-qpid-proton-python \
-	build/quiver/impls/quiver-server-activemq \
 	build/quiver/impls/quiver-server-activemq-artemis \
 	build/quiver/impls/quiver-server-builtin \
-	build/quiver/impls/quiver-server-qpid-cpp \
 	build/quiver/impls/quiver-server-qpid-dispatch
 
 ifeq (${JAVA_ENABLED},yes)
