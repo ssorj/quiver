@@ -1,6 +1,6 @@
 # Quiver
 
-![main](https://github.com/ssorj/quiver/actions/workflows/main.yaml/badge.svg?branch=main)
+[![main](https://github.com/ssorj/quiver/actions/workflows/main.yaml/badge.svg?branch=main)](https://github.com/ssorj/quiver/actions/workflows/main.yaml?query=branch%3Amain)
 
 Tools for testing the performance of messaging clients and servers.
 
@@ -66,17 +66,15 @@ password or a client certificate.
 | --------------------- | --------------------- | ---
 | GCC C++               | build-essential       | gcc-c++
 | GNU Make              | make                  | make
-| Java 8 JDK            | openjdk-8-jdk         | java-1.8.0-openjdk-devel
+| Java 11 JDK           | openjdk-11-jdk        | java-11-openjdk-devel
 | Maven                 | maven                 | maven
 | Node.js               | nodejs                | nodejs
 | NumPy                 | python-numpy, python3-numpy | python-numpy, python3-numpy
 | OpenSSL               | openssl               | openssl
-| Python 2.7            | python                | python
 | Python 3              | python3               | python3
 | Qpid Messaging C++    | libqpidmessaging-dev, libqpidtypes-dev, libqpidcommon-dev | qpid-cpp-client-devel
-| Qpid Messaging Python | python-qpid-messaging, python-qpid | python-qpid-messaging
 | Qpid Proton C         | libqpid-proton-proactor1-dev | qpid-proton-c-devel
-| Qpid Proton C++       | libqpid-proton-cpp11-dev | qpid-proton-cpp-devel
+| Qpid Proton C++       | libqpid-proton-cpp12-dev | qpid-proton-cpp-devel
 | Qpid Proton Python    | python3-qpid-proton   | python3-qpid-proton
 | SASL                  | libsasl2-2 libsasl2-dev libsasl2-modules sasl2-bin | cyrus-sasl-devel cyrus-sasl-plain cyrus-sasl-md5
 | Unzip                 | unzip                 | unzip
@@ -85,15 +83,6 @@ password or a client certificate.
 ### Using Docker
 
     $ sudo docker run -it ssorj/quiver
-
-### Installing on Fedora
-
-    $ sudo dnf install dnf-plugins-core
-    $ sudo dnf copr enable jross/ssorj
-    $ sudo dnf install quiver
-
-If you don't have `dnf`, use the repo files at
-<https://copr.fedorainfracloud.org/coprs/jross/ssorj/>.
 
 ### Installing on Ubuntu
 
@@ -104,7 +93,7 @@ Ubuntu PPA.
     $ sudo apt-get install software-properties-common
     $ sudo add-apt-repository ppa:qpid/released
     $ sudo apt-get update
-    $ sudo apt-get install build-essential make openjdk-8-jdk maven nodejs \
+    $ sudo apt-get install build-essential make openjdk-11-jdk maven nodejs \
         python python-numpy python3 python3-numpy \
         libqpidmessaging-dev libqpidtypes-dev libqpidcommon-dev \
         libqpid-proton-proactor1-dev libqpid-proton-cpp12-dev \
@@ -178,8 +167,9 @@ Set `LD_LIBRARY_PATH` or update `ld.so.conf` to match your
 
     $ export LD_LIBRARY_PATH=$HOME/.local/lib64
 
-Source `misc/home-local-libs-env.sh` in your shell to set these
-variables for libraries under `$HOME/.local` and `/usr/local`.
+Source `scripts/home-local-libs-env.sh` or
+`scripts/usr-local-libs-env.sh` in your shell to set these variables
+for libraries under `$HOME/.local` or `/usr/local` respectively.
 
 ## Command-line interface
 
@@ -291,7 +281,8 @@ the given address.
 
 ### Running Quiver with ActiveMQ
 
-    [Configure ActiveMQ for anonymous connections and AMQP]
+Make sure you configure ActiveMQ to allow anonymous connections.
+
     $ <instance-dir>/bin/activemq start
     $ quiver q0
 
