@@ -35,10 +35,21 @@
       <groupId>net.ssorj.quiver</groupId>
       <artifactId>quiver-jms-driver</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-jms-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-transport-native-epoll</artifactId>
+      <version>${qpid-jms-netty-version}</version>
+      <classifier>${netty-transport-native-epoll-classifier}</classifier>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-transport-native-kqueue</artifactId>
+      <version>${qpid-jms-netty-version}</version>
+      <classifier>${netty-transport-native-kqueue-classifier}</classifier>
     </dependency>
   </dependencies>
 

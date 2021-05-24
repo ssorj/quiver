@@ -38,19 +38,24 @@
     <slf4j-version>1.7.30</slf4j-version>
 
     <!-- Client Dependencies for Quiver -->
-    <activemq-version>5.16.1</activemq-version>
+    <activemq-version>5.16.2</activemq-version>
     <artemis-version>2.17.0</artemis-version>
     <qpid-jms-version>0.58.0</qpid-jms-version>
-    <vertx-proton-version>4.0.2</vertx-proton-version>
+    <vertx-proton-version>4.0.3</vertx-proton-version>
     <geronimo.jms.2.spec.version>1.0-alpha-2</geronimo.jms.2.spec.version>
     <protonj2-client-version>1.0.0-M1</protonj2-client-version>
-
-    <!-- Netty Version that is used to grab native transport libraries -->
-    <netty-version>4.1.65.Final</netty-version>
 
     <!-- Maven Plugin Versions for this Project -->
     <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
     <maven-assembly-plugin-version>3.2.0</maven-assembly-plugin-version>
+    <maven.enforcer.plugin.version>3.0.0-M3</maven.enforcer.plugin.version>
+
+    <!--  Client specific version of the netty-tcnative libraries pulled in which
+          should be checked when updating the client release to ensure versions match -->
+    <vertx-proton-netty-version>4.1.60.Final</vertx-proton-netty-version>
+    <qpid-jms-netty-version>4.1.63.Final</qpid-jms-netty-version>
+    <protonj2-netty-version>4.1.63.Final</protonj2-netty-version>
+    <artemis-jms-netty-version>4.1.51.Final</artemis-jms-netty-version>
 
     <netty-transport-native-epoll-classifier>linux-x86_64</netty-transport-native-epoll-classifier>
     <netty-transport-native-kqueue-classifier>osx-x86_64</netty-transport-native-kqueue-classifier>
@@ -131,31 +136,6 @@
       </dependency>
       <dependency>
         <groupId>io.netty</groupId>
-        <artifactId>netty-buffer</artifactId>
-        <version>${netty-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-common</artifactId>
-        <version>${netty-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-handler</artifactId>
-        <version>${netty-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-handler-proxy</artifactId>
-        <version>${netty-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-transport</artifactId>
-        <version>${netty-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
         <artifactId>netty-transport-native-epoll</artifactId>
         <version>${netty-version}</version>
         <classifier>${netty-transport-native-epoll-classifier}</classifier>
@@ -166,49 +146,63 @@
         <version>${netty-version}</version>
         <classifier>${netty-transport-native-kqueue-classifier}</classifier>
       </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-codec</artifactId>
-        <version>${netty-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-codec-http</artifactId>
-        <version>${netty-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-codec-http2</artifactId>
-        <version>${netty-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-resolver</artifactId>
-        <version>${netty-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-resolver-dns</artifactId>
-        <version>${netty-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-codec-dns</artifactId>
-        <version>${netty-version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 
   <build>
     <defaultGoal>install</defaultGoal>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>${maven.enforcer.plugin.version}</version>
+          <executions>
+            <execution>
+              <id>enforce-java-version</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <requireJavaVersion>
+                    <version>[11,)</version>
+                  </requireJavaVersion>
+                </rules>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-maven-version</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireMavenVersion>
+                  <version>3.0.5</version>
+                </requireMavenVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${maven-compiler-plugin-version}</version>
         <configuration>
-          <source>${source-version}</source>
-          <target>${target-version}</target>
+          <release>${maven.compiler.release}</release>
+          <source>${maven.compiler.source}</source>
+          <target>${maven.compiler.target}</target>
           <optimize>true</optimize>
           <debug>true</debug>
           <showDeprecation>true</showDeprecation>
