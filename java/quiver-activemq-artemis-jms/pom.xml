@@ -39,6 +39,18 @@
       <groupId>org.apache.activemq</groupId>
       <artifactId>artemis-jms-client</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-transport-native-epoll</artifactId>
+      <version>${artemis-jms-netty-version}</version>
+      <classifier>${netty-transport-native-epoll-classifier}</classifier>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-transport-native-kqueue</artifactId>
+      <version>${artemis-jms-netty-version}</version>
+      <classifier>${netty-transport-native-kqueue-classifier}</classifier>
+    </dependency>
   </dependencies>
 
   <build>
