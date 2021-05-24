@@ -203,12 +203,14 @@ class Command(object):
                                  help="Send or receive COUNT messages " \
                                  "(default 1m; 0 means no limit)",
                                  default="1m")
-        self.parser.add_argument("-d", "--duration", metavar="DURATION",
-                                 help="Stop after DURATION, ignoring --count " \
-                                 "(default 0, disabled)",
-                                 default="0")
         self.parser.add_argument("-m", "--messages", dest="count",
                                  help=_argparse.SUPPRESS)
+        self.parser.add_argument("-d", "--duration", metavar="DURATION",
+                                 help="Stop after DURATION, ignoring --count (default 0, disabled)",
+                                 default="0")
+        self.parser.add_argument("--rate", metavar="COUNT",
+                                 help="Target a rate of COUNT messages per second (default 0, disabled)",
+                                 default="0")
         self.parser.add_argument("--body-size", metavar="COUNT",
                                  help="Send message bodies containing COUNT bytes (default 100)",
                                  default="100")
@@ -218,9 +220,6 @@ class Command(object):
         self.parser.add_argument("--transaction-size", metavar="COUNT",
                                  help="Transfer batches of COUNT messages inside transactions " \
                                  "(default 0, disabled)",
-                                 default="0")
-        self.parser.add_argument("--target", metavar="COUNT",
-                                 help="Set a target throughput in msg/sec; 0 to disable. Java only",
                                  default="0")
         self.parser.add_argument("--durable", action="store_true",
                                  help="Require persistent store-and-forward transfers")

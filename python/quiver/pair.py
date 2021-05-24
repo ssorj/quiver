@@ -113,11 +113,13 @@ class QuiverPairCommand(Command):
         else:
             args += ["--duration", self.args.duration]
 
+        if self.rate != 0:
+            args += ["--rate", self.args.rate]
+
         args += [
             "--body-size", self.args.body_size,
             "--credit", self.args.credit,
             "--transaction-size", self.args.transaction_size,
-            "--target", self.args.target,
             "--timeout", self.args.timeout,
         ]
 

@@ -32,21 +32,22 @@ constitute a pair of communicating endpoints.
 ### Input
 
 The implementations take named arguments, with key and value separated
-by `=`.  They must process the following arguments.
+by `=`.  They must process the following arguments:
 
-    connection-mode    string   'client' or 'server'
-    channel-mode       string   'active' or 'passive'
-    operation          string   'send' or 'receive'
-    id                 string   A unique identifier for the application
-    host               string   The socket name
-    port               string   The socket port (or '-')
-    path               string   A named source or target for a message, often a queue
-    duration           integer  Run time in seconds; 0 means no limit
-    count              integer  Number of messages to transfer; 0 means no limit
-    body-size          integer  Length of generated message body
-    credit-window      integer  Size of credit window to maintain
-    transaction-size   integer  Size of transaction batches; 0 means no transactions
-    durable            integer  1 if messages are durable; 0 if non-durable
+    connection-mode   string   'client' or 'server'
+    channel-mode      string   'active' or 'passive'
+    operation         string   'send' or 'receive'
+    id                string   A unique identifier for the application
+    host              string   The socket name
+    port              string   The socket port (or '-')
+    path              string   A named source or target for a message, often a queue
+    duration          integer  Run time in seconds; 0 means no limit
+    count             integer  Number of messages to transfer; 0 means no limit
+    rate              integer  Target message rate; 0 to disable
+    body-size         integer  Length of generated message body
+    credit-window     integer  Size of credit window to maintain
+    transaction-size  integer  Size of transaction batches; 0 means no transactions
+    durable           integer  1 if messages are durable; 0 if non-durable
 
 If an implementation does not support a particular option, for
 instance connection mode `server`, it should raise an error at start
@@ -61,7 +62,6 @@ The following arguments are optional:
     password          string   password used to connect to the peer
     cert              string   certificate file that identifies the arrow to the peer
     key               string   private key file associated with the certificate
-    target-throughput  integer  Target throughput in msg/sec; 0 to disable (Java only)
 
 Implementations should avoid validating inputs.  That's the job of the
 wrapper.  The wrapper and the implementation are closely coupled by

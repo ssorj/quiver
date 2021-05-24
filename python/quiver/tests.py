@@ -347,8 +347,8 @@ def _test_arrow(impl):
             call("quiver-arrow send {} --impl {} --count 1 --verbose", server.url, impl)
             call("quiver-arrow receive {} --impl {} --count 1 --verbose", server.url, impl)
 
-            call("quiver-arrow send {} --impl {} --duration 1 --verbose", server.url, impl)
-            call("quiver-arrow receive {} --impl {} --duration 1 --verbose", server.url, impl)
+            call("quiver-arrow send {} --impl {} --duration 1 --rate 100 --verbose", server.url, impl)
+            call("quiver-arrow receive {} --impl {} --duration 1 --rate 100 --verbose", server.url, impl)
 
 def _test_server(impl):
     if not impl_available(impl):

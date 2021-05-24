@@ -89,6 +89,7 @@ class Client {
     protected final String operation;
     protected final int desiredDuration;
     protected final int desiredCount;
+    protected final int desiredRate;
     protected final int bodySize;
     protected final int transactionSize;
 
@@ -114,7 +115,9 @@ class Client {
         this.durable = durable;
 
         if (this.desiredRate > 0) {
-            this.nanoPeriod = this.desiredRate > 0 ? TimeUnit.SECONDS.toNanos(1) / this.desiredRate;
+            this.nanoPeriod = TimeUnit.SECONDS.toNanos(1) / this.desiredRate;
+        } else {
+            this.nanoPeriod = 0;
         }
 
         this.sent = 0;
@@ -197,7 +200,7 @@ class Client {
         final byte[] body = new byte[bodySize];
         final long nanoPeriod = this.nanoPeriod;
         final long startTime = System.nanoTime();
-        long nextTime = start + nanoPeriod;
+        long nextTime = startTime + nanoPeriod;
 
         Arrays.fill(body, (byte) 120);
 
@@ -211,22 +214,13 @@ class Client {
 
         while (!stopping.get()) {
             final BytesMessage message = session.createBytesMessage();
-            final long stime = System.currentTimeMillis();
 
-=======
-        byte[] body = new byte[bodySize];
-        Arrays.fill(body, (byte) 120);
-        final long nanoPeriod = this.nanoPeriod;
-        final long start = System.nanoTime();
-        long nextTime = start + nanoPeriod;
-
-        while (sent < messages) {
-            BytesMessage message = session.createBytesMessage();
->>>>>>> 284e808 (Added support for target throughput benchmarks in Java)
             message.writeBytes(body);
+
             if (nanoPeriod > 0) {
                 nextTime = waitUntilNextTime(nextTime, nanoPeriod);
             }
+
             final long stime = System.currentTimeMillis();
             message.setLongProperty("SendTime", stime);
             producer.send(message);
