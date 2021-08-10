@@ -289,7 +289,7 @@ the given address.
 
 ## Examples
 
-### Running Quiver with ActiveMQ
+### Running Quiver with ActiveMQ classic
 
     [Configure ActiveMQ for anonymous connections and AMQP]
     $ <instance-dir>/bin/activemq start
