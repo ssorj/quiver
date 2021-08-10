@@ -278,7 +278,7 @@ the given address.
 
 ## Examples
 
-### Running Quiver with ActiveMQ
+### Running Quiver with ActiveMQ classic
 
 Make sure you configure ActiveMQ to allow anonymous connections.
 
