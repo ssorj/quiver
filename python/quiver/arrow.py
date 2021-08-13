@@ -439,7 +439,8 @@ class _StatusSnapshot:
                 latency = receive_time - send_time
                 latencies.append(latency)
 
-            self.latency = int(_numpy.mean(latencies))
+            if latencies:
+                self.latency = int(_numpy.mean(latencies))
 
     def marshal(self):
         fields = (self.timestamp,
