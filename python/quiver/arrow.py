@@ -415,7 +415,7 @@ class _StatusSnapshot:
 
     def capture_transfers(self, transfers_file):
         transfers = list()
-        sample = 997
+        sample = 1000
         count = sample
 
         for line in _itertools.islice(transfers_file, sample, None, sample):
