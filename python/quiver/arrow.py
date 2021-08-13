@@ -24,6 +24,7 @@ from __future__ import unicode_literals
 from __future__ import with_statement
 
 import argparse as _argparse
+import itertools as _itertools
 import json as _json
 import numpy as _numpy
 import os as _os
@@ -385,11 +386,10 @@ class _StatusSnapshot:
         self.rss = 0
 
     def capture(self, transfers_file, proc):
-        self.timestamp = now()
-        self.period = self.timestamp - self.command.start_time
+        assert self.previous is not None
 
-        if self.previous is not None:
-            self.period = self.timestamp - self.previous.timestamp
+        self.timestamp = now()
+        self.period = self.timestamp - self.previous.timestamp
 
         self.capture_transfers(transfers_file)
         self.capture_proc_info(proc)
@@ -415,11 +415,11 @@ class _StatusSnapshot:
 
     def capture_transfers(self, transfers_file):
         transfers = list()
-        count = 0
+        sample = 997
+        count = sample
 
-        for count, line in enumerate(_read_lines(transfers_file)):
-            if count % 33 != 0:
-                continue
+        for line in _itertools.islice(transfers_file, sample, None, sample):
+            count += sample
 
             try:
                 record = self.command.transfers_parse_func(line)
@@ -469,32 +469,13 @@ class _StatusSnapshot:
          self.period_cpu_time,
          self.rss) = fields
 
-def _read_lines(file_):
-    while True:
-        fpos = file_.tell()
-        line = file_.readline()
-
-        if line == b"":
-            break
-
-        if not line.endswith(b"\n"):
-            file_.seek(fpos)
-            break
-
-        yield line[:-1]
-
 def _parse_send(line):
     message_id, send_time = line.split(b",", 1)
-    send_time = int(send_time)
-
-    return message_id, send_time
+    return message_id, int(send_time)
 
 def _parse_receive(line):
     message_id, send_time, receive_time = line.split(b",", 2)
-    send_time = int(send_time)
-    receive_time = int(receive_time)
-
-    return message_id, send_time, receive_time
+    return message_id, int(send_time), int(receive_time)
 
 _join = _plano.join
 _ticks_per_ms = _os.sysconf(_os.sysconf_names["SC_CLK_TCK"]) / 1000
