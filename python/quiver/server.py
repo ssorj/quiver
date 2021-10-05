@@ -29,14 +29,14 @@ import subprocess as _subprocess
 import uuid as _uuid
 
 from .common import *
-from .common import __version__, _epilog_address_urls, _epilog_server_impls
+from .common import __version__, _epilog_urls, _epilog_server_impls
 
 _description = """
 Start a message server with the given queue.
 """
 
 _epilog = """
-{_epilog_address_urls}
+{_epilog_urls}
 
 {_epilog_server_impls}
 """.format(**globals())
@@ -48,32 +48,29 @@ class QuiverServerCommand(Command):
         self.parser.description = _description.lstrip()
         self.parser.epilog = _epilog.lstrip()
 
-        self.parser.add_argument("url", metavar="ADDRESS-URL",
+        self.parser.add_argument("url", metavar="URL",
                                  help="The location of a message source or target")
-        self.parser.add_argument("--impl", metavar="NAME",
-                                 help="Use NAME implementation",
+        self.parser.add_argument("--impl", metavar="IMPL",
+                                 help="Use the IMPL server implementation",
                                  default=DEFAULT_SERVER_IMPL)
         self.parser.add_argument("--info", action="store_true",
                                  help="Print implementation details and exit")
-        self.parser.add_argument("--impl-info", action="store_true", dest="info",
-                                 help=_argparse.SUPPRESS)
         self.parser.add_argument("--ready-file", metavar="FILE",
                                  help="The file used to indicate the server is ready")
         self.parser.add_argument("--prelude", metavar="PRELUDE", default="",
                                  help="Commands to precede the implementation invocation")
-        self.parser.add_argument("--cert", metavar="CERT.PEM",
-                                 help="Certificate filename")
-        self.parser.add_argument("--key", metavar="PRIVATE-KEY.PEM",
-                                 help="Private key filename")
-        self.parser.add_argument("--key-password", metavar="key_password",
-                                 help="Certificate password (required for encrypted private keys)")
-        self.parser.add_argument("--trusted-db", metavar="TRUSTED-DB.PEM",
-                                 help="Database of trusted CA certificate(s).  If specified the peer's client is tested"
-                                      "against this source of trust.")
-        self.parser.add_argument("--sasl-user", metavar="SASL USERNAME",
-                                 help="SASL username that the peer must present")
-        self.parser.add_argument("--sasl-password", metavar="SASL PASSWORD",
-                                 help="SASL password that the peer must present. Ignored is --sasl-user is not present.")
+        self.parser.add_argument("--user", metavar="USER",
+                                 help="The SASL username that the client must present")
+        self.parser.add_argument("--password", metavar="SECRET",
+                                 help="SASL password that the client must present.  "
+                                 "Ignored if --sasl-user is not present.")
+        self.parser.add_argument("--cert", metavar="FILE",
+                                 help="The TLS certificate file")
+        self.parser.add_argument("--key", metavar="FILE",
+                                 help="The TLS private key file")
+        self.parser.add_argument("--trust-store", metavar="FILE",
+                                 help="The file containing trusted client certificates.  "
+                                 "If set, the server verifies client identities.")
 
         self.add_common_tool_arguments()
 
@@ -85,12 +82,11 @@ class QuiverServerCommand(Command):
         self.impl = require_impl(self.args.impl)
         self.ready_file = self.args.ready_file
         self.prelude = _shlex.split(self.args.prelude)
+        self.user = self.args.user
+        self.password = self.args.password
         self.cert = self.args.cert
         self.key = self.args.key
-        self.key_password = self.args.key_password
-        self.trusted_db = self.args.trusted_db
-        self.sasl_user = self.args.sasl_user
-        self.sasl_password = self.args.sasl_password
+        self.trust_store = self.args.trust_store
 
         if self.ready_file is None:
             self.ready_file = "-"
@@ -107,8 +103,11 @@ class QuiverServerCommand(Command):
             "ready-file={}".format(self.ready_file),
         ]
 
-        if self.scheme:
-            args.append("scheme={}".format(self.scheme))
+        if self.user:
+            args.append("user={}".format(self.user))
+
+        if self.password:
+            args.append("password={}".format(self.password))
 
         if self.cert:
             args.append("cert={}".format(self.cert))
@@ -116,36 +115,34 @@ class QuiverServerCommand(Command):
         if self.key:
             args.append("key={}".format(self.key))
 
-        if self.key_password:
-            args.append("key-password={}".format(self.key_password))
+        if self.trust_store:
+            args.append("trust-store={}".format(self.trust_store))
 
-        if self.trusted_db:
-            args.append("trusted-db={}".format(self.trusted_db))
+        if self.quiet:
+            args.append("quiet=1")
 
-        if self.sasl_user:
-            args.append("user={}".format(self.sasl_user))
-
-        if self.sasl_password:
-            args.append("password={}".format(self.sasl_password))
+        if self.verbose:
+            args.append("verbose=1")
 
         _plano.call(args)
 
 class BuiltinBroker(_brokerlib.Broker):
-    def __init__(self, scheme, host, port, path, ready_file,
-                 cert=None,
-                 key=None,
-                 key_password=None,
-                 trusted_db=None,
-                 user=None,
-                 password=None):
-        if ready_file == "-":
-            ready_file = None
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        super().__init__(scheme, host, port, id="quiver-server-builtin", ready_file=ready_file,
-                         cert=cert, key=key, key_password=key_password, trusted_db=trusted_db,
-                         user=user, password=password)
+        self.id = "quiver-server-builtin"
 
-        self.path = path
+        if self.ready_file == "-":
+            self.ready_file = None
+
+    def init(self):
+        if self.quiet:
+            _plano.enable_logging("error")
+
+        if self.verbose:
+            _plano.enable_logging("notice")
+
+        super().init()
 
     def info(self, message, *args):
         _plano.notice(message, *args)

@@ -33,7 +33,7 @@ import time as _time
 from .arrow import _StatusSnapshot
 from .common import *
 from .common import __version__
-from .common import _epilog_address_urls
+from .common import _epilog_urls
 from .common import _epilog_arrow_impls
 from .common import _epilog_count_and_duration_formats
 
@@ -45,7 +45,7 @@ message servers and APIs.
 """
 
 _epilog = """
-{_epilog_address_urls}
+{_epilog_urls}
 
 {_epilog_count_and_duration_formats}
 
@@ -63,42 +63,32 @@ class QuiverPairCommand(Command):
         self.parser.description = _description.lstrip()
         self.parser.epilog = _epilog.lstrip()
 
-        self.parser.add_argument("url", metavar="ADDRESS-URL",
-                                 help="The location of a message source or target")
+        self.parser.add_argument("url", metavar="URL", nargs="?",
+                                 help="The location of a message source or target "
+                                 "(if not set, quiver runs in peer-to-peer mode)")
         self.parser.add_argument("--output", metavar="DIR",
                                  help="Save output files to DIR")
-        self.parser.add_argument("--arrow", metavar="IMPL", default=DEFAULT_ARROW_IMPL,
+        self.parser.add_argument("--impl", metavar="IMPL", default=DEFAULT_ARROW_IMPL,
                                  help="Use IMPL to send and receive " \
                                  "(default {})".format(DEFAULT_ARROW_IMPL))
         self.parser.add_argument("--sender", metavar="IMPL",
                                  help="Use IMPL to send (default {})".format(DEFAULT_ARROW_IMPL))
         self.parser.add_argument("--receiver", metavar="IMPL",
                                  help="Use IMPL to receive (default {})".format(DEFAULT_ARROW_IMPL))
-        self.parser.add_argument("--impl", metavar="IMPL",
-                                 help="An alias for --arrow")
-        self.parser.add_argument("--peer-to-peer", action="store_true",
-                                 help="Connect the sender directly to the receiver in server mode")
-        self.parser.add_argument("--cert", metavar="CERT.PEM",
-                                 help="Certificate filename - used for client authentication")
-        self.parser.add_argument("--key", metavar="PRIVATE-KEY.PEM",
-                                 help="Private key filename - - used for client authentication")
 
         self.add_common_test_arguments()
         self.add_common_tool_arguments()
+        self.add_common_tls_arguments()
 
         self.start_time = None
 
     def init(self):
         super(QuiverPairCommand, self).init()
 
-        arrow = self.args.arrow
+        impl = self.args.impl
 
-        if self.args.impl is not None:
-            arrow = self.args.impl
-
-        self.sender_impl = require_impl(self.args.sender, arrow)
-        self.receiver_impl = require_impl(self.args.receiver, arrow)
-        self.peer_to_peer = self.args.peer_to_peer
+        self.sender_impl = require_impl(self.args.sender, impl)
+        self.receiver_impl = require_impl(self.args.receiver, impl)
 
         self.init_url_attributes()
         self.init_output_dir()
@@ -106,17 +96,10 @@ class QuiverPairCommand(Command):
         self.init_common_tool_attributes()
 
     def run(self):
-        args = list()
-
-        if self.duration == 0:
-            args += ["--count", self.args.count]
-        else:
-            args += ["--duration", self.args.duration]
-
-        if self.rate != 0:
-            args += ["--rate", self.args.rate]
-
-        args += [
+        args = [
+            "--duration", self.args.duration,
+            "--count", self.args.count,
+            "--rate", self.args.rate,
             "--body-size", self.args.body_size,
             "--credit", self.args.credit,
             "--transaction-size", self.args.transaction_size,
@@ -141,7 +124,7 @@ class QuiverPairCommand(Command):
         sender_args = ["quiver-arrow", "send", self.url, "--impl", self.sender_impl.name] + args
         receiver_args = ["quiver-arrow", "receive", self.url, "--impl", self.receiver_impl.name] + args
 
-        if self.peer_to_peer:
+        if self.args.url is None:
             receiver_args += ["--server", "--passive"]
 
         self.start_time = now()
@@ -150,7 +133,7 @@ class QuiverPairCommand(Command):
         receiver = _plano.start_process(receiver_args)
         #del _os.environ["DEBUG"]
 
-        if self.peer_to_peer:
+        if self.args.url is None:
             _plano.wait_for_port(self.port, host=self.host)
 
         #_os.environ["PN_TRACE_FRM"] = "1"
@@ -296,9 +279,6 @@ class QuiverPairCommand(Command):
 
         if self.durable:
             flags.append("durable")
-
-        if self.peer_to_peer:
-            flags.append("peer-to-peer")
 
         if flags:
             _print_field("Flags", ", ".join(flags))

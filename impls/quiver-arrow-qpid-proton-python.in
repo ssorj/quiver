@@ -79,9 +79,11 @@ class Handler(MessagingHandler):
             raise Exception()
 
         self.start_time = time.time()
+        self.timer_task = None
 
         if self.desired_duration > 0:
-            event.container.schedule(self.desired_duration, self)
+            self.timer_task = event.container.schedule(self.desired_duration, self)
+
 
     def on_timer_task(self, event):
         self.stop(event)
@@ -163,6 +165,9 @@ class Handler(MessagingHandler):
             self.stop(event)
 
     def stop(self, event):
+        if self.timer_task is not None:
+            self.timer_task.cancel()
+
         if self.connection is not None:
             self.connection.close()
 

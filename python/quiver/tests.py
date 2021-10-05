@@ -53,8 +53,9 @@ def test_command_quiver_server(session):
     call("quiver-server --init-only q0")
 
 def test_command_quiver_bench(session):
-    _test_command("quiver-bench")
-    call("quiver-bench --init-only")
+    with temp_working_dir() as output:
+        _test_command("quiver-bench")
+        call("quiver-bench --init-only --output {}".format(output))
 
 # Arrows
 
@@ -68,11 +69,9 @@ def test_arrow_qpid_jms(session):
     _test_arrow("qpid-jms")
 
 def test_arrow_qpid_proton_c(session):
-    raise TestSkipped("Disabled: https://github.com/ssorj/quiver/issues/51")
     _test_arrow("qpid-proton-c")
 
 def test_arrow_qpid_proton_cpp(session):
-    raise TestSkipped("Disabled: https://github.com/ssorj/quiver/issues/51")
     _test_arrow("qpid-proton-cpp")
 
 def test_arrow_qpid_proton_python(session):
@@ -223,6 +222,8 @@ def test_bench(session):
             "quiver-bench",
             "--count", "1",
             "--include-servers", "builtin",
+            "--include-senders", "qpid-proton-c",
+            "--include-receivers", "qpid-proton-c",
             "--verbose",
             "--output", output,
         ]
@@ -303,7 +304,7 @@ class _TestServer:
         if impl == "activemq":
             port = "5672"
 
-        self.url = "{}//127.0.0.1:{}/q0".format(scheme + ":" if scheme else "", port)
+        self.url = "{}//localhost:{}/q0".format(scheme + ":" if scheme else "", port)
         self.ready_file = make_temp_file()
 
         command = [
@@ -332,7 +333,7 @@ class _TestServer:
         remove(self.ready_file)
 
 def _test_url():
-    return "//127.0.0.1:{}/q0".format(random_port())
+    return "//localhost:{}/q0".format(random_port())
 
 def _test_command(command):
     call("{} --help", command)
@@ -345,6 +346,9 @@ def _test_arrow(impl):
     call("quiver-arrow --impl {} --info", impl)
 
     if impl in AMQP_ARROW_IMPLS:
+        if impl == "qpid-proton-cpp":
+            raise TestSkipped("Proton C++ timer trouble: https://github.com/ssorj/quiver/issues/51")
+
         with _TestServer() as server:
             call("quiver-arrow send {} --impl {} --count 1 --verbose", server.url, impl)
             call("quiver-arrow receive {} --impl {} --count 1 --verbose", server.url, impl)
@@ -362,6 +366,9 @@ def _test_server(impl):
         call("quiver {} --count 1", server.url)
 
 def _test_pair(sender_impl, receiver_impl):
+    if "qpid-proton-cpp" in (sender_impl, receiver_impl):
+        raise TestSkipped("Proton C++ timer trouble: https://github.com/ssorj/quiver/issues/51")
+
     if not impl_available(sender_impl):
         raise TestSkipped("Sender '{}' is unavailable".format(sender_impl))
 
@@ -369,9 +376,9 @@ def _test_pair(sender_impl, receiver_impl):
         raise TestSkipped("Receiver '{}' is unavailable".format(receiver_impl))
 
     if receiver_impl in PEER_TO_PEER_ARROW_IMPLS:
-        call("quiver {} --sender {} --receiver {} --count 1 --peer-to-peer --verbose",
-             _test_url(), sender_impl, receiver_impl)
+        call("quiver --sender {} --receiver {} --count 1 --verbose",
+             sender_impl, receiver_impl)
 
     with _TestServer() as server:
-        call("quiver {} --sender {} --receiver {} --count 1 --verbose",
-             server.url, sender_impl, receiver_impl)
+        call("quiver --sender {} --receiver {} --count 1 --verbose {}",
+             sender_impl, receiver_impl, server.url)

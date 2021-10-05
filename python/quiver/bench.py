@@ -315,7 +315,7 @@ class _TestPair:
         _plano.make_dir(self.output_dir)
 
         command = [
-            "quiver", "//127.0.0.1:{}/q0".format(port),
+            "quiver",
             "--sender", self.sender_impl,
             "--receiver", self.receiver_impl,
             "--count", args.count,
@@ -325,15 +325,15 @@ class _TestPair:
             "--timeout", args.timeout,
         ]
 
-        if self.peer_to_peer:
-            command += ["--peer-to-peer"]
-
         if self.command.verbose:
             command += ["--verbose"]
 
         command += [
             "--output", self.output_dir,
         ]
+
+        if not self.peer_to_peer:
+            command += ["//localhost:{}/q0".format(port)]
 
         _plano.write(self.command_file, "{}\n".format(" ".join(command)))
 
@@ -375,7 +375,7 @@ class _TestServer:
         self.output = open(self.output_file, "w")
 
         command = [
-            "quiver-server", "//127.0.0.1:{}/q0".format(port),
+            "quiver-server", "//localhost:{}/q0".format(port),
             "--impl", self.impl,
             "--ready-file", self.ready_file,
             "--verbose",

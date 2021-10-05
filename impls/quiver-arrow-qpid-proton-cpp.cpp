@@ -236,6 +236,8 @@ struct handler : public proton::messaging_handler {
         if (connection_mode == "server") {
             listener.stop();
         }
+
+        // XXX How do I cancel the timer?
     }
 
     void on_transport_error(proton::transport& trans) override {

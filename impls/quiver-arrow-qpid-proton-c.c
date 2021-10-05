@@ -111,15 +111,16 @@ void eprint(const char* fmt, ...) {
 }
 
 static void stop(struct arrow* a) {
-    if (a->connection) {
-        pn_connection_close(a->connection);
-    }
-
     if (a->listener) {
         pn_listener_close(a->listener);
     }
 
+    if (a->connection) {
+        pn_connection_close(a->connection);
+    }
+
     pn_proactor_cancel_timeout(a->proactor);
+    pn_proactor_interrupt(a->proactor);
 }
 
 static inline bool bytes_equal(const pn_bytes_t a, const pn_bytes_t b) {
@@ -406,7 +407,14 @@ static bool handle(struct arrow* a, pn_event_t* e) {
         stop(a);
         break;
 
-    case PN_PROACTOR_INACTIVE:
+    // XXX I was not able to reliably get this event in order to shut
+    // down, after closing the listener and connection and cancelling
+    // the timer.
+    //
+    // case PN_PROACTOR_INACTIVE:
+    //     return false;
+
+    case PN_PROACTOR_INTERRUPT:
         return false;
 
     default:

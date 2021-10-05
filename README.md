@@ -4,40 +4,40 @@
 
 Tools for testing the performance of messaging clients and servers.
 
-    $ quiver --duration 10 --peer-to-peer q0
+    $ quiver
     ---------------------- Sender -----------------------  --------------------- Receiver ----------------------  --------
     Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Lat [ms]
     -----------------------------------------------------  -----------------------------------------------------  --------
-         2.3      1,202,970     600,884      188     22.2       2.1      1,210,056     604,726      188      5.5         1
-         5.2      1,791,304     209,297       67     27.2       5.4      1,982,039     237,241       68      5.5         1
-         7.2      2,420,785     314,583      102     32.7       7.8      2,690,078     291,134       88      5.5         1
-        11.2      3,032,565      16,826        4      0.0      10.1      3,032,565     146,237       38      0.0         1
+           -              -           -        -        -       2.1        644,000     321,678       87      8.5         2
+         2.3        715,000     357,143       99     15.9       4.1      1,356,000     355,644       97      8.5         2
+    [...]
+        26.3      9,167,000     358,142       99     89.8      28.1      9,794,000     348,826       97      8.5         2
+        28.4      9,866,000     349,151       99     95.8      30.1     10,475,000     339,990       95      0.0         2
 
     CONFIGURATION
 
     Sender ........................................ qpid-proton-c
     Receiver ...................................... qpid-proton-c
-    Address URL .............................................. q0
-    Output files ........................... /tmp/quiver-ljt_ztl1
-    Duration ................................................. 10 seconds
+    Address URL ................... amqp://localhost:56727/quiver
+    Output files ........................... /tmp/quiver-ci8uyw9v
+    Duration ................................................. 30 seconds
     Body size ............................................... 100 bytes
     Credit window ......................................... 1,000 messages
-    Flags .......................................... peer-to-peer
 
     RESULTS
 
-    Count ............................................. 3,032,565 messages
-    Duration ................................................ 9.8 seconds
-    Sender rate ......................................... 310,586 messages/s
-    Receiver rate ....................................... 310,618 messages/s
-    End-to-end rate ..................................... 310,427 messages/s
+    Count ............................................ 10,468,040 messages
+    Duration ............................................... 29.8 seconds
+    Sender rate ......................................... 351,418 messages/s
+    Receiver rate ....................................... 351,430 messages/s
+    End-to-end rate ..................................... 351,394 messages/s
 
     Latencies by percentile:
 
-              0% ........ 1 ms       90.00% ........ 2 ms
+              0% ........ 1 ms       90.00% ........ 3 ms
              25% ........ 2 ms       99.00% ........ 3 ms
-             50% ........ 2 ms       99.90% ........ 6 ms
-            100% ........ 7 ms       99.99% ........ 6 ms
+             50% ........ 2 ms       99.90% ........ 4 ms
+            100% ........ 8 ms       99.99% ........ 7 ms
 
 ## Overview
 
@@ -55,8 +55,8 @@ The `quiver` command launches a pair of `quiver-arrow` instances, one
 sender and one receiver, and produces a summary of the end-to-end
 transmission of messages.
 
-Some client quiver arrows can authenticate to their peer using username
-password or a client certificate.
+Some client quiver arrows can authenticate to their peer using
+username and password or a client certificate.
 
 ## Installation
 
@@ -177,10 +177,11 @@ for libraries under `$HOME/.local` or `/usr/local` respectively.
 This command starts a sender-receiver pair.  Each sender or receiver
 is an invocation of the `quiver-arrow` command.
 
-    usage: quiver [-h] [--output DIR] [--arrow IMPL] [--sender IMPL] [--receiver IMPL] [--impl IMPL] [--peer-to-peer] [-c COUNT] [-d DURATION]
-                  [--body-size COUNT] [--credit COUNT] [--transaction-size COUNT] [--durable] [--timeout DURATION] [--quiet] [--verbose]
-                  [--init-only] [--version]
-                  ADDRESS-URL
+    usage: quiver [-h] [--output DIR] [--impl IMPL] [--sender IMPL] [--receiver IMPL] [--cert FILE] [--key FILE]
+                  [-d DURATION] [-c COUNT] [--rate COUNT] [--body-size COUNT] [--credit COUNT]
+                  [--transaction-size COUNT] [--durable] [--timeout DURATION] [--quiet] [--verbose] [--init-only]
+                  [--version]
+                  [URL]
 
     Start a sender-receiver pair for a particular messaging address.
 
@@ -188,34 +189,26 @@ is an invocation of the `quiver-arrow` command.
     message servers and APIs.
 
     positional arguments:
-      ADDRESS-URL           The location of a message source or target
+      URL                   The location of a message source or target (if not set, quiver runs in peer-to-peer
+                            mode)
 
     optional arguments:
       -h, --help            show this help message and exit
       --output DIR          Save output files to DIR
-      --arrow IMPL          Use IMPL to send and receive (default qpid-proton-c)
+      --impl IMPL           Use IMPL to send and receive (default qpid-proton-c)
       --sender IMPL         Use IMPL to send (default qpid-proton-c)
       --receiver IMPL       Use IMPL to receive (default qpid-proton-c)
-      --impl IMPL           An alias for --arrow
-      --peer-to-peer        Connect the sender directly to the receiver in server
-                            mode
-      --cert CERT.PEM       Certificate filename - used for client authentication
-      --key PRIVATE-KEY.PEM
-                            Private key filename - - used for client
-                            authentication
-      -c COUNT, --count COUNT
-                            Send or receive COUNT messages (default 1m; 0 means no
-                            limit)
+      --cert FILE           The filename of the client certificate
+      --key FILE            The filename the client private key
       -d DURATION, --duration DURATION
-                            Stop after DURATION, ignoring --count (default 0,
-                            disabled)
-      --body-size COUNT     Send message bodies containing COUNT bytes (default
-                            100)
-      --credit COUNT        Sustain credit for COUNT incoming messages (default
-                            1000)
+                            Stop after DURATION (default 30s)
+      -c COUNT, --count COUNT
+                            Send or receive COUNT messages
+      --rate COUNT          Target a rate of COUNT messages per second (default 0, disabled)
+      --body-size COUNT     Send message bodies containing COUNT bytes (default 100)
+      --credit COUNT        Sustain credit for COUNT incoming messages (default 1000)
       --transaction-size COUNT
-                            Transfer batches of COUNT messages inside transactions
-                            (default 0, disabled)
+                            Transfer batches of COUNT messages inside transactions (default 0, disabled)
       --durable             Require persistent store-and-forward transfers
       --timeout DURATION    Fail after DURATION without transfers (default 10s)
       --quiet               Print nothing to the console
@@ -223,13 +216,13 @@ is an invocation of the `quiver-arrow` command.
       --init-only           Initialize and exit
       --version             Print the version and exit
 
-    address URLs:
+    URLs:
       [SCHEME:][//SERVER/]ADDRESS     The default server is 'localhost'
       queue0
       //localhost/queue0
       amqp://example.net:10000/jobs
       amqps://10.0.0.10/jobs/alpha
-      amqps://user:password@10.0.0.10/jobs/alpha
+      amqps://username:password@10.0.0.10/jobs/alpha
 
     count format:                     duration format:
       1 (no unit)    1                  1 (no unit)    1 second
@@ -241,7 +234,6 @@ is an invocation of the `quiver-arrow` command.
       activemq-artemis-jms            Client mode only; requires Artemis server
       activemq-jms                    Client mode only; ActiveMQ or Artemis server
       qpid-jms (jms)                  Client mode only
-      qpid-messaging-cpp              Client mode only
       qpid-proton-c (c)               The default implementation
       qpid-proton-cpp (cpp)
       qpid-proton-python (python, py)
@@ -259,14 +251,11 @@ This command sends or receives AMQP messages as fast as it can.  Each
 invocation creates a single connection.  It terminates when the target
 number of messages are all sent or received.
 
-    usage: quiver-arrow [-h] [--output DIR] [--impl NAME] [--info] [--id ID]
-                        [--server] [--passive] [--prelude PRELUDE]
-                        [--cert CERT.PEM] [--key PRIVATE-KEY.PEM] [-c COUNT]
-                        [-d DURATION] [--body-size COUNT] [--credit COUNT]
-                        [--transaction-size COUNT] [--durable]
-                        [--timeout DURATION] [--quiet] [--verbose] [--init-only]
-                        [--version]
-                        OPERATION ADDRESS-URL
+    usage: quiver-arrow [-h] [--output DIR] [--impl IMPL] [--info] [--id ID] [--server] [--passive]
+                        [--prelude PRELUDE] [-d DURATION] [-c COUNT] [--rate COUNT] [--body-size COUNT]
+                        [--credit COUNT] [--transaction-size COUNT] [--durable] [--timeout DURATION] [--quiet]
+                        [--verbose] [--init-only] [--version] [--cert FILE] [--key FILE]
+                        OPERATION URL
 
 ### `quiver-server`
 
@@ -304,7 +293,7 @@ Make sure you configure ActiveMQ to allow anonymous connections.
 
 ### Running Quiver peer-to-peer
 
-    $ quiver --peer-to-peer --sender qpid-jms --receiver qpid-proton-python q0
+    $ quiver --sender qpid-jms --receiver qpid-proton-python
 
 ## More information
 

@@ -36,7 +36,7 @@ import time as _time
 
 from .common import *
 from .common import __version__
-from .common import _epilog_address_urls
+from .common import _epilog_urls
 from .common import _epilog_arrow_impls
 from .common import _epilog_count_and_duration_formats
 from .common import _urlparse
@@ -54,7 +54,7 @@ operations:
   send                  Send messages
   receive               Receive messages
 
-{_epilog_address_urls}
+{_epilog_urls}
 
 {_epilog_count_and_duration_formats}
 
@@ -85,17 +85,15 @@ class QuiverArrowCommand(Command):
         self.parser.add_argument("operation", metavar="OPERATION",
                                  choices=["send", "receive"],
                                  help="Either 'send' or 'receive'")
-        self.parser.add_argument("url", metavar="ADDRESS-URL",
+        self.parser.add_argument("url", metavar="URL",
                                  help="The location of a message source or target")
         self.parser.add_argument("--output", metavar="DIR",
                                  help="Save output files to DIR")
-        self.parser.add_argument("--impl", metavar="NAME",
-                                 help="Use NAME implementation",
-                                 default=DEFAULT_ARROW_IMPL)
+        self.parser.add_argument("--impl", metavar="IMPL", default=DEFAULT_ARROW_IMPL,
+                                 help="Use IMPL to send and receive " \
+                                 "(default {})".format(DEFAULT_ARROW_IMPL))
         self.parser.add_argument("--info", action="store_true",
                                  help="Print implementation details and exit")
-        self.parser.add_argument("--impl-info", action="store_true", dest="info",
-                                 help=_argparse.SUPPRESS)
         self.parser.add_argument("--id", metavar="ID",
                                  help="Use ID as the client or server identity")
         self.parser.add_argument("--server", action="store_true",
@@ -104,13 +102,10 @@ class QuiverArrowCommand(Command):
                                  help="Operate in passive mode")
         self.parser.add_argument("--prelude", metavar="PRELUDE", default="",
                                  help="Commands to precede the implementation invocation")
-        self.parser.add_argument("--cert", metavar="CERT.PEM",
-                                 help="Certificate filename - used for client authentication")
-        self.parser.add_argument("--key", metavar="PRIVATE-KEY.PEM",
-                                 help="Private key filename - used for client authentication")
 
         self.add_common_test_arguments()
         self.add_common_tool_arguments()
+        self.add_common_tls_arguments()
 
     def init(self):
         self.intercept_info_request(DEFAULT_ARROW_IMPL)

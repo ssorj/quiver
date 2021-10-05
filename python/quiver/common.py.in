@@ -129,6 +129,7 @@ CORE_PROTOCOL_SERVER_IMPLS = [x.name for x in _impls if x.kind == "server" and "
 
 DEFAULT_ARROW_IMPL = "qpid-proton-c"
 DEFAULT_SERVER_IMPL = "builtin"
+PEER_TO_PEER_URL = "amqp://localhost:56727/quiver"
 
 _epilog_arrow_impls = """
 arrow implementations:
@@ -150,8 +151,8 @@ server implementations:
   qpid-dispatch (dispatch, qdrouterd)
 """
 
-_epilog_address_urls = """
-address URLs:
+_epilog_urls = """
+URLs:
   [SCHEME:][//SERVER/]ADDRESS     The default server is 'localhost'
   queue0
   //localhost/queue0
@@ -199,14 +200,11 @@ class Command(object):
         self.args = self.parser.parse_args()
 
     def add_common_test_arguments(self):
-        self.parser.add_argument("-c", "--count", metavar="COUNT",
-                                 help="Send or receive COUNT messages " \
-                                 "(default 1m; 0 means no limit)",
-                                 default="1m")
-        self.parser.add_argument("-m", "--messages", dest="count",
-                                 help=_argparse.SUPPRESS)
         self.parser.add_argument("-d", "--duration", metavar="DURATION",
-                                 help="Stop after DURATION, ignoring --count (default 0, disabled)",
+                                 help="Stop after DURATION (default 30s)",
+                                 default="30s")
+        self.parser.add_argument("-c", "--count", metavar="COUNT",
+                                 help="Send or receive COUNT messages (default 0, no limit)",
                                  default="0")
         self.parser.add_argument("--rate", metavar="COUNT",
                                  help="Target a rate of COUNT messages per second (default 0, disabled)",
@@ -238,6 +236,12 @@ class Command(object):
                                  help="Print the version and exit",
                                  version="%(prog)s {}".format(__version__))
 
+    def add_common_tls_arguments(self):
+        self.parser.add_argument("--cert", metavar="FILE",
+                                 help="The client TLS certificate file")
+        self.parser.add_argument("--key", metavar="FILE",
+                                 help="The client TLS private key file")
+
     def init_common_test_attributes(self):
         self.count = self.parse_count(self.args.count)
         self.duration = self.parse_duration(self.args.duration)
@@ -247,9 +251,6 @@ class Command(object):
         self.transaction_size = self.parse_count(self.args.transaction_size)
         self.durable = self.args.durable
         self.timeout = self.parse_duration(self.args.timeout)
-
-        if self.duration != 0:
-            self.count = 0
 
     def init_common_tool_attributes(self):
         self.init_only = self.args.init_only
@@ -265,6 +266,9 @@ class Command(object):
     def init_url_attributes(self):
         self.url = self.args.url
 
+        if self.url is None:
+            self.url = PEER_TO_PEER_URL
+
         url = _urlparse(self.url)
 
         if url.path is None:
@@ -278,8 +282,7 @@ class Command(object):
         self.password = url.password
 
         if self.host is None:
-            # XXX Should be "localhost" - a workaround for a proton issue
-            self.host = "127.0.0.1"
+            self.host = "localhost"
 
         if self.port is None:
             self.port = "5672"
