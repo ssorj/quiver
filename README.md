@@ -137,7 +137,6 @@ script from the project directory.
     impls/                # Arrow and server implementations
     scripts/              # Scripts called by Makefile rules
     java/                 # Java library code
-    javascript/           # JavaScript library code
     python/               # Python library code
     build/                # The default build location
 

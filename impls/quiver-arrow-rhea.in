@@ -1,4 +1,4 @@
-#!/usr/bin/node 
+#!/usr/bin/node
 
 //
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -29,12 +29,11 @@ if (process.env.hasOwnProperty("QUIVER_HOME")) {
     home = process.env.QUIVER_HOME;
 }
 
-const rhea = require(home + "/javascript/node_modules/rhea");
-const types = require(home + "/javascript/node_modules/rhea/lib/types.js");
+const rhea = require("rhea");
 
 if (process.argv.length === 2) {
-    let data = require(home + "/javascript/node_modules/rhea/package.json");
-    process.stdout.write("Rhea " + data.version + "\n");
+    // XXX Get the version somehow
+    process.stdout.write("Rhea XXX\n");
     process.exit(0);
 }
 
@@ -71,7 +70,7 @@ for (let i = 0; i < a.length; i++) {
     a[i] = 120;
 }
 
-const body = types.wrap_binary(new Uint8Array(a));
+const body = rhea.types.wrap_binary(new Uint8Array(a));
 
 let start_time;
 let sent = 0;
@@ -169,7 +168,7 @@ container.on("sendable", function(event) {
         }
 
         let id = (sent + 1).toString();
-        let stime = types.wrap_long(new Date().getTime());
+        let stime = rhea.types.wrap_long(new Date().getTime());
 
         let message = {
             message_id: id,
