@@ -248,6 +248,8 @@ def test_anonymous_tls(session):
             call("quiver-arrow receive {} --impl {} --count 1 --verbose", server.url, impl)
 
 def test_clientauth_tls(session):
+    raise TestSkipped("Disabled: https://github.com/ssorj/quiver/issues/70")
+
     extra_server_args = []
     extra_server_args.append("--key={}".format(TSERVER_PRIVATE_KEY_PEM))
     extra_server_args.append("--key-password={}".format("password"))
