@@ -10,7 +10,7 @@ jobs:
         apt-get -qq install software-properties-common
         add-apt-repository -y ppa:qpid/released
         apt-get -qq update
-        apt-get -qq install build-essential make openjdk-11-jdk maven nodejs python3 python3-numpy unzip xz-utils zstd
+        apt-get -qq install build-essential make openjdk-11-jdk maven nodejs npm python3 python3-numpy unzip xz-utils zstd
         apt-get -y install libqpid-proton-cpp12-dev python3-qpid-proton libsasl2-2 libsasl2-dev libsasl2-modules sasl2-bin
         npm -g install rhea
     - uses: actions/checkout@v2
@@ -22,3 +22,5 @@ jobs:
           ${{ runner.os }}-maven-
     - run: make install PREFIX=/usr
     - run: quiver-test
+      env:
+        NODE_PATH: /usr/local/lib/node_modules

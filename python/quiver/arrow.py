@@ -274,17 +274,25 @@ class QuiverArrowCommand(Command):
             self.timeout_checkpoint = snap
 
     def compute_results(self):
-        transfers = list()
+        start = _time.time()
 
-        with open(self.transfers_file, "rb") as f:
-            for line in f:
-                try:
-                    transfer = self.transfers_parse_func(line)
-                except Exception as e:
-                    _plano.error("Failed to parse line '{}': {}", line, e)
-                    continue
+        def read_transfers():
+            with open(self.transfers_file, "rb") as f:
+                for line in f:
+                    try:
+                        yield self.transfers_parse_func(line)
+                    except Exception as e:
+                        _plano.error("Failed to parse line '{}': {}", line, e)
+                        continue
 
-                transfers.append(transfer)
+        if self.operation == "send":
+            dtype = [("send_time", _numpy.uint64)]
+            transfers = _numpy.fromiter(read_transfers(), dtype=dtype)
+        else:
+            dtype = [("send_time", _numpy.uint64), ("receive_time", _numpy.uint64)]
+            transfers = _numpy.fromiter(read_transfers(), dtype=dtype)
+
+        # print("load time", _time.time() - start)
 
         self.message_count = len(transfers)
 
@@ -292,17 +300,20 @@ class QuiverArrowCommand(Command):
             return
 
         if self.operation == "send":
-            self.first_send_time = transfers[0][1]
-            self.last_send_time = transfers[-1][1]
+            self.first_send_time = int(transfers[0]["send_time"])
+            self.last_send_time = int(transfers[-1]["send_time"])
 
             duration = (self.last_send_time - self.first_send_time) / 1000
         elif self.operation == "receive":
-            self.first_receive_time = transfers[0][2]
-            self.last_receive_time = transfers[-1][2]
+            self.first_receive_time = int(transfers[0]["receive_time"])
+            self.last_receive_time = int(transfers[-1]["receive_time"])
 
             duration = (self.last_receive_time - self.first_receive_time) / 1000
 
+            start = _time.time()
             self.compute_latencies(transfers)
+
+            # print("compute latencies time", _time.time() - start)
         else:
             raise Exception()
 
@@ -310,14 +321,7 @@ class QuiverArrowCommand(Command):
             self.message_rate = int(round(self.message_count / duration))
 
     def compute_latencies(self, transfers):
-        latencies = list()
-
-        for id_, send_time, receive_time in transfers:
-            latency = receive_time - send_time
-            latencies.append(latency)
-
-        latencies = _numpy.array(latencies, _numpy.int32)
-
+        latencies = transfers["receive_time"] - transfers["send_time"]
         q = 0, 25, 50, 75, 100, 90, 99, 99.9, 99.99, 99.999
         percentiles = _numpy.percentile(latencies, q)
         percentiles = [int(x) for x in percentiles]
@@ -430,7 +434,7 @@ class _StatusSnapshot:
         if self.period_count > 0 and self.command.operation == "receive":
             latencies = list()
 
-            for id_, send_time, receive_time in transfers:
+            for send_time, receive_time in transfers:
                 latency = receive_time - send_time
                 latencies.append(latency)
 
@@ -466,12 +470,12 @@ class _StatusSnapshot:
          self.rss) = fields
 
 def _parse_send(line):
-    message_id, send_time = line.split(b",", 1)
-    return message_id, int(send_time)
+    _, send_time = line.split(b",", 1)
+    return int(send_time)
 
 def _parse_receive(line):
-    message_id, send_time, receive_time = line.split(b",", 2)
-    return message_id, int(send_time), int(receive_time)
+    _, send_time, receive_time = line.split(b",", 2)
+    return int(send_time), int(receive_time)
 
 _join = _plano.join
 _ticks_per_ms = _os.sysconf(_os.sysconf_names["SC_CLK_TCK"]) / 1000

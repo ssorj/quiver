@@ -25,14 +25,18 @@ RUN apt-get -qq update \
     && apt-get -qq install software-properties-common \
     && add-apt-repository -y ppa:qpid/released \
     && apt-get -qq update \
-    && apt-get -qq install build-essential make openjdk-11-jdk maven nodejs python \
+    && apt-get -qq install build-essential make openjdk-11-jdk maven nodejs npm python \
         python3 python-numpy python3-numpy unzip xz-utils
 
 RUN apt-get -y install \
         libqpid-proton-cpp12-dev python3-qpid-proton \
         libsasl2-2 libsasl2-dev libsasl2-modules sasl2-bin
 
+RUN npm -g install rhea
+
 COPY . /root/quiver
+
+ENV NODE_PATH=/usr/local/lib/node_modules
 
 RUN cd /root/quiver && make install PREFIX=/usr
 
