@@ -17,12 +17,6 @@
 # under the License.
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import with_statement
-
 import argparse as _argparse
 import itertools as _itertools
 import json as _json
@@ -149,15 +143,6 @@ class QuiverArrowCommand(Command):
             if self.impl.name in ("activemq-jms", "activemq-artemis-jms"):
                 self.port = "61616"
 
-        # XXX Drop the flags stuff
-
-        flags = list()
-
-        if self.durable:
-            flags.append("durable")
-
-        self.flags = ",".join(flags)
-
         self.snapshots_file = _join(self.output_dir, "{}-snapshots.csv".format(self.role))
         self.summary_file = _join(self.output_dir, "{}-summary.json".format(self.role))
         self.transfers_file = _join(self.output_dir, "{}-transfers.csv".format(self.role))
@@ -265,7 +250,7 @@ class QuiverArrowCommand(Command):
         checkpoint = self.timeout_checkpoint
         since = (snap.timestamp - checkpoint.timestamp) / 1000
 
-        #print("check_timeout", snap.count, "==", checkpoint.count, "and", since, ">", self.timeout)
+        # print("check_timeout", snap.count, "==", checkpoint.count, "and", since, ">", self.timeout)
 
         if snap.count == checkpoint.count and since > self.timeout:
             raise CommandError("{} timed out", self.role)

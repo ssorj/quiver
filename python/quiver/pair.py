@@ -17,12 +17,6 @@
 # under the License.
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-from __future__ import with_statement
-
 import json as _json
 import os as _os
 import plano as _plano
@@ -175,7 +169,7 @@ class QuiverPairCommand(Command):
                 sline = _read_line(fs)
                 rline = _read_line(fr)
 
-                #print("S: {} R: {}".format(sline, rline))
+                # print("S: {} R: {}".format(sline, rline))
 
                 if sline is not None:
                     ssnap = _StatusSnapshot(self, None)
@@ -275,13 +269,8 @@ class QuiverPairCommand(Command):
         if self.transaction_size != 0:
             _print_numeric_field("Transaction size", self.transaction_size, _plano.plural("message", self.transaction_size))
 
-        flags = list()
-
         if self.durable:
-            flags.append("durable")
-
-        if flags:
-            _print_field("Flags", ", ".join(flags))
+            _print_field("Durable", "Yes")
 
         _print_heading("Results")
 
