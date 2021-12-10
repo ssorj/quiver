@@ -368,3 +368,30 @@ def parse_keyword_args(args):
 
 def now():
     return int(_time.time() * 1000)
+
+def print_heading(name):
+    print()
+    print(name.upper())
+    print()
+
+def print_field(name, value):
+    name = "{} ".format(name)
+    value = " {}".format(value)
+    print("{:.<19}{:.>42}".format(name, value))
+
+def print_numeric_field(name, value, unit, fmt="{:,.0f}"):
+    name = "{} ".format(name)
+
+    if value is None:
+        value = "-"
+    elif fmt is not None:
+        value = fmt.format(value)
+
+    value = " {}".format(value)
+
+    print("{:.<24}{:.>37} {}".format(name, value, unit))
+
+def print_latency_fields(lname, lvalue, rname, rvalue):
+    lvalue = " {}".format(lvalue)
+    rvalue = " {}".format(rvalue)
+    print("{:>12} {:.>10} ms {:>12} {:.>10} ms".format(lname, lvalue, rname, rvalue))

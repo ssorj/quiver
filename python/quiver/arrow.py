@@ -86,6 +86,8 @@ class QuiverArrowCommand(Command):
         self.parser.add_argument("--impl", metavar="IMPL", default=DEFAULT_ARROW_IMPL,
                                  help="Use IMPL to send and receive " \
                                  "(default {})".format(DEFAULT_ARROW_IMPL))
+        self.parser.add_argument("--summary", action="store_true",
+                                 help="Print the configuration and results to the console")
         self.parser.add_argument("--info", action="store_true",
                                  help="Print implementation details and exit")
         self.parser.add_argument("--id", metavar="ID",
@@ -217,6 +219,9 @@ class QuiverArrowCommand(Command):
             _plano.remove("{}.xz".format(self.transfers_file))
 
         _plano.call("xz --compress -0 --threads 0 {}", self.transfers_file)
+
+        if (self.args.summary):
+            self.print_summary()
 
     def monitor_subprocess(self, proc):
         snap = _StatusSnapshot(self, None)
@@ -352,6 +357,62 @@ class QuiverArrowCommand(Command):
 
         with open(self.summary_file, "w") as f:
             _json.dump(props, f, indent=2)
+
+    def print_summary(self):
+        with open(self.summary_file) as f:
+            arrow = _json.load(f)
+
+        print_heading("Configuration")
+
+        print_field("URL", self.url)
+        print_field("Output files", self.output_dir)
+
+        if self.count != 0:
+            print_numeric_field("Count", self.count, _plano.plural("message", self.count))
+
+        if self.duration != 0:
+            print_numeric_field("Duration", self.duration, _plano.plural("second", self.duration))
+
+        print_numeric_field("Body size", self.body_size, _plano.plural("byte", self.body_size))
+        print_numeric_field("Credit window", self.credit_window, _plano.plural("message", self.credit_window))
+
+        if self.transaction_size != 0:
+            print_numeric_field("Transaction size", self.transaction_size, _plano.plural("message", self.transaction_size))
+
+        if self.durable:
+            print_field("Durable", "Yes")
+
+        print_heading("Results")
+
+        if self.operation == "send":
+            start_time = arrow["results"]["first_send_time"]
+            end_time = arrow["results"]["last_send_time"]
+        elif self.operation == "receive":
+            start_time = arrow["results"]["first_receive_time"]
+            end_time = arrow["results"]["last_receive_time"]
+        else:
+            raise Exception()
+
+        count = arrow["results"]["message_count"]
+        duration = (end_time - start_time) / 1000
+
+        print_numeric_field("Count", count, _plano.plural("message", self.count))
+        print_numeric_field("Duration", duration, "seconds", "{:,.1f}")
+        print_numeric_field("Message rate", arrow["results"]["message_rate"], "messages/s")
+
+        if self.operation == "receive":
+            print()
+            print("Latencies by percentile:")
+            print()
+
+            print_latency_fields("0%", arrow["results"]["latency_quartiles"][0],
+                                 "90.00%", arrow["results"]["latency_nines"][0])
+            print_latency_fields("25%", arrow["results"]["latency_quartiles"][1],
+                                 "99.00%", arrow["results"]["latency_nines"][1])
+            print_latency_fields("50%", arrow["results"]["latency_quartiles"][2],
+                                 "99.90%", arrow["results"]["latency_nines"][2])
+            print_latency_fields("100%", arrow["results"]["latency_quartiles"][4],
+                                 "99.99%", arrow["results"]["latency_nines"][3])
 
 class _StatusSnapshot:
     def __init__(self, command, previous):

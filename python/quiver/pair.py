@@ -250,29 +250,29 @@ class QuiverPairCommand(Command):
         with open(_join(self.output_dir, "receiver-summary.json")) as f:
             receiver = _json.load(f)
 
-        _print_heading("Configuration")
+        print_heading("Configuration")
 
-        _print_field("Sender", self.sender_impl.name)
-        _print_field("Receiver", self.receiver_impl.name)
-        _print_field("Address URL", self.url)
-        _print_field("Output files", self.output_dir)
+        print_field("Sender", self.sender_impl.name)
+        print_field("Receiver", self.receiver_impl.name)
+        print_field("URL", self.url)
+        print_field("Output files", self.output_dir)
 
         if self.count != 0:
-            _print_numeric_field("Count", self.count, _plano.plural("message", self.count))
+            print_numeric_field("Count", self.count, _plano.plural("message", self.count))
 
         if self.duration != 0:
-            _print_numeric_field("Duration", self.duration, _plano.plural("second", self.duration))
+            print_numeric_field("Duration", self.duration, _plano.plural("second", self.duration))
 
-        _print_numeric_field("Body size", self.body_size, _plano.plural("byte", self.body_size))
-        _print_numeric_field("Credit window", self.credit_window, _plano.plural("message", self.credit_window))
+        print_numeric_field("Body size", self.body_size, _plano.plural("byte", self.body_size))
+        print_numeric_field("Credit window", self.credit_window, _plano.plural("message", self.credit_window))
 
         if self.transaction_size != 0:
-            _print_numeric_field("Transaction size", self.transaction_size, _plano.plural("message", self.transaction_size))
+            print_numeric_field("Transaction size", self.transaction_size, _plano.plural("message", self.transaction_size))
 
         if self.durable:
-            _print_field("Durable", "Yes")
+            print_field("Durable", "Yes")
 
-        _print_heading("Results")
+        print_heading("Results")
 
         count = receiver["results"]["message_count"]
 
@@ -287,51 +287,24 @@ class QuiverPairCommand(Command):
 
         # XXX Sender and receiver CPU, RSS
 
-        _print_numeric_field("Count", count, _plano.plural("message", self.count))
-        _print_numeric_field("Duration", duration, "seconds", "{:,.1f}")
-        _print_numeric_field("Sender rate", sender["results"]["message_rate"], "messages/s")
-        _print_numeric_field("Receiver rate", receiver["results"]["message_rate"], "messages/s")
-        _print_numeric_field("End-to-end rate", rate, "messages/s")
+        print_numeric_field("Count", count, _plano.plural("message", self.count))
+        print_numeric_field("Duration", duration, "seconds", "{:,.1f}")
+        print_numeric_field("Sender rate", sender["results"]["message_rate"], "messages/s")
+        print_numeric_field("Receiver rate", receiver["results"]["message_rate"], "messages/s")
+        print_numeric_field("End-to-end rate", rate, "messages/s")
 
         print()
         print("Latencies by percentile:")
         print()
 
-        _print_latency_fields("0%", receiver["results"]["latency_quartiles"][0],
-                              "90.00%", receiver["results"]["latency_nines"][0])
-        _print_latency_fields("25%", receiver["results"]["latency_quartiles"][1],
-                              "99.00%", receiver["results"]["latency_nines"][1])
-        _print_latency_fields("50%", receiver["results"]["latency_quartiles"][2],
-                              "99.90%", receiver["results"]["latency_nines"][2])
-        _print_latency_fields("100%", receiver["results"]["latency_quartiles"][4],
-                              "99.99%", receiver["results"]["latency_nines"][3])
-
-def _print_heading(name):
-    print()
-    print(name.upper())
-    print()
-
-def _print_field(name, value):
-    name = "{} ".format(name)
-    value = " {}".format(value)
-    print("{:.<19}{:.>42}".format(name, value))
-
-def _print_numeric_field(name, value, unit, fmt="{:,.0f}"):
-    name = "{} ".format(name)
-
-    if value is None:
-        value = "-"
-    elif fmt is not None:
-        value = fmt.format(value)
-
-    value = " {}".format(value)
-
-    print("{:.<24}{:.>37} {}".format(name, value, unit))
-
-def _print_latency_fields(lname, lvalue, rname, rvalue):
-    lvalue = " {}".format(lvalue)
-    rvalue = " {}".format(rvalue)
-    print("{:>12} {:.>10} ms {:>12} {:.>10} ms".format(lname, lvalue, rname, rvalue))
+        print_latency_fields("0%", receiver["results"]["latency_quartiles"][0],
+                             "90.00%", receiver["results"]["latency_nines"][0])
+        print_latency_fields("25%", receiver["results"]["latency_quartiles"][1],
+                             "99.00%", receiver["results"]["latency_nines"][1])
+        print_latency_fields("50%", receiver["results"]["latency_quartiles"][2],
+                             "99.90%", receiver["results"]["latency_nines"][2])
+        print_latency_fields("100%", receiver["results"]["latency_quartiles"][4],
+                             "99.99%", receiver["results"]["latency_nines"][3])
 
 def _read_line(file_):
     fpos = file_.tell()
