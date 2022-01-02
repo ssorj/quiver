@@ -10,3 +10,6 @@ perf annotate -d
 perf record ps -efw
 perf annotate -d ps -efw
 perf annotate -d /bin/ps
+
+dnf install jemalloc
+dnf install js-d3-flame-graph
