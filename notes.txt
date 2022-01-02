@@ -1,0 +1,12 @@
+cmake .. -DCMAKE_INSTALL_PREFIX=~/.local -DCMAKE_C_FLAGS="-B/usr/local/bin"
+cmake .. -DCMAKE_INSTALL_PREFIX=~/.local -DCMAKE_C_FLAGS="-fno-omit-frame-pointer"
+
+perf c2c report -i perf.data
+perf c2c report -i perf.data -g
+coredumpctl debug
+offcputime.py -df -p `pgrep -nx qdrouterd` 30 > out.stacks
+perf record sleep 5
+perf annotate -d
+perf record ps -efw
+perf annotate -d ps -efw
+perf annotate -d /bin/ps

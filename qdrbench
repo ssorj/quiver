@@ -1,0 +1,38 @@
+#!/usr/bin/python
+
+from plano import *
+
+import time as _time
+
+def wait_for_server(ready_file, timeout=30):
+    start_time = _time.time()
+    interval = 0.125
+
+    while True:
+        if _time.time() - start_time > timeout:
+            raise Exception("Timed out waiting for the server")
+
+        _time.sleep(interval)
+
+        with open(ready_file, "r") as f:
+            if f.read() == "ready\n":
+                break
+
+        if interval < 1:
+            interval = interval * 2
+        else:
+            print("Still waiting for the server")
+
+with temp_file() as ready_file:
+    run("which quiver-server")
+    run("which qdrouterd")
+
+    server = start(f"quiver-server q0 --impl qpid-dispatch --verbose --ready-file {ready_file}")
+
+    wait_for_server(ready_file)
+
+    run("quiver -c 5m --credit 2k q0")
+
+    kill(server)
+
+    sleep(1)

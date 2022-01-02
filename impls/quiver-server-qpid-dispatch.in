@@ -43,6 +43,8 @@ listener {{
 }}
 """
 
+running = True
+
 def main():
     enable_logging("warn")
 
@@ -63,13 +65,33 @@ def main():
     config = config_template.format(host, port)
     config_file = write(make_temp_file(), config)
 
-    start_process("qdrouterd --config {}", config_file)
+    import signal
+
+    proc = start_process("qdrouterd --config {}", config_file)
+    # proc = start_process("jemalloc.sh qdrouterd --config {}", config_file)
+
+    def handle_sigterm(a, b):
+        global running
+        proc.terminate()
+        running = False
+        print("Doooowwn")
+
+    signal.signal(signal.SIGINT, handle_sigterm)
+    signal.signal(signal.SIGTERM, handle_sigterm)
+
     wait_for_port(port)
 
     if ready_file != "-":
         write(ready_file, "ready\n")
 
-    while True:
+    sleep(3)
+
+    pid = call_for_stdout("pgrep -nx qdrouterd")
+    call(f"perf stat -d -d -p {pid} --timeout 10000")
+    # call(f"perf record -g -p {pid} sleep 10")
+    # call(f"perf script flamegraph -F 99 -p {pid} sleep 10")
+
+    while running:
         sleep(1)
 
 try:
