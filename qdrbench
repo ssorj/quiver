@@ -27,7 +27,7 @@ with temp_file() as ready_file:
     run("which quiver-server")
     run("which qdrouterd")
 
-    server = start(f"quiver-server q0 --impl qpid-dispatch --verbose --ready-file {ready_file}")
+    server = start(f"numactl --physcpubind 1,3,5,7,9 quiver-server q0 --impl qpid-dispatch --verbose --ready-file {ready_file}")
 
     wait_for_server(ready_file)
 
