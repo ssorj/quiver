@@ -13,3 +13,5 @@ perf annotate -d /bin/ps
 
 dnf install jemalloc
 dnf install js-d3-flame-graph
+
+htop -F qdrouterd
