@@ -35,15 +35,15 @@
     <maven.compiler.target>11</maven.compiler.target>
     <maven.compiler.release>11</maven.compiler.release>
 
-    <slf4j-version>1.7.30</slf4j-version>
+    <slf4j-version>1.7.36</slf4j-version>
 
     <!-- Client Dependencies for Quiver -->
-    <activemq-version>5.16.2</activemq-version>
-    <artemis-version>2.17.0</artemis-version>
-    <qpid-jms-version>0.58.0</qpid-jms-version>
-    <vertx-proton-version>4.0.3</vertx-proton-version>
+    <activemq-version>5.17.1</activemq-version>
+    <artemis-version>2.22.0</artemis-version>
+    <qpid-jms-version>1.6.0</qpid-jms-version>
+    <vertx-proton-version>4.3.1</vertx-proton-version>
     <geronimo.jms.2.spec.version>1.0-alpha-2</geronimo.jms.2.spec.version>
-    <protonj2-client-version>1.0.0-M1</protonj2-client-version>
+    <protonj2-client-version>1.0.0-M6</protonj2-client-version>
 
     <!-- Maven Plugin Versions for this Project -->
     <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
@@ -52,10 +52,10 @@
 
     <!--  Client specific version of the netty-tcnative libraries pulled in which
           should be checked when updating the client release to ensure versions match -->
-    <vertx-proton-netty-version>4.1.60.Final</vertx-proton-netty-version>
-    <qpid-jms-netty-version>4.1.63.Final</qpid-jms-netty-version>
-    <protonj2-netty-version>4.1.63.Final</protonj2-netty-version>
-    <artemis-jms-netty-version>4.1.51.Final</artemis-jms-netty-version>
+    <vertx-proton-netty-version>4.1.77.Final</vertx-proton-netty-version>
+    <qpid-jms-netty-version>4.1.77.Final</qpid-jms-netty-version>
+    <protonj2-netty-version>4.1.77.Final</protonj2-netty-version>
+    <artemis-jms-netty-version>4.1.77.Final</artemis-jms-netty-version>
 
     <netty-transport-native-epoll-classifier>linux-x86_64</netty-transport-native-epoll-classifier>
     <netty-transport-native-kqueue-classifier>osx-x86_64</netty-transport-native-kqueue-classifier>
