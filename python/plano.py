@@ -22,7 +22,6 @@ from __future__ import print_function
 import atexit as _atexit
 import binascii as _binascii
 import codecs as _codecs
-import collections as _collections
 import ctypes as _ctypes
 import fnmatch as _fnmatch
 import getpass as _getpass
@@ -45,6 +44,11 @@ import uuid as _uuid
 
 from subprocess import CalledProcessError
 from subprocess import PIPE
+
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 
 # See documentation at http://www.ssorj.net/projects/plano.html
 
@@ -765,7 +769,7 @@ def start_process(command, *args, **kwargs):
         command = command.format(*args)
         command_args = _shlex.split(command)
         command_string = command
-    elif isinstance(command, _collections.Iterable):
+    elif isinstance(command, Iterable):
         assert len(args) == 0, args
         command_args = command
         command_string = _command_string(command, [])
@@ -870,7 +874,7 @@ def exec_process(command, *args):
         command = command.format(*args)
         command_args = _shlex.split(command)
         command_string = command
-    elif isinstance(command, _collections.Iterable):
+    elif isinstance(command, Iterable):
         assert len(args) == 0, args
         command_args = command
         command_string = _command_string(command, [])
