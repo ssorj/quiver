@@ -21,6 +21,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
     - run: make install PREFIX=/usr
-    - run: quiver-test
+    - run: quiver-self-test
       env:
         NODE_PATH: /usr/local/lib/node_modules

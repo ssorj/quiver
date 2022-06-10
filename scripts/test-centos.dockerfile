@@ -17,7 +17,7 @@
 # under the License.
 #
 
-FROM quay.io/centos/centos:stream8
+FROM quay.io/centos/centos:stream9
 
 RUN dnf -qy update && dnf -q clean all
 
@@ -32,4 +32,4 @@ COPY . /root/quiver
 RUN cd /root/quiver && make install PREFIX=/usr
 
 WORKDIR /root
-CMD ["quiver-test"]
+CMD ["quiver-self-test"]

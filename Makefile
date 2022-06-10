@@ -119,7 +119,7 @@ install: build
 
 .PHONY: test
 test: build
-	quiver-test
+	quiver-self-test
 
 .PHONY: big-test
 big-test: test os-tests
@@ -150,7 +150,7 @@ docker-build:
 
 .PHONY: docker-test
 docker-test: docker-build
-	sudo docker run -t ${DOCKER_TAG} quiver-test
+	sudo docker run -t ${DOCKER_TAG} quiver-self-test
 
 .PHONY: docker-run
 docker-run: docker-build

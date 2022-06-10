@@ -40,4 +40,4 @@ ENV NODE_PATH=/usr/local/lib/node_modules
 
 RUN cd /root/quiver && make install PREFIX=/usr
 
-CMD ["quiver-test"]
+CMD ["quiver-self-test"]
