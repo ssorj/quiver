@@ -17,13 +17,13 @@
 # under the License.
 #
 
-FROM registry.centos.org/centos/centos:8
+FROM quay.io/centos/centos:stream8
 
 RUN dnf -qy update && dnf -q clean all
 
 RUN dnf -qy install epel-release
 
-RUN dnf -qy install gcc-c++ java-11-openjdk-devel make maven nodejs python3-numpy unzip xz
+RUN dnf -qy install gcc-c++ java-11-openjdk-devel make maven nodejs python3-numpy unzip zstd
 
 RUN dnf -y install cyrus-sasl-devel cyrus-sasl-md5 cyrus-sasl-plain python3-qpid-proton qpid-proton-c-devel qpid-proton-cpp-devel
 

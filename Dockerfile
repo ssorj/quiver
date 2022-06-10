@@ -20,7 +20,7 @@
 FROM registry.fedoraproject.org/fedora:34
 
 RUN dnf -qy update && dnf -q clean all
-RUN dnf -qy install gcc-c++ java-11-openjdk-devel make maven nodejs npm python3-numpy unzip xz
+RUN dnf -qy install gcc-c++ java-11-openjdk-devel make maven nodejs npm python3-numpy unzip zstd
 RUN dnf -y install cyrus-sasl-devel cyrus-sasl-md5 cyrus-sasl-plain python3-qpid-proton qpid-proton-c-devel qpid-proton-cpp-devel
 RUN npm -g install rhea
 

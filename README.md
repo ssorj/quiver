@@ -78,7 +78,7 @@ username and password or a client certificate.
 | Qpid Proton Python    | python3-qpid-proton   | python3-qpid-proton
 | SASL                  | libsasl2-2 libsasl2-dev libsasl2-modules sasl2-bin | cyrus-sasl-devel cyrus-sasl-plain cyrus-sasl-md5
 | Unzip                 | unzip                 | unzip
-| XZ                    | xz-utils              | xz
+| zstd                  | zstd                  | zstd
 
 ### Using Docker
 
@@ -98,7 +98,7 @@ Ubuntu PPA.
         libqpidmessaging-dev libqpidtypes-dev libqpidcommon-dev \
         libqpid-proton-proactor1-dev libqpid-proton-cpp12-dev \
         python-qpid python-qpid-messaging python3-qpid-proton \
-        openssl unzip xz-utils
+        openssl unzip zstd
 
 After this you can install from source.
 

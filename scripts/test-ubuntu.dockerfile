@@ -26,7 +26,7 @@ RUN apt-get -qq update \
     && add-apt-repository -y ppa:qpid/released \
     && apt-get -qq update \
     && apt-get -qq install build-essential make openjdk-11-jdk maven nodejs npm python \
-        python3 python-numpy python3-numpy unzip xz-utils
+        python3 python-numpy python3-numpy unzip zstd
 
 RUN apt-get -y install \
         libqpid-proton-cpp12-dev python3-qpid-proton \

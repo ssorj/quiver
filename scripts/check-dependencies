@@ -53,7 +53,7 @@ def main():
     check_executable("make", missing, "make")
     check_executable("mvn", missing, "maven")
     check_executable("node", missing, "nodejs")
-    check_executable("xz", missing, "xz")
+    check_executable("zstd", missing, "zstd")
 
     check_header("proton/message.h", missing, "qpid-proton-c-devel")
     check_header("proton/message.hpp", missing, "qpid-proton-cpp-devel")

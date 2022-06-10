@@ -214,10 +214,10 @@ class QuiverArrowCommand(Command):
         self.compute_results()
         self.save_summary()
 
-        if _plano.exists("{}.xz".format(self.transfers_file)):
-            _plano.remove("{}.xz".format(self.transfers_file))
+        if _plano.exists("{}.zst".format(self.transfers_file)):
+            _plano.remove("{}.zst".format(self.transfers_file))
 
-        _plano.call("xz --compress -0 --threads 0 {}", self.transfers_file)
+        _plano.call("zstd --fast --quiet -T0 --rm -f {}", self.transfers_file)
 
         if (self.args.summary):
             self.print_summary()

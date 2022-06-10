@@ -6,7 +6,7 @@ LABEL Name="quiver" \
     License="Apache License, Version 2.0"
 
 # Core dependancies
-RUN dnf install -y gcc-c++ make java-1.8.0-openjdk-devel maven nodejs numpy python xz && \
+RUN dnf install -y gcc-c++ make java-1.8.0-openjdk-devel maven nodejs numpy python zstd && \
      dnf clean all
 
 # Qpid dependancies
