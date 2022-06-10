@@ -18,7 +18,6 @@
 #
 
 import argparse as _argparse
-import itertools as _itertools
 import json as _json
 import numpy as _numpy
 import os as _os
@@ -271,7 +270,7 @@ class QuiverArrowCommand(Command):
                 for line in f:
                     try:
                         yield self.transfers_parse_func(line)
-                    except Exception as e:
+                    except ValueError as e:
                         _plano.error("Failed to parse line '{}': {}", line, e)
                         continue
 
@@ -439,6 +438,35 @@ class _StatusSnapshot:
         self.capture_transfers(transfers_file)
         self.capture_proc_info(proc)
 
+    def capture_transfers(self, transfers_file):
+        transfers = list()
+        sample = 100
+        count = 0
+
+        for count, line in enumerate(transfers_file):
+            if count % sample != 0:
+                continue
+
+            try:
+                record = self.command.transfers_parse_func(line)
+            except ValueError:
+                continue
+
+            transfers.append(record)
+
+        self.period_count = count
+        self.count = self.previous.count + self.period_count
+
+        if self.period_count > 0 and self.command.operation == "receive":
+            latencies = list()
+
+            for send_time, receive_time in transfers:
+                latency = receive_time - send_time
+                latencies.append(latency)
+
+            if latencies:
+                self.latency = int(_numpy.mean(latencies))
+
     def capture_proc_info(self, proc):
         proc_file = _join("/", "proc", str(proc.pid), "stat")
 
@@ -457,35 +485,6 @@ class _StatusSnapshot:
             self.period_cpu_time = self.cpu_time - self.previous.cpu_time
 
         self.rss = int(fields[23]) * _page_size
-
-    def capture_transfers(self, transfers_file):
-        transfers = list()
-        sample = 1000
-        count = sample
-
-        for line in _itertools.islice(transfers_file, sample, None, sample):
-            count += sample
-
-            try:
-                record = self.command.transfers_parse_func(line)
-            except Exception as e:
-                _plano.error("Failed to parse line '{}': {}", line, e)
-                continue
-
-            transfers.append(record)
-
-        self.period_count = count
-        self.count = self.previous.count + self.period_count
-
-        if self.period_count > 0 and self.command.operation == "receive":
-            latencies = list()
-
-            for send_time, receive_time in transfers:
-                latency = receive_time - send_time
-                latencies.append(latency)
-
-            if latencies:
-                self.latency = int(_numpy.mean(latencies))
 
     def marshal(self):
         fields = (self.timestamp,
