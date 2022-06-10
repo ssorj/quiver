@@ -234,7 +234,7 @@ public class QuiverArrowProtonJ2 {
                 final long stime = System.currentTimeMillis();
 
                 message.property("SendTime", stime);
-                message.messageId(UnsignedLong.valueOf(sent));
+                message.messageId(String.valueOf(sent));
                 if (durable) {
                     message.durable(true);
                 }

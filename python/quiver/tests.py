@@ -200,7 +200,6 @@ def test_pair_qpid_protonj2_to_qpid_proton_cpp(session):
     _test_pair("qpid-protonj2", "qpid-proton-cpp")
 
 def test_pair_qpid_protonj2_to_qpid_proton_c(session):
-    raise TestSkipped("Currently fails with an error reading the SendTime property")
     _test_pair("qpid-protonj2", "qpid-proton-c")
 
 def test_pair_qpid_protonj2_to_qpid_proton_python(session):
@@ -210,7 +209,7 @@ def test_pair_qpid_protonj2_to_qpid_protonj2(session):
     _test_pair("qpid-protonj2", "qpid-protonj2")
 
 def test_pair_qpid_protonj2_to_rhea(session):
-    raise TestSkipped("Currently fails with an error reading the SendTime property")
+    raise TestSkipped("Disabled: https://github.com/ssorj/quiver/issues/79")
     _test_pair("qpid-protonj2", "rhea")
 
 def test_pair_qpid_protonj2_to_vertx_proton(session):
