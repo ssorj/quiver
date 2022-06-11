@@ -11,7 +11,7 @@ Implementations live under `impls/` in the source tree, with a name
 starting with `quiver-arrow-` or `quiver-server-`.  Any build or
 install logic should be placed in the project `Makefile`.
 
-The details of new implementations should be added by adding an
+The details of new implementations should be provided by adding an
 `_Impl` instance to `python/quiver/common.py.in`.
 
 ## Arrow implementations
@@ -48,6 +48,7 @@ by `=`.  They must process the following arguments:
     credit-window     integer  Size of credit window to maintain
     transaction-size  integer  Size of transaction batches; 0 means no transactions
     durable           integer  1 if messages are durable; 0 if non-durable
+    set-message-id    integer  1 if messages have message IDs; 0 if not
 
 If an implementation does not support a particular option, for
 instance connection mode `server`, it should raise an error at start
@@ -72,16 +73,16 @@ design.
 Implementations must print sent transfers to standard output, one
 transfer per line.
 
-    <message-id>,<send-time>\n
+    <send-time>,0\n   # The second element is reserved for future use
 
 Implementations must print received transfers to standard output, one
 transfer per line.
 
-    <message-id>,<send-time>,<receive-time>\n
+    <send-time>,<receive-time>\n
 
 Time values are unix epoch milliseconds.
 
-    10,1472344673324,1472344673345
+    1472344673324,1472344673345
 
 To avoid any performance impact, take care that writes to standard
 output are buffered.  Make sure any buffered writes are flushed before
@@ -123,9 +124,8 @@ confirm their creation.
 
 ### Messages
 
-Implementations must give each message a unique ID to aid debugging.
-They must also set an application property named `SendTime` containing
-a `long` representing the send time in milliseconds.
+Implementations must set an application property named `SendTime`
+containing a `long` representing the send time in milliseconds.
 
 By convention, message bodies are filled with as many `x`s as
 indicated by the `body-size` parameter.  The `x` must be a single
