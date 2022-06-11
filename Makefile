@@ -65,7 +65,8 @@ TARGETS := ${BIN_TARGETS} ${PYTHON_TARGETS} ${TESTDATA_TARGETS} \
 	build/quiver/impls/quiver-arrow-qpid-proton-python \
 	build/quiver/impls/quiver-server-activemq-artemis \
 	build/quiver/impls/quiver-server-builtin \
-	build/quiver/impls/quiver-server-qpid-dispatch
+	build/quiver/impls/quiver-server-qpid-dispatch \
+	build/quiver/impls/brokerlib.py
 
 ifeq (${JAVA_ENABLED},yes)
 TARGETS += \
@@ -187,6 +188,10 @@ build/quiver/java/quiver-vertx-proton.jar: java/quiver-vertx-proton/pom.xml $(sh
 	cp java/quiver-vertx-proton/target/quiver-vertx-proton-1.0.0-SNAPSHOT-jar-with-dependencies.jar $@
 
 build/quiver/impls/quiver-arrow-qpid-protonj2: impls/quiver-arrow-qpid-protonj2.in build/quiver/java/quiver-protonj2.jar
+
+build/quiver/impls/brokerlib.py: impls/brokerlib.py
+	@mkdir -p ${@D}
+	cp $< $@
 
 build/quiver/java/quiver-qpid-protonj2.jar: java/quiver-protonj2/pom.xml $(shell find java/quiver-protonj2/src -type f)
 	@mkdir -p build/quiver/java

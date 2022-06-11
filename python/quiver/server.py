@@ -18,7 +18,6 @@
 #
 
 import argparse as _argparse
-import brokerlib as _brokerlib
 import collections as _collections
 import plano as _plano
 import proton as _proton
@@ -125,36 +124,3 @@ class QuiverServerCommand(Command):
             args.append("verbose=1")
 
         _plano.call(args)
-
-class BuiltinBroker(_brokerlib.Broker):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.id = "quiver-server-builtin"
-
-        if self.ready_file == "-":
-            self.ready_file = None
-
-    def init(self):
-        if self.quiet:
-            _plano.enable_logging("error")
-
-        if self.verbose:
-            _plano.enable_logging("notice")
-
-        super().init()
-
-    def info(self, message, *args):
-        _plano.notice(message, *args)
-
-    def notice(self, message, *args):
-        _plano.notice(message, *args)
-
-    def warn(self, message, *args):
-        _plano.warn(message, *args)
-
-    def error(self, message, *args):
-        _plano.error(message, *args)
-
-    def fail(self, message, *args):
-        _plano.fail(message, *args)

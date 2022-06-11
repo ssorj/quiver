@@ -25,6 +25,7 @@ default_home = os.path.normpath("@quiver_home@")
 home = os.environ.get("QUIVER_HOME", default_home)
 sys.path.insert(0, os.path.join(home, "python"))
 
+import brokerlib
 import collections
 import uuid
 
@@ -51,7 +52,7 @@ def main():
     password = kwargs.get("password")
     cert = kwargs.get("cert")
     key = kwargs.get("key")
-    trust_store = kwargs.get("trust-store")
+    trust = kwargs.get("trust-store")
     quiet = kwargs.get("quiet")
     verbose = kwargs.get("verbose")
 
@@ -60,12 +61,48 @@ def main():
                            password=password,
                            cert=cert,
                            key=key,
-                           trust_store=trust_store,
+                           trust=trust,
                            quiet=quiet,
                            verbose=verbose)
 
     broker.init()
     broker.run()
+
+class BuiltinBroker(brokerlib.Broker):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.id = "quiver-server-builtin"
+
+        if self.ready_file == "-":
+            self.ready_file = None
+
+    def __repr__(self):
+        return self.__class__.__name__
+
+    def init(self):
+        if self.quiet:
+            enable_logging("error")
+
+        if self.verbose:
+            enable_logging("notice")
+
+        super().init()
+
+    def info(self, message, *args):
+        notice(message, *args)
+
+    def notice(self, message, *args):
+        notice(message, *args)
+
+    def warn(self, message, *args):
+        warn(message, *args)
+
+    def error(self, message, *args):
+        error(message, *args)
+
+    def fail(self, message, *args):
+        fail(message, *args)
 
 if __name__ == "__main__":
     try:
