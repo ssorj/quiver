@@ -116,10 +116,8 @@ class QuiverArrowCommand(Command):
 
         if self.operation == "send":
             self.role = "sender"
-            self.transfers_parse_func = _parse_send
         elif self.operation == "receive":
             self.role = "receiver"
-            self.transfers_parse_func = _parse_receive
         else:
             raise Exception()
 
@@ -179,6 +177,7 @@ class QuiverArrowCommand(Command):
             "credit-window={}".format(self.credit_window),
             "transaction-size={}".format(self.transaction_size),
             "durable={}".format(1 if self.durable else 0),
+            "set-message-id={}".format(1 if self.set_message_id else 0),
         ]
 
         if self.username:
@@ -263,25 +262,8 @@ class QuiverArrowCommand(Command):
             self.timeout_checkpoint = snap
 
     def compute_results(self):
-        start = _time.time()
-
-        def read_transfers():
-            with open(self.transfers_file, "rb") as f:
-                for line in f:
-                    try:
-                        yield self.transfers_parse_func(line)
-                    except ValueError as e:
-                        _plano.error("Failed to parse line '{}': {}", line, e)
-                        continue
-
-        if self.operation == "send":
-            dtype = [("send_time", _numpy.uint64)]
-            transfers = _numpy.fromiter(read_transfers(), dtype=dtype)
-        else:
-            dtype = [("send_time", _numpy.uint64), ("receive_time", _numpy.uint64)]
-            transfers = _numpy.fromiter(read_transfers(), dtype=dtype)
-
-        # print("load time", _time.time() - start)
+        dtype = [("send_time", _numpy.uint64), ("receive_time", _numpy.uint64)]
+        transfers = _numpy.fromiter(self.read_transfers(), dtype=dtype)
 
         self.message_count = len(transfers)
 
@@ -299,15 +281,22 @@ class QuiverArrowCommand(Command):
 
             duration = (self.last_receive_time - self.first_receive_time) / 1000
 
-            start = _time.time()
             self.compute_latencies(transfers)
-
-            # print("compute latencies time", _time.time() - start)
         else:
             raise Exception()
 
         if duration > 0:
             self.message_rate = int(round(self.message_count / duration))
+
+    def read_transfers(self):
+        with open(self.transfers_file, "rb") as f:
+            for line in f:
+                try:
+                    send_time, receive_time = line.split(b",", 1)
+                    yield send_time, receive_time
+                except ValueError as e:
+                    _plano.error("Failed to parse line '{}': {}", line, e)
+                    continue
 
     def compute_latencies(self, transfers):
         latencies = transfers["receive_time"] - transfers["send_time"]
@@ -443,12 +432,20 @@ class _StatusSnapshot:
         sample = 100
         count = 0
 
+        # Skip the first line since it may be incomplete
+        for line in enumerate(transfers_file):
+            break
+
         for count, line in enumerate(transfers_file):
             if count % sample != 0:
                 continue
 
+            if not line.endswith(b"\n"):
+                continue
+
             try:
-                record = self.command.transfers_parse_func(line)
+                send_time, receive_time = line.split(b",", 1)
+                record = int(send_time), int(receive_time)
             except ValueError:
                 continue
 
@@ -458,11 +455,7 @@ class _StatusSnapshot:
         self.count = self.previous.count + self.period_count
 
         if self.period_count > 0 and self.command.operation == "receive":
-            latencies = list()
-
-            for send_time, receive_time in transfers:
-                latency = receive_time - send_time
-                latencies.append(latency)
+            latencies = [receive_time - send_time for send_time, receive_time in transfers]
 
             if latencies:
                 self.latency = int(_numpy.mean(latencies))
@@ -513,14 +506,6 @@ class _StatusSnapshot:
          self.cpu_time,
          self.period_cpu_time,
          self.rss) = fields
-
-def _parse_send(line):
-    _, send_time = line.split(b",", 1)
-    return int(send_time)
-
-def _parse_receive(line):
-    _, send_time, receive_time = line.split(b",", 2)
-    return int(send_time), int(receive_time)
 
 _join = _plano.join
 _ticks_per_ms = _os.sysconf(_os.sysconf_names["SC_CLK_TCK"]) / 1000

@@ -88,6 +88,7 @@ public class QuiverArrowVertxProton {
         final int creditWindow = Integer.parseInt(kwargs.get("credit-window"));
         final int transactionSize = Integer.parseInt(kwargs.get("transaction-size"));
         final boolean durable = Integer.parseInt(kwargs.get("durable")) == 1;
+        final boolean setMessageID = Integer.parseInt(kwargs.get("set-message-id")) == 1;
 
         if (!CLIENT.equalsIgnoreCase(connectionMode)) {
             throw new RuntimeException("This impl currently supports client mode only");
@@ -146,9 +147,9 @@ public class QuiverArrowVertxProton {
                     }
 
                     if (sender) {
-                        send(connection, path, desiredCount, bodySize, durable);
+                        send(connection, path, desiredCount, bodySize, durable, setMessageID);
                     } else {
-                        receive(connection, path, desiredCount, creditWindow);
+                        receive(connection, path, desiredCount, creditWindow, setMessageID);
                     }
                 } else {
                     res.cause().printStackTrace();
@@ -168,7 +169,8 @@ public class QuiverArrowVertxProton {
     }
 
     private static void send(final ProtonConnection connection, final String address,
-                             final int desiredCount, final int bodySize, final boolean durable) {
+                             final int desiredCount, final int bodySize, final boolean durable,
+                             final boolean setMessageID) {
         final StringBuilder line = new StringBuilder();
         final BufferedWriter out = getWriter();
         final AtomicInteger count = new AtomicInteger(0);
@@ -189,13 +191,8 @@ public class QuiverArrowVertxProton {
                             }
 
                             final Message msg = Message.Factory.create();
-                            final String id = String.valueOf(count.get());
-                            final long stime = System.currentTimeMillis();
                             final Map<String, Object> props = new HashMap<>();
 
-                            props.put("SendTime", stime);
-
-                            msg.setMessageId(id);
                             msg.setBody(new Data(new Binary(body)));
                             msg.setApplicationProperties(new ApplicationProperties(props));
 
@@ -203,11 +200,19 @@ public class QuiverArrowVertxProton {
                                 msg.setDurable(true);
                             }
 
+                            if (setMessageID) {
+                                final String id = String.valueOf(count.get());
+                                msg.setMessageId(id);
+                            }
+
+                            final long stime = System.currentTimeMillis();
+                            props.put("SendTime", stime);
+
                             sender.send(msg);
                             count.incrementAndGet();
 
                             line.setLength(0);
-                            out.append(line.append(id).append(',').append(stime).append('\n'));
+                            out.append(line.append(stime).append(",0\n"));
                         }
                     } finally {
                         out.flush();
@@ -222,7 +227,7 @@ public class QuiverArrowVertxProton {
     }
 
     private static void receive(final ProtonConnection connection, final String address,
-                                final int desiredCount, final int creditWindow) {
+                                final int desiredCount, final int creditWindow, final boolean setMessageID) {
         final StringBuilder line = new StringBuilder();
         final BufferedWriter out = getWriter();
         final AtomicInteger count = new AtomicInteger(0);
@@ -233,12 +238,15 @@ public class QuiverArrowVertxProton {
         receiver.handler((delivery, msg) -> {
                 try {
                     try {
-                        final Object id = msg.getMessageId();
+                        if (setMessageID) {
+                            final Object id = msg.getMessageId();
+                        }
+
                         final long stime = (Long) msg.getApplicationProperties().getValue().get("SendTime");
                         final long rtime = System.currentTimeMillis();
 
                         line.setLength(0);
-                        out.append(line.append(id).append(',').append(stime).append(',').append(rtime).append('\n'));
+                        out.append(line.append(stime).append(',').append(rtime).append('\n'));
 
                         delivery.disposition(ACCEPTED, true);
 

@@ -103,6 +103,9 @@ class QuiverPairCommand(Command):
         if self.durable:
             args += ["--durable"]
 
+        if self.set_message_id:
+            args += ["--set-message-id"]
+
         if self.quiet:
             args += ["--quiet"]
 
@@ -271,6 +274,9 @@ class QuiverPairCommand(Command):
 
         if self.durable:
             print_field("Durable", "Yes")
+
+        if self.set_message_id:
+            print_field("Set message ID", "Yes")
 
         print_heading("Results")
 

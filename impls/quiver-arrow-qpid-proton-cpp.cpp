@@ -91,6 +91,7 @@ struct handler : public proton::messaging_handler {
     int body_size;
     int credit_window;
     bool durable;
+    bool set_message_id;
 
     proton::connection connection;
     proton::listener listener;
@@ -176,7 +177,7 @@ struct handler : public proton::messaging_handler {
     }
 
     void on_sendable(proton::sender& snd) override {
-        assert (operation == "send");
+        assert(operation == "send");
 
         proton::message msg;
 
@@ -185,22 +186,25 @@ struct handler : public proton::messaging_handler {
                 break;
             }
 
-            std::string id = std::to_string(sent + 1);
-            int64_t stime = now();
-
             msg.clear();
             msg.body(body);
-            msg.id(id);
-            msg.properties().put("SendTime", stime);
+
+            if (set_message_id) {
+                std::string id = std::to_string(sent + 1);
+                msg.id(id);
+            }
 
             if (durable) {
                 msg.durable(true);
             }
 
+            int64_t stime = now();
+            msg.properties().put("SendTime", stime);
+
             snd.send(msg);
             sent++;
 
-            std::cout << id << "," << stime << "\n";
+            std::cout << stime << ",0\n";
         }
     }
 
@@ -213,15 +217,18 @@ struct handler : public proton::messaging_handler {
     }
 
     void on_message(proton::delivery& dlv, proton::message& msg) override {
-        assert (operation == "receive");
+        assert(operation == "receive");
 
         received++;
 
-        proton::message_id id = msg.id();
+        if (set_message_id) {
+            proton::message_id id = msg.id();
+        }
+
         proton::scalar stime = msg.properties().get("SendTime");
         int64_t rtime = now();
 
-        std::cout << id << "," << stime << "," << rtime << "\n";
+        std::cout << stime << "," << rtime << "\n";
 
         if (received == desired_count) {
             stop();
@@ -290,6 +297,7 @@ int main(int argc, char** argv) {
     h.body_size = std::stoi(kwargs["body-size"]);
     h.credit_window = std::stoi(kwargs["credit-window"]);
     h.durable = std::stoi(kwargs["durable"]);
+    h.set_message_id = std::stoi(kwargs["set-message-id"]);
 
     if (h.scheme.empty()) {
         h.scheme = "amqp";

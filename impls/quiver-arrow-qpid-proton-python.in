@@ -128,21 +128,22 @@ class Handler(MessagingHandler):
             if (self.desired_count > 0 and self.sent == self.desired_count):
                 break
 
-            id = str(self.sent + 1)
-            stime = now()
-
             message.clear()
             message.body = self.body
-            message.id = id
-            message.properties = {"SendTime": stime}
 
             if self.durable:
                 message.durable = True
 
+            if self.set_message_id:
+                message.id = str(self.sent + 1)
+
+            stime = now()
+            message.properties = {"SendTime": stime}
+
             event.sender.send(message)
             self.sent += 1
 
-            sys.stdout.write("{},{}\n".format(id, stime))
+            sys.stdout.write("{},0\n".format(stime))
 
     def on_accepted(self, event):
         self.accepted += 1
@@ -156,10 +157,14 @@ class Handler(MessagingHandler):
         self.received += 1
 
         message = event.message
-        rtime = now()
-        stime = event.message.properties["SendTime"]
 
-        sys.stdout.write("{},{},{}\n".format(message.id, stime, rtime))
+        if self.set_message_id:
+            id = message.id
+
+        stime = event.message.properties["SendTime"]
+        rtime = now()
+
+        sys.stdout.write("{},{}\n".format(stime, rtime))
 
         if self.received == self.desired_count:
             self.stop(event)
@@ -205,6 +210,7 @@ def main():
     handler.desired_count = int(kwargs["count"])
     handler.body_size = int(kwargs["body-size"])
     handler.durable = int(kwargs["durable"]) == 1
+    handler.set_message_id = int(kwargs["set-message-id"]) == 1
     handler.ssl_domain = None
 
     if handler.scheme == 'amqps':

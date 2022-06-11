@@ -89,6 +89,7 @@ public class QuiverArrowProtonJ2 {
         final int creditWindow = Integer.parseInt(kwargs.get("credit-window"));
         final int transactionSize = Integer.parseInt(kwargs.get("transaction-size"));
         final boolean durable = Integer.parseInt(kwargs.get("durable")) == 1;
+        final boolean setMessageID = Integer.parseInt(kwargs.get("set-message-id")) == 1;
 
         if (!CLIENT.equalsIgnoreCase(connectionMode)) {
             throw new RuntimeException("This impl currently supports client mode only");
@@ -129,7 +130,7 @@ public class QuiverArrowProtonJ2 {
         final Arrow arrow = new Arrow(client, options, host, port,
                                       address, role, creditWindow,
                                       desiredDuration, desiredCount,
-                                      bodySize, transactionSize, durable);
+                                      bodySize, transactionSize, durable, setMessageID);
 
         arrow.run();
     }
@@ -148,6 +149,7 @@ public class QuiverArrowProtonJ2 {
         private int bodySize;
         private int transactionSize;
         private boolean durable;
+        private boolean setMessageID;
 
         // Runtime data collected for Quiver results
         protected int sent;
@@ -157,7 +159,7 @@ public class QuiverArrowProtonJ2 {
         Arrow(final Client client, final ConnectionOptions options, final String host, final int port,
               final String address, final Role role, final int prefetch,
               final int desiredDuration, final int desiredCount, final int bodySize,
-              final int transactionSize, final boolean durable) {
+              final int transactionSize, final boolean durable, final boolean setMessageID) {
 
             this.client = client;
             this.options = options;
@@ -171,6 +173,7 @@ public class QuiverArrowProtonJ2 {
             this.bodySize = bodySize;
             this.transactionSize = transactionSize;
             this.durable = durable;
+            this.setMessageID = setMessageID;
         }
 
         void run() {
@@ -231,19 +234,23 @@ public class QuiverArrowProtonJ2 {
 
             while (!stopping.get()) {
                 final Message<byte[]> message = Message.create(body);
-                final long stime = System.currentTimeMillis();
 
-                message.property("SendTime", stime);
-                message.messageId(String.valueOf(sent));
                 if (durable) {
                     message.durable(true);
                 }
+
+                if (this.setMessageID) {
+                    message.messageId(String.valueOf(sent));
+                }
+
+                final long stime = System.currentTimeMillis();
+                message.property("SendTime", stime);
 
                 lastSentTracker = sender.send(message);
                 sent += 1;
 
                 line.setLength(0);
-                out.append(line.append(message.messageId()).append(',').append(stime).append('\n'));
+                out.append(line.append(stime).append(",0\n"));
 
                 if (transactionSize > 0 && (sent % transactionSize) == 0) {
                     sender.session().commitTransaction();
@@ -292,12 +299,15 @@ public class QuiverArrowProtonJ2 {
 
                 received += 1;
 
-                final Object id = message.messageId();
+                if (this.setMessageID) {
+                    final Object id = message.messageId();
+                }
+
                 final long stime = (long) message.property("SendTime");
                 final long rtime = System.currentTimeMillis();
 
                 line.setLength(0);
-                out.append(line.append(id).append(',').append(stime).append(',').append(rtime).append('\n'));
+                out.append(line.append(stime).append(',').append(rtime).append('\n'));
 
                 if (transactionSize > 0 && (received % transactionSize) == 0) {
                     receiver.session().commitTransaction();

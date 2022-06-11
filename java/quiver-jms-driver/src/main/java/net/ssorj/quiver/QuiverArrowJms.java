@@ -55,6 +55,7 @@ public class QuiverArrowJms {
         final int bodySize = Integer.parseInt(kwargs.get("body-size"));
         final int transactionSize = Integer.parseInt(kwargs.get("transaction-size"));
         final boolean durable = Integer.parseInt(kwargs.get("durable")) == 1;
+        final boolean setMessageID = Integer.parseInt(kwargs.get("set-message-id")) == 1;
 
         if (!connectionMode.equals("client")) {
             throw new RuntimeException("This impl supports client mode only");
@@ -77,7 +78,7 @@ public class QuiverArrowJms {
         final Destination queue = (Destination) context.lookup("queueLookup");
 
         final Client client = new Client(factory, queue, operation, desiredDuration, desiredCount, desiredRate,
-                                         bodySize, transactionSize, durable);
+                                         bodySize, transactionSize, durable, setMessageID);
 
         client.run();
     }
@@ -94,6 +95,7 @@ class Client {
     protected final int transactionSize;
 
     protected final boolean durable;
+    protected final boolean setMessageID;
 
     protected int sent;
     protected int received;
@@ -103,7 +105,7 @@ class Client {
 
     Client(final ConnectionFactory factory, final Destination queue, final String operation,
            final int desiredDuration, final int desiredCount, final int desiredRate,
-           final int bodySize, final int transactionSize, final boolean durable) {
+           final int bodySize, final int transactionSize, final boolean durable, final boolean setMessageID) {
         this.factory = factory;
         this.queue = queue;
         this.operation = operation;
@@ -113,6 +115,7 @@ class Client {
         this.bodySize = bodySize;
         this.transactionSize = transactionSize;
         this.durable = durable;
+        this.setMessageID = setMessageID;
 
         if (this.desiredRate > 0) {
             this.nanoPeriod = TimeUnit.SECONDS.toNanos(1) / this.desiredRate;
@@ -212,6 +215,12 @@ class Client {
 
         producer.setDisableMessageTimestamp(true);
 
+        if (this.setMessageID) {
+            producer.setDisableMessageID(false);
+        } else {
+            producer.setDisableMessageID(true);
+        }
+
         while (!stopping.get()) {
             final BytesMessage message = session.createBytesMessage();
 
@@ -223,11 +232,13 @@ class Client {
 
             final long stime = System.currentTimeMillis();
             message.setLongProperty("SendTime", stime);
+
             producer.send(message);
+
             sent += 1;
 
             line.setLength(0);
-            out.append(line.append(message.getJMSMessageID()).append(',').append(stime).append('\n'));
+            out.append(line.append(stime).append(",0\n"));
 
             if (transactionSize > 0 && (sent % transactionSize) == 0) {
                 session.commit();
@@ -255,12 +266,15 @@ class Client {
 
             received += 1;
 
-            final String id = message.getJMSMessageID();
+            if (this.setMessageID) {
+                final String id = message.getJMSMessageID();
+            }
+
             final long stime = message.getLongProperty("SendTime");
             final long rtime = System.currentTimeMillis();
 
             line.setLength(0);
-            out.append(line.append(id).append(',').append(stime).append(',').append(rtime).append('\n'));
+            out.append(line.append(stime).append(',').append(rtime).append('\n'));
 
             if (transactionSize > 0 && (received % transactionSize) == 0) {
                 session.commit();

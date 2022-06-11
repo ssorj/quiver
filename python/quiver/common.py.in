@@ -221,6 +221,8 @@ class Command(object):
                                  default="0")
         self.parser.add_argument("--durable", action="store_true",
                                  help="Require persistent store-and-forward transfers")
+        self.parser.add_argument("--set-message-id", action="store_true",
+                                 help="Send each message with a message ID and read it on receive")
         self.parser.add_argument("--timeout", metavar="DURATION",
                                  help="Fail after DURATION without transfers (default 10s)",
                                  default="10")
@@ -250,6 +252,7 @@ class Command(object):
         self.credit_window = self.parse_count(self.args.credit)
         self.transaction_size = self.parse_count(self.args.transaction_size)
         self.durable = self.args.durable
+        self.set_message_id = self.args.set_message_id
         self.timeout = self.parse_duration(self.args.timeout)
 
     def init_common_tool_attributes(self):

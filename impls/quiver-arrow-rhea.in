@@ -63,6 +63,7 @@ const body_size = parseInt(kwargs["body-size"]);
 const credit_window = parseInt(kwargs["credit-window"]);
 const transaction_size = parseInt(kwargs["transaction-size"]);
 const durable = new Boolean(parseInt(kwargs["durable"]));
+const set_message_id = new Boolean(parseInt(kwargs["set-message-id"]));
 
 let a = new Array(body_size);
 
@@ -172,22 +173,25 @@ container.on("sendable", function(event) {
             break;
         }
 
-        let id = (sent + 1).toString();
-        let stime = rhea.types.wrap_long(new Date().getTime());
-
         let message = {
-            message_id: id,
-            application_properties: {
-                SendTime: stime,
-            },
+            application_properties: {},
             durable: durable,
             body: body,
         };
 
+        if (set_message_id) {
+            let id = (sent + 1).toString();
+            message.message_id = id;
+        }
+
+        let stime = rhea.types.wrap_long(new Date().getTime());
+        message.application_properties.SendTime = stime;
+
         event.sender.send(message);
+
         sent++;
 
-        write(id + "," + stime + "\n");
+        write(stime + ",0\n");
     }
 });
 
@@ -203,10 +207,15 @@ container.on("message", function(event) {
     received++;
 
     let message = event.message;
+
+    if (set_message_id) {
+        let id = message.id;
+    }
+
     let rtime = new Date().getTime();
     let stime = message.application_properties.SendTime;
 
-    write(message.id + "," + stime + "," + rtime + "\n");
+    write(stime + "," + rtime + "\n");
 
     if (received == desired_count) {
         stop();
