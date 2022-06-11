@@ -4,40 +4,42 @@
 
 Tools for testing the performance of messaging clients and servers.
 
-    $ quiver
-    ---------------------- Sender -----------------------  --------------------- Receiver ----------------------  --------
-    Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Lat [ms]
-    -----------------------------------------------------  -----------------------------------------------------  --------
-           -              -           -        -        -       2.1        644,000     321,678       87      8.5         2
-         2.3        715,000     357,143       99     15.9       4.1      1,356,000     355,644       97      8.5         2
-    [...]
-        26.3      9,167,000     358,142       99     89.8      28.1      9,794,000     348,826       97      8.5         2
-        28.4      9,866,000     349,151       99     95.8      30.1     10,475,000     339,990       95      0.0         2
+~~~
+$ quiver
+---------------------- Sender -----------------------  --------------------- Receiver ----------------------  --------
+Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Time [s]      Count [m]  Rate [m/s]  CPU [%]  RSS [M]  Lat [ms]
+-----------------------------------------------------  -----------------------------------------------------  --------
+     2.2      2,495,486   1,246,497       82     11.4       2.1      2,367,633   1,183,225       89     10.2         0
+     4.2      4,870,652   1,186,990       77     12.2       4.1      4,751,211   1,191,193       88     10.7         0
+     6.2      7,244,794   1,186,478       77     12.2       6.1      7,123,233   1,185,418       89     10.7         0
+     8.2      9,621,240   1,187,629       77     12.2       8.1      9,498,473   1,187,026       88     10.7         0
+    10.2     11,757,474   1,067,583       70      0.0      10.1     11,756,478   1,128,438       84      0.0         0
 
-    CONFIGURATION
+CONFIGURATION
 
-    Sender ........................................ qpid-proton-c
-    Receiver ...................................... qpid-proton-c
-    Address URL ................... amqp://localhost:56727/quiver
-    Output files ........................... /tmp/quiver-ci8uyw9v
-    Duration ................................................. 30 seconds
-    Body size ............................................... 100 bytes
-    Credit window ......................................... 1,000 messages
+Sender ........................................ qpid-proton-c
+Receiver ...................................... qpid-proton-c
+URL ........................... amqp://localhost:56727/quiver
+Output files ........................... /tmp/quiver-mv9r_g7t
+Duration ................................................. 10 seconds
+Body size ............................................... 100 bytes
+Credit window ......................................... 1,000 messages
 
-    RESULTS
+RESULTS
 
-    Count ............................................ 10,468,040 messages
-    Duration ............................................... 29.8 seconds
-    Sender rate ......................................... 351,418 messages/s
-    Receiver rate ....................................... 351,430 messages/s
-    End-to-end rate ..................................... 351,394 messages/s
+Count ............................................ 11,756,484 messages
+Duration ................................................ 9.9 seconds
+Sender rate ....................................... 1,188,705 messages/s
+Receiver rate ..................................... 1,188,845 messages/s
+End-to-end rate ................................... 1,188,724 messages/s
 
-    Latencies by percentile:
+Latencies by percentile:
 
-              0% ........ 1 ms       90.00% ........ 3 ms
-             25% ........ 2 ms       99.00% ........ 3 ms
-             50% ........ 2 ms       99.90% ........ 4 ms
-            100% ........ 8 ms       99.99% ........ 7 ms
+          0% ........ 0 ms       90.00% ........ 1 ms
+         25% ........ 0 ms       99.00% ........ 1 ms
+         50% ........ 1 ms       99.90% ........ 1 ms
+        100% ........ 2 ms       99.99% ........ 1 ms
+~~~
 
 ## Overview
 
@@ -177,97 +179,120 @@ for libraries under `$HOME/.local` or `/usr/local` respectively.
 This command starts a sender-receiver pair.  Each sender or receiver
 is an invocation of the `quiver-arrow` command.
 
-    usage: quiver [-h] [--output DIR] [--impl IMPL] [--sender IMPL] [--receiver IMPL] [--cert FILE] [--key FILE]
-                  [-d DURATION] [-c COUNT] [--rate COUNT] [--body-size COUNT] [--credit COUNT]
-                  [--transaction-size COUNT] [--durable] [--timeout DURATION] [--quiet] [--verbose] [--init-only]
-                  [--version]
-                  [URL]
+~~~
+usage: quiver [-h] [--output DIR] [--impl IMPL] [--sender IMPL]
+              [--receiver IMPL] [-d DURATION] [-c COUNT] [--rate COUNT]
+              [--body-size COUNT] [--credit COUNT] [--transaction-size COUNT]
+              [--durable] [--set-message-id] [--timeout DURATION] [--quiet]
+              [--verbose] [--init-only] [--version] [--cert FILE] [--key FILE]
+              [URL]
 
-    Start a sender-receiver pair for a particular messaging address.
+Start a sender-receiver pair for a particular messaging address.
 
-    'quiver' is one of the Quiver tools for testing the performance of
-    message servers and APIs.
+'quiver' is one of the Quiver tools for testing the performance of
+message servers and APIs.
 
-    positional arguments:
-      URL                   The location of a message source or target (if not set, quiver runs in peer-to-peer
-                            mode)
+positional arguments:
+  URL                   The location of a message source or target (if not
+                        set, quiver runs in peer-to-peer mode)
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      --output DIR          Save output files to DIR
-      --impl IMPL           Use IMPL to send and receive (default qpid-proton-c)
-      --sender IMPL         Use IMPL to send (default qpid-proton-c)
-      --receiver IMPL       Use IMPL to receive (default qpid-proton-c)
-      --cert FILE           The filename of the client certificate
-      --key FILE            The filename the client private key
-      -d DURATION, --duration DURATION
-                            Stop after DURATION (default 30s)
-      -c COUNT, --count COUNT
-                            Send or receive COUNT messages
-      --rate COUNT          Target a rate of COUNT messages per second (default 0, disabled)
-      --body-size COUNT     Send message bodies containing COUNT bytes (default 100)
-      --credit COUNT        Sustain credit for COUNT incoming messages (default 1000)
-      --transaction-size COUNT
-                            Transfer batches of COUNT messages inside transactions (default 0, disabled)
-      --durable             Require persistent store-and-forward transfers
-      --timeout DURATION    Fail after DURATION without transfers (default 10s)
-      --quiet               Print nothing to the console
-      --verbose             Print details to the console
-      --init-only           Initialize and exit
-      --version             Print the version and exit
+options:
+  -h, --help            show this help message and exit
+  --output DIR          Save output files to DIR
+  --impl IMPL           Use IMPL to send and receive (default qpid-proton-c)
+  --sender IMPL         Use IMPL to send (default qpid-proton-c)
+  --receiver IMPL       Use IMPL to receive (default qpid-proton-c)
+  -d DURATION, --duration DURATION
+                        Stop after DURATION (default 30s)
+  -c COUNT, --count COUNT
+                        Send or receive COUNT messages (default 0, no limit)
+  --rate COUNT          Target a rate of COUNT messages per second (default 0,
+                        disabled)
+  --body-size COUNT     Send message bodies containing COUNT bytes (default
+                        100)
+  --credit COUNT        Sustain credit for COUNT incoming messages (default
+                        1000)
+  --transaction-size COUNT
+                        Transfer batches of COUNT messages inside transactions
+                        (default 0, disabled)
+  --durable             Require persistent store-and-forward transfers
+  --set-message-id      Send each message with a message ID and read it on
+                        receive
+  --timeout DURATION    Fail after DURATION without transfers (default 10s)
+  --quiet               Print nothing to the console
+  --verbose             Print details to the console
+  --init-only           Initialize and exit
+  --version             Print the version and exit
+  --cert FILE           The client TLS certificate file
+  --key FILE            The client TLS private key file
 
-    URLs:
-      [SCHEME:][//SERVER/]ADDRESS     The default server is 'localhost'
-      queue0
-      //localhost/queue0
-      amqp://example.net:10000/jobs
-      amqps://10.0.0.10/jobs/alpha
-      amqps://username:password@10.0.0.10/jobs/alpha
+URLs:
+  [SCHEME:][//SERVER/]ADDRESS     The default server is 'localhost'
+  queue0
+  //localhost/queue0
+  amqp://example.net:10000/jobs
+  amqps://10.0.0.10/jobs/alpha
+  amqps://username:password@10.0.0.10/jobs/alpha
 
-    count format:                     duration format:
-      1 (no unit)    1                  1 (no unit)    1 second
-      1k             1,000              1s             1 second
-      1m             1,000,000          1m             1 minute
-                                        1h             1 hour
+count format:                     duration format:
+  1 (no unit)    1                  1 (no unit)    1 second
+  1k             1,000              1s             1 second
+  1m             1,000,000          1m             1 minute
+                                    1h             1 hour
 
-    arrow implementations:
-      activemq-artemis-jms            Client mode only; requires Artemis server
-      activemq-jms                    Client mode only; ActiveMQ or Artemis server
-      qpid-jms (jms)                  Client mode only
-      qpid-proton-c (c)               The default implementation
-      qpid-proton-cpp (cpp)
-      qpid-proton-python (python, py)
-      qpid-protonj2 (java)            Client mode only
-      rhea (javascript, js)
-      vertx-proton (java)             Client mode only
+arrow implementations:
+  activemq-artemis-jms            Client mode only; requires Artemis server
+  activemq-jms                    Client mode only; ActiveMQ or Artemis server
+  qpid-jms (jms)                  Client mode only
+  qpid-proton-c (c)               The default implementation
+  qpid-proton-cpp (cpp)
+  qpid-proton-python (python, py)
+  qpid-protonj2 (java)            Client mode only
+  rhea (javascript, js)
+  vertx-proton (java)             Client mode only
 
-    example usage:
-      $ qdrouterd &                   # Start a message server
-      $ quiver q0                     # Start the test
+example peer-to-peer usage:
+  $ quiver                        # Run the test using the default C arrow
+
+example client-server usage:
+  $ qdrouterd &                   # Start a server listening on localhost
+  $ quiver q0                     # Run the test
+~~~
 
 ### `quiver-arrow`
 
 This command sends or receives AMQP messages as fast as it can.  Each
-invocation creates a single connection.  It terminates when the target
-number of messages are all sent or received.
+invocation creates a single connection.  It terminates when the
+requested duration is exceeded or the target number of messages are
+all sent or received.
 
-    usage: quiver-arrow [-h] [--output DIR] [--impl IMPL] [--info] [--id ID] [--server] [--passive]
-                        [--prelude PRELUDE] [-d DURATION] [-c COUNT] [--rate COUNT] [--body-size COUNT]
-                        [--credit COUNT] [--transaction-size COUNT] [--durable] [--timeout DURATION] [--quiet]
-                        [--verbose] [--init-only] [--version] [--cert FILE] [--key FILE]
-                        OPERATION URL
+~~~
+usage: quiver-arrow [-h] [--output DIR] [--impl IMPL] [--summary] [--info]
+                    [--id ID] [--server] [--passive] [--prelude PRELUDE]
+                    [-d DURATION] [-c COUNT] [--rate COUNT]
+                    [--body-size COUNT] [--credit COUNT]
+                    [--transaction-size COUNT] [--durable] [--set-message-id]
+                    [--timeout DURATION] [--quiet] [--verbose] [--init-only]
+                    [--version] [--cert FILE] [--key FILE]
+                    OPERATION URL
+~~~
 
 ### `quiver-server`
 
 This command starts a server implementation and configures it to serve
 the given address.
 
-    usage: quiver-server [-h] [--impl NAME] [--info] [--ready-file FILE] [--prelude PRELUDE] [--quiet] [--verbose]
-                         [--init-only] [--version] ADDRESS-URL
+~~~
+usage: quiver-server [-h] [--impl IMPL] [--info] [--ready-file FILE]
+                     [--prelude PRELUDE] [--user USER] [--password SECRET]
+                     [--cert FILE] [--key FILE] [--trust-store FILE] [--quiet]
+                     [--verbose] [--init-only] [--version]
+                     URL
+~~~
 
 ## Examples
 
-### Running Quiver with ActiveMQ classic
+### Running Quiver with ActiveMQ Classic
 
 Make sure you configure ActiveMQ to allow anonymous connections.
 
@@ -277,23 +302,20 @@ Make sure you configure ActiveMQ to allow anonymous connections.
 ### Running Quiver with ActiveMQ Artemis
 
     $ <instance-dir>/bin/artemis run &
-    $ <instance-dir>/bin/artemis queue create --name q0 --address q0 --anycast --no-durable --auto-create-address --preserve-on-no-consumers
+    $ <instance-dir>/bin/artemis queue create --name q0 --address q0 \
+        --anycast --no-durable --auto-create-address --preserve-on-no-consumers
     $ quiver q0
 
-### Running Quiver with the Qpid C++ broker
-
-    $ qpidd --auth no &
-    $ qpid-config add queue q0
-    $ quiver q0
-
-### Running Quiver with the Qpid Dispatch router
+### Running Quiver with Qpid Dispatch router
 
     $ qdrouterd &
     $ quiver q0
 
 ### Running Quiver peer-to-peer
 
-    $ quiver --sender qpid-jms --receiver qpid-proton-python
+    $ quiver
+    $ quiver --sender qpid-jms
+    $ quiver --sender rhea --receiver qpid-proton-python
 
 ## More information
 

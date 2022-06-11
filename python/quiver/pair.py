@@ -45,9 +45,12 @@ _epilog = """
 
 {_epilog_arrow_impls}
 
-example usage:
-  $ qdrouterd &                   # Start a message server
-  $ quiver q0                     # Start the test
+example peer-to-peer usage:
+  $ quiver                        # Run the test using the default C arrow
+
+example client-server usage:
+  $ qdrouterd &                   # Start a server listening on localhost
+  $ quiver q0                     # Run the test
 """.format(**globals())
 
 class QuiverPairCommand(Command):
