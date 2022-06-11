@@ -20,7 +20,6 @@
 import sys as _sys
 import os as _os
 
-from commandant import *
 from plano import *
 from quiver.common import *
 from urllib.parse import urlparse as _urlparse

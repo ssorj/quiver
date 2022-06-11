@@ -220,7 +220,7 @@ build/quiver/python/quiver/common.py: python/quiver/common.py.in
 	@mkdir -p ${@D}
 	scripts/configure-file -a version=${VERSION} -a quiver_home=${INSTALLED_QUIVER_HOME} $< $@
 
-build/quiver/python/quiver/%: python/quiver/% python/commandant.py python/pencil.py python/plano.py build/quiver/python/quiver/common.py
+build/quiver/python/quiver/%: python/quiver/% python/pencil.py python/plano.py build/quiver/python/quiver/common.py
 	@mkdir -p ${@D}
 	cp $< $@
 
