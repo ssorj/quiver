@@ -1,0 +1,9 @@
+services:
+ - docker
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq -y make python
+
+script:
+ - make big-test DOCKER_COMMAND=docker

@@ -1,0 +1,75 @@
+from bullseye import *
+
+app.set_default_command("build", prefix="/tmp/alpha")
+
+project.name = "chucker"
+project.data_dirs = ["files"]
+project.excluded_modules = ["flipper"]
+project.test_modules = ["chucker_tests"]
+
+result_file = "build/result.json"
+
+@command(parent=build)
+def build(app, *args, **kwargs):
+    build.super(app, *args, **kwargs)
+
+    notice("Extended building")
+
+    data = {"built": True}
+    write_json(result_file, data)
+
+@command(parent=test)
+def test(app, *args, **kwargs):
+    test.super(app, *args, **kwargs)
+
+    notice("Extended testing")
+
+    check_file(result_file)
+
+    if exists(result_file):
+        data = read_json(result_file)
+        data["tested"] = True
+        write_json(result_file, data)
+
+@command(parent=install)
+def install(app, *args, **kwargs):
+    install.super(app, *args, **kwargs)
+
+    notice("Extended installing")
+
+    data = read_json(result_file)
+    data["installed"] = True
+    write_json(result_file, data)
+
+@command
+def base_command(app, alpha, beta, omega="x"):
+    print("base", alpha, beta, omega)
+
+@command(name="extended-command", parent=base_command)
+def extended_command(app, alpha, beta, omega="y"):
+    print("extended", alpha, omega)
+    extended_command.super(app, alpha, beta, omega)
+
+@command(args=(CommandArgument("message_", help="The message to print", display_name="message"),
+               CommandArgument("count", help="Print the message COUNT times"),
+               CommandArgument("extra", default=1, short_option="e")))
+def echo(app, message_, count=1, extra=None, trouble=False):
+    """Print a message to the console"""
+
+    print("Echoing (message={0}, count={1})".format(message_, count))
+
+    if trouble:
+        raise Exception("Trouble")
+
+    for i in range(count):
+       print(message_)
+
+@command
+def haberdash(app, first, *middle, last="bowler"):
+    data = [first, *middle, last]
+    write_json("haberdash.json", data)
+
+@command(args=(CommandArgument("optional", positional=True),))
+def balderdash(app, required, optional="malarkey", other="rubbish"):
+    data = [required, optional, other]
+    write_json("balderdash.json", data)
