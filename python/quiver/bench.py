@@ -84,7 +84,7 @@ class QuiverBenchCommand(Command):
         self.output_dir = self.args.output
 
         if self.output_dir is None:
-            prefix = _plano.program_name()
+            prefix = _plano.get_program_name()
             datestamp = _time.strftime('%Y-%m-%d', _time.localtime())
 
             self.output_dir = "{}-{}".format(prefix, datestamp)
@@ -218,7 +218,7 @@ class QuiverBenchCommand(Command):
 
     def run_test(self, sender_impl, server_impl, receiver_impl):
         peer_to_peer = server_impl is None
-        port = _plano.random_port()
+        port = _plano.get_random_port()
         server = None
 
         if server_impl == "activemq":
@@ -333,7 +333,7 @@ class _TestPair:
 
         with open(self.output_file, "w") as f:
             try:
-                _plano.call(command, stdout=f, stderr=f)
+                _plano.run(command, stdout=f, stderr=f)
             except:
                 _plano.write(self.status_file, "FAILED\n")
                 raise
@@ -377,7 +377,7 @@ class _TestServer:
 
         _plano.write(self.command_file, "{}\n".format(" ".join(command)))
 
-        self.proc = _plano.start_process(command, stdout=self.output, stderr=self.output)
+        self.proc = _plano.start(command, stdout=self.output, stderr=self.output)
 
         for i in range(30):
             if _plano.read(self.ready_file) == "ready\n":
@@ -390,11 +390,11 @@ class _TestServer:
     def stop(self):
         assert self.proc is not None
 
-        _plano.stop_process(self.proc)
+        _plano.stop(self.proc)
 
         self.output.close()
 
-        if self.proc.returncode > 0 and self.proc.returncode < 128:
+        if self.proc.exit_code > 0 and self.proc.exit_code < 128:
             _plano.write(self.status_file, "FAILED\n")
         else:
             _plano.write(self.status_file, "PASSED\n")

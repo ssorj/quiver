@@ -23,13 +23,13 @@ from plano import *
 def main():
     header = ARGS[1]
 
-    with temp_working_dir():
+    with working_dir():
         source_file = "test.cpp"
         source = "#include <{}>\n int main() {{ return 1; }}\n".format(header)
 
         write(source_file, source)
 
-        call("g++ {}", source_file)
+        run(f"g++ {source_file}")
 
 if __name__ == "__main__":
     try:

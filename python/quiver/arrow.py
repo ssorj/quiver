@@ -122,7 +122,7 @@ class QuiverArrowCommand(Command):
             raise Exception()
 
         if self.id_ is None:
-            self.id_ = "quiver-{}-{}".format(self.role, _plano.unique_id(4))
+            self.id_ = "quiver-{}-{}".format(self.role, _plano.get_unique_id(4))
 
         if self.args.server:
             self.connection_mode = "server"
@@ -191,23 +191,22 @@ class QuiverArrowCommand(Command):
             args.append("cert={}".format(self.cert))
 
         with open(self.transfers_file, "wb") as fout:
-            env = _plano.ENV
-
             if self.verbose:
-                env["QUIVER_VERBOSE"] = "1"
-
-            proc = _plano.start_process(args, stdout=fout, env=env)
+                with _plano.working_env(QUIVER_VERBOSE=1):
+                    proc = _plano.start(args, stdout=fout)
+            else:
+                proc = _plano.start(args, stdout=fout)
 
             try:
                 self.monitor_subprocess(proc)
             except:
-                _plano.stop_process(proc)
+                _plano.stop(proc)
                 raise
 
             if proc.returncode != 0:
                 raise CommandError("{} exited with code {}", self.role, proc.returncode)
 
-        if _plano.file_size(self.transfers_file) == 0:
+        if _plano.get_file_size(self.transfers_file) == 0:
             raise CommandError("No transfers")
 
         self.compute_results()
@@ -216,7 +215,7 @@ class QuiverArrowCommand(Command):
         if _plano.exists("{}.zst".format(self.transfers_file)):
             _plano.remove("{}.zst".format(self.transfers_file))
 
-        _plano.call("zstd --fast --quiet -T0 --rm -f {}", self.transfers_file)
+        _plano.run(f"zstd --fast --quiet -T0 --rm -f {self.transfers_file}")
 
         if (self.args.summary):
             self.print_summary()

@@ -62,11 +62,11 @@ def main():
         exit("The 'artemis' command is not on the path")
 
     if len(ARGS) == 1:
-        executable = real_path(which("artemis"))
-        profile_file = join(parent_dir(parent_dir(executable)), "etc", "artemis.profile")
+        executable = get_real_path(which("artemis"))
+        profile_file = join(get_parent_dir(get_parent_dir(executable)), "etc", "artemis.profile")
 
         # XXX Strip and replace is a temp fix
-        call(_info_script.strip().replace("\n", ";"), profile_file, shell=True)
+        run(_info_script.strip().replace("\n", ";").format(profile_file), shell=True)
 
         exit()
 
@@ -78,16 +78,18 @@ def main():
     ready_file = kwargs["ready-file"]
 
     config = config_template.format(host, port, path, path).lstrip()
-    config_file = write(make_temp_file(), config)
 
-    start_process("artemis run --broker {}", config_file)
-    wait_for_port(port)
+    with temp_file() as config_file:
+        write(config_file, config)
 
-    if ready_file != "-":
-        write(ready_file, "ready\n")
+        start(f"artemis run --broker {config_file}")
+        await_port(port)
 
-    while True:
-        sleep(1)
+        if ready_file != "-":
+            write(ready_file, "ready\n")
+
+        while True:
+            sleep(2)
 
 try:
     main()

@@ -123,4 +123,4 @@ class QuiverServerCommand(Command):
         if self.verbose:
             args.append("verbose=1")
 
-        _plano.call(args)
+        _plano.run(args)

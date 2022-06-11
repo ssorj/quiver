@@ -38,8 +38,8 @@ def main():
     pom_file = join("META-INF", "maven", "org.apache.qpid", "protonj2-client", "pom.properties")
 
     if len(ARGS) == 1:
-        call("unzip -p {} {}", jar_file, pom_file)
-        call("java -version")
+        run(f"unzip -p {jar_file} {pom_file}")
+        run("java -version")
         exit()
 
     args = ["/usr/bin/env", "--", "java"]
@@ -55,7 +55,9 @@ def main():
 
     args += ARGS[1:]
 
-    exec_process(args)
+    notice("Running '{}'", " ".join(args))
+
+    os.execvp(args[0], args[1:])
 
 if __name__ == "__main__":
     try:

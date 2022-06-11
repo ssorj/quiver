@@ -26,15 +26,15 @@ def check_executable(executable, missing, fedora_package):
         missing.append(fedora_package)
 
 def check_header(header, missing, fedora_package):
-    with temp_working_dir():
+    with working_dir():
         source_file = "test.cpp"
         source = "#include <{}>\n int main() {{ return 1; }}\n".format(header)
 
         write(source_file, source)
 
         try:
-            call("gcc {}", source_file)
-        except CalledProcessError:
+            run(f"gcc {source_file}")
+        except PlanoProcessError:
             missing.append(fedora_package)
 
 def check_python_module(module, missing, fedora_package):

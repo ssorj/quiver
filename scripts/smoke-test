@@ -23,12 +23,12 @@ from plano import *
 def main():
     enable_logging("warn")
 
-    call("quiver q0 --quiet --init-only", quiet=True)
-    call("quiver-arrow send //localhost:12345/a/b/c --init-only", quiet=True)
-    call("quiver-server q0 --init-only", quiet=True)
+    run("quiver q0 --quiet --init-only", stash=True)
+    run("quiver-arrow send //localhost:12345/a/b/c --init-only", stash=True)
+    run("quiver-server q0 --init-only", stash=True)
 
-    with temp_working_dir() as d:
-        call("quiver-bench --init-only --output {}", d, quiet=True)
+    with working_dir() as temp_dir:
+        run(f"quiver-bench --init-only --output {temp_dir}", stash=True)
 
 if __name__ == "__main__":
     try:

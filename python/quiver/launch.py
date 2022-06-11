@@ -65,20 +65,14 @@ class QuiverLaunchCommand(Command):
         if self.verbose:
             _plano.enable_logging("debug", output=_sys.stdout)
 
-        def nvl(value, fallback):
-            if value is None:
-                return fallback
-
-            return value
-
-        self.sender_count = nvl(self.args.sender_count, self.args.count)
-        self.sender_impl = nvl(self.args.sender_impl, self.args.impl)
-        self.sender_options = nvl(self.args.sender_options, self.args.options)
+        self.sender_count = _plano.nvl(self.args.sender_count, self.args.count)
+        self.sender_impl = _plano.nvl(self.args.sender_impl, self.args.impl)
+        self.sender_options = _plano.nvl(self.args.sender_options, self.args.options)
         self.sender_options = _shlex.split(self.sender_options)
 
-        self.receiver_count = nvl(self.args.receiver_count, self.args.count)
-        self.receiver_impl = nvl(self.args.receiver_impl, self.args.impl)
-        self.receiver_options = nvl(self.args.receiver_options, self.args.options)
+        self.receiver_count = _plano.nvl(self.args.receiver_count, self.args.count)
+        self.receiver_impl = _plano.nvl(self.args.receiver_impl, self.args.impl)
+        self.receiver_options = _plano.nvl(self.args.receiver_options, self.args.options)
         self.receiver_options = _shlex.split(self.receiver_options)
 
         self.init_url_attributes()
@@ -97,38 +91,38 @@ class QuiverLaunchCommand(Command):
         receivers = list()
 
         for i in range(self.receiver_count):
-            receiver = _plano.start_process(receiver_command)
+            receiver = _plano.start(receiver_command)
             receivers.append(receiver)
 
-        _plano.wait_for_port(self.port)
+        _plano.await_port(self.port)
 
         for i in range(self.sender_count):
-            sender = _plano.start_process(sender_command)
+            sender = _plano.start(sender_command)
             senders.append(sender)
 
         try:
             try:
                 for sender in senders:
-                    _plano.wait_for_process(sender)
+                    _plano.wait(sender)
 
                 for receiver in receivers:
-                    _plano.wait_for_process(receiver)
+                    _plano.wait(receiver)
             except:
                 for sender in senders:
-                    _plano.stop_process(sender)
+                    _plano.stop(sender)
 
                 for receiver in receivers:
-                    _plano.stop_process(receiver)
+                    _plano.stop(receiver)
 
                 raise
 
             for sender in senders:
-                if sender.returncode != 0:
+                if sender.exit_code != 0:
                     exit_code = 1
                     break
 
             for receiver in receivers:
-                if receiver.returncode != 0:
+                if receiver.exit_code != 0:
                     exit_code = 1
                     break
         except KeyboardInterrupt:

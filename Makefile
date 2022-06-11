@@ -111,6 +111,7 @@ clean:
 
 .PHONY: build
 build: ${TARGETS} build/prefix.txt
+	cp python/plano.py build/quiver/python/plano.py
 	scripts/smoke-test
 
 .PHONY: install

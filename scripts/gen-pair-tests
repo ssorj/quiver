@@ -21,17 +21,18 @@
 from quiver.common import *
 
 test_template = """
-def test_pair_{sender_impl_symbol}_to_{receiver_impl_symbol}(session):
+@test
+def pair_{sender_impl_symbol}_to_{receiver_impl_symbol}():
     _test_pair("{sender_impl}", "{receiver_impl}")
 """
 
 for sender_impl in AMQP_ARROW_IMPLS:
     print("# {}".format(sender_impl))
     print()
-    
+
     for receiver_impl in AMQP_ARROW_IMPLS:
         sender_impl_symbol = sender_impl.replace("-", "_")
         receiver_impl_symbol = receiver_impl.replace("-", "_")
-        
+
         print(test_template.format(**locals()).strip())
         print()

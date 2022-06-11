@@ -50,7 +50,7 @@ def main():
         exit("The 'qdouterd' command is not on the path")
 
     if len(ARGS) == 1:
-        call("qdrouterd --version")
+        run("qdrouterd --version")
         exit()
 
     kwargs = parse_keyword_args(ARGS[1:])
@@ -61,16 +61,18 @@ def main():
     ready_file = kwargs["ready-file"]
 
     config = config_template.format(host, port)
-    config_file = write(make_temp_file(), config)
 
-    start_process("qdrouterd --config {}", config_file)
-    wait_for_port(port)
+    with temp_file() as config_file:
+        write(config_file, config)
 
-    if ready_file != "-":
-        write(ready_file, "ready\n")
+        start(f"qdrouterd --config {config_file}")
+        await_port(port)
 
-    while True:
-        sleep(1)
+        if ready_file != "-":
+            write(ready_file, "ready\n")
+
+        while True:
+            sleep(2)
 
 try:
     main()

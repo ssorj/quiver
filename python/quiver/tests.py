@@ -23,11 +23,7 @@ import os as _os
 from commandant import *
 from plano import *
 from quiver.common import *
-
-try:
-    from urllib.parse import urlparse as _urlparse
-except ImportError:
-    from urlparse import urlparse as _urlparse
+from urllib.parse import urlparse as _urlparse
 
 SCRIPT_DIR = _os.path.dirname(_os.path.realpath(__file__))
 TCLIENT_CERTIFICATE_PEM = SCRIPT_DIR + "/test_tls_certs/tclient-certificate.pem"
@@ -35,236 +31,299 @@ TCLIENT_PRIVATE_KEY_PEM = SCRIPT_DIR + "/test_tls_certs/tclient-private-key-nopw
 TSERVER_CERTIFICATE_PEM = SCRIPT_DIR + "/test_tls_certs/tserver-certificate.pem"
 TSERVER_PRIVATE_KEY_PEM = SCRIPT_DIR + "/test_tls_certs/tserver-private-key.pem"
 
-def open_test_session(session):
-    enable_logging("warn")
-
 # Commands
 
-def test_command_quiver(session):
+@test
+def command_quiver():
     _test_command("quiver")
-    call("quiver --init-only q0")
+    run("quiver --init-only q0")
 
-def test_command_quiver_arrow(session):
+@test
+def command_quiver_arrow():
     _test_command("quiver-arrow")
-    call("quiver-arrow --init-only send q0")
+    run("quiver-arrow --init-only send q0")
 
-def test_command_quiver_server(session):
+@test
+def command_quiver_server():
     _test_command("quiver-server")
-    call("quiver-server --init-only q0")
+    run("quiver-server --init-only q0")
 
-def test_command_quiver_bench(session):
-    with temp_working_dir() as output:
+@test
+def command_quiver_bench():
+    with working_dir() as output:
         _test_command("quiver-bench")
-        call("quiver-bench --init-only --output {}".format(output))
+        run(f"quiver-bench --init-only --output {output}")
 
 # Arrows
 
-def test_arrow_activemq_artemis_jms(session):
+@test
+def arrow_activemq_artemis_jms():
     _test_arrow("activemq-artemis-jms")
 
-def test_arrow_activemq_jms(session):
+@test
+def arrow_activemq_jms():
     _test_arrow("activemq-jms")
 
-def test_arrow_qpid_jms(session):
+@test
+def arrow_qpid_jms():
     _test_arrow("qpid-jms")
 
-def test_arrow_qpid_proton_c(session):
+@test
+def arrow_qpid_proton_c():
     _test_arrow("qpid-proton-c")
 
-def test_arrow_qpid_proton_cpp(session):
+@test
+def arrow_qpid_proton_cpp():
     _test_arrow("qpid-proton-cpp")
 
-def test_arrow_qpid_proton_python(session):
+@test
+def arrow_qpid_proton_python():
     _test_arrow("qpid-proton-python")
 
-def test_arrow_qpid_protonj2(session):
+@test
+def arrow_qpid_protonj2():
     _test_arrow("qpid-protonj2")
 
-def test_arrow_rhea(session):
+@test
+def arrow_rhea():
     _test_arrow("rhea")
 
-def test_arrow_vertx_proton(session):
+@test
+def arrow_vertx_proton():
     _test_arrow("vertx-proton")
 
 # Servers
 
-def test_server_activemq_artemis(session):
+@test
+def server_activemq_artemis():
     _test_server("activemq-artemis")
 
-def test_server_builtin(session):
+@test
+def server_builtin():
     _test_server("builtin")
 
-def test_server_qpid_dispatch(session):
+@test
+def server_qpid_dispatch():
     _test_server("qpid-dispatch")
 
 # Pairs
 
 # qpid-jms
 
-def test_pair_qpid_jms_to_qpid_jms(session):
+@test
+def pair_qpid_jms_to_qpid_jms():
     _test_pair("qpid-jms", "qpid-jms")
 
-def test_pair_qpid_jms_to_qpid_proton_cpp(session):
+@test
+def pair_qpid_jms_to_qpid_proton_cpp():
     _test_pair("qpid-jms", "qpid-proton-cpp")
 
-def test_pair_qpid_jms_to_qpid_proton_c(session):
+@test
+def pair_qpid_jms_to_qpid_proton_c():
     _test_pair("qpid-jms", "qpid-proton-c")
 
-def test_pair_qpid_jms_to_qpid_proton_python(session):
+@test
+def pair_qpid_jms_to_qpid_proton_python():
     _test_pair("qpid-jms", "qpid-proton-python")
 
-def test_pair_qpid_jms_to_qpid_protonj2(session):
+@test
+def pair_qpid_jms_to_qpid_protonj2():
     _test_pair("qpid-jms", "qpid-protonj2")
 
-def test_pair_qpid_jms_to_rhea(session):
+@test
+def pair_qpid_jms_to_rhea():
     _test_pair("qpid-jms", "rhea")
 
-def test_pair_qpid_jms_to_vertx_proton(session):
+@test
+def pair_qpid_jms_to_vertx_proton():
     _test_pair("qpid-jms", "vertx-proton")
 
 # qpid-proton-cpp
 
-def test_pair_qpid_proton_cpp_to_qpid_jms(session):
+@test
+def pair_qpid_proton_cpp_to_qpid_jms():
     _test_pair("qpid-proton-cpp", "qpid-jms")
 
-def test_pair_qpid_proton_cpp_to_qpid_proton_cpp(session):
+@test
+def pair_qpid_proton_cpp_to_qpid_proton_cpp():
     _test_pair("qpid-proton-cpp", "qpid-proton-cpp")
 
-def test_pair_qpid_proton_cpp_to_qpid_proton_c(session):
+@test
+def pair_qpid_proton_cpp_to_qpid_proton_c():
     _test_pair("qpid-proton-cpp", "qpid-proton-c")
 
-def test_pair_qpid_proton_cpp_to_qpid_proton_python(session):
+@test
+def pair_qpid_proton_cpp_to_qpid_proton_python():
     _test_pair("qpid-proton-cpp", "qpid-proton-python")
 
-def test_pair_qpid_proton_cpp_to_qpid_protonj2(session):
+@test
+def pair_qpid_proton_cpp_to_qpid_protonj2():
     _test_pair("qpid-proton-cpp", "qpid-protonj2")
 
-def test_pair_qpid_proton_cpp_to_rhea(session):
+@test
+def pair_qpid_proton_cpp_to_rhea():
     _test_pair("qpid-proton-cpp", "rhea")
 
-def test_pair_qpid_proton_cpp_to_vertx_proton(session):
+@test
+def pair_qpid_proton_cpp_to_vertx_proton():
     _test_pair("qpid-proton-cpp", "vertx-proton")
 
 # qpid-proton-c
 
-def test_pair_qpid_proton_c_to_qpid_jms(session):
+@test
+def pair_qpid_proton_c_to_qpid_jms():
     _test_pair("qpid-proton-c", "qpid-jms")
 
-def test_pair_qpid_proton_c_to_qpid_proton_cpp(session):
+@test
+def pair_qpid_proton_c_to_qpid_proton_cpp():
     _test_pair("qpid-proton-c", "qpid-proton-cpp")
 
-def test_pair_qpid_proton_c_to_qpid_proton_c(session):
+@test
+def pair_qpid_proton_c_to_qpid_proton_c():
     _test_pair("qpid-proton-c", "qpid-proton-c")
 
-def test_pair_qpid_proton_c_to_qpid_proton_python(session):
+@test
+def pair_qpid_proton_c_to_qpid_proton_python():
     _test_pair("qpid-proton-c", "qpid-proton-python")
 
-def test_pair_qpid_proton_c_to_qpid_protonj2(session):
+@test
+def pair_qpid_proton_c_to_qpid_protonj2():
     _test_pair("qpid-proton-c", "qpid-protonj2")
 
-def test_pair_qpid_proton_c_to_rhea(session):
+@test
+def pair_qpid_proton_c_to_rhea():
     _test_pair("qpid-proton-c", "rhea")
 
-def test_pair_qpid_proton_c_to_vertx_proton(session):
+@test
+def pair_qpid_proton_c_to_vertx_proton():
     _test_pair("qpid-proton-c", "vertx-proton")
 
 # qpid-proton-python
 
-def test_pair_qpid_proton_python_to_qpid_jms(session):
+@test
+def pair_qpid_proton_python_to_qpid_jms():
     _test_pair("qpid-proton-python", "qpid-jms")
 
-def test_pair_qpid_proton_python_to_qpid_proton_cpp(session):
+@test
+def pair_qpid_proton_python_to_qpid_proton_cpp():
     _test_pair("qpid-proton-python", "qpid-proton-cpp")
 
-def test_pair_qpid_proton_python_to_qpid_proton_c(session):
+@test
+def pair_qpid_proton_python_to_qpid_proton_c():
     _test_pair("qpid-proton-python", "qpid-proton-c")
 
-def test_pair_qpid_proton_python_to_qpid_proton_python(session):
+@test
+def pair_qpid_proton_python_to_qpid_proton_python():
     _test_pair("qpid-proton-python", "qpid-proton-python")
 
-def test_pair_qpid_proton_python_to_qpid_protonj2(session):
+@test
+def pair_qpid_proton_python_to_qpid_protonj2():
     _test_pair("qpid-proton-python", "qpid-protonj2")
 
-def test_pair_qpid_proton_python_to_rhea(session):
+@test
+def pair_qpid_proton_python_to_rhea():
     _test_pair("qpid-proton-python", "rhea")
 
-def test_pair_qpid_proton_python_to_vertx_proton(session):
+@test
+def pair_qpid_proton_python_to_vertx_proton():
     _test_pair("qpid-proton-python", "vertx-proton")
 
 # qpid-protonj2
 
-def test_pair_qpid_protonj2_to_qpid_jms(session):
+@test
+def pair_qpid_protonj2_to_qpid_jms():
     _test_pair("qpid-protonj2", "qpid-jms")
 
-def test_pair_qpid_protonj2_to_qpid_proton_cpp(session):
+@test
+def pair_qpid_protonj2_to_qpid_proton_cpp():
     _test_pair("qpid-protonj2", "qpid-proton-cpp")
 
-def test_pair_qpid_protonj2_to_qpid_proton_c(session):
+@test
+def pair_qpid_protonj2_to_qpid_proton_c():
     _test_pair("qpid-protonj2", "qpid-proton-c")
 
-def test_pair_qpid_protonj2_to_qpid_proton_python(session):
+@test
+def pair_qpid_protonj2_to_qpid_proton_python():
     _test_pair("qpid-protonj2", "qpid-proton-python")
 
-def test_pair_qpid_protonj2_to_qpid_protonj2(session):
+@test
+def pair_qpid_protonj2_to_qpid_protonj2():
     _test_pair("qpid-protonj2", "qpid-protonj2")
 
-def test_pair_qpid_protonj2_to_rhea(session):
-    raise TestSkipped("Error reading SendTime property: https://github.com/ssorj/quiver/issues/79")
+@test
+def pair_qpid_protonj2_to_rhea():
+    raise PlanoTestSkipped("Error reading SendTime property: https://github.com/ssorj/quiver/issues/79")
     _test_pair("qpid-protonj2", "rhea")
 
-def test_pair_qpid_protonj2_to_vertx_proton(session):
+@test
+def pair_qpid_protonj2_to_vertx_proton():
     _test_pair("qpid-protonj2", "vertx-proton")
 
 # rhea
 
-def test_pair_rhea_to_qpid_jms(session):
+@test
+def pair_rhea_to_qpid_jms():
     _test_pair("rhea", "qpid-jms")
 
-def test_pair_rhea_to_qpid_proton_cpp(session):
+@test
+def pair_rhea_to_qpid_proton_cpp():
     _test_pair("rhea", "qpid-proton-cpp")
 
-def test_pair_rhea_to_qpid_proton_c(session):
+@test
+def pair_rhea_to_qpid_proton_c():
     _test_pair("rhea", "qpid-proton-c")
 
-def test_pair_rhea_to_qpid_proton_python(session):
+@test
+def pair_rhea_to_qpid_proton_python():
     _test_pair("rhea", "qpid-proton-python")
 
-def test_pair_rhea_to_qpid_protonj2(session):
+@test
+def pair_rhea_to_qpid_protonj2():
     _test_pair("rhea", "qpid-protonj2")
 
-def test_pair_rhea_to_rhea(session):
+@test
+def pair_rhea_to_rhea():
     _test_pair("rhea", "rhea")
 
-def test_pair_rhea_to_vertx_proton(session):
+@test
+def pair_rhea_to_vertx_proton():
     _test_pair("rhea", "vertx-proton")
 
 # vertx-proton
 
-def test_pair_vertx_proton_to_qpid_jms(session):
+@test
+def pair_vertx_proton_to_qpid_jms():
     _test_pair("vertx-proton", "qpid-jms")
 
-def test_pair_vertx_proton_to_qpid_proton_cpp(session):
+@test
+def pair_vertx_proton_to_qpid_proton_cpp():
     _test_pair("vertx-proton", "qpid-proton-cpp")
 
-def test_pair_vertx_proton_to_qpid_proton_c(session):
+@test
+def pair_vertx_proton_to_qpid_proton_c():
     _test_pair("vertx-proton", "qpid-proton-c")
 
-def test_pair_vertx_proton_to_qpid_proton_python(session):
+@test
+def pair_vertx_proton_to_qpid_proton_python():
     _test_pair("vertx-proton", "qpid-proton-python")
 
-def test_pair_vertx_proton_to_qpid_protonj2(session):
+@test
+def pair_vertx_proton_to_qpid_protonj2():
     _test_pair("vertx-proton", "qpid-protonj2")
 
-def test_pair_vertx_proton_to_rhea(session):
+@test
+def pair_vertx_proton_to_rhea():
     _test_pair("vertx-proton", "rhea")
 
-def test_pair_vertx_proton_to_vertx_proton(session):
+@test
+def pair_vertx_proton_to_vertx_proton():
     _test_pair("vertx-proton", "vertx-proton")
 
 # Bench
 
-def test_bench(session):
-    with temp_working_dir() as output:
+@test
+def bench():
+    with working_dir() as output:
         command = [
             "quiver-bench",
             "--count", "1",
@@ -275,12 +334,13 @@ def test_bench(session):
             "--output", output,
         ]
 
-        call(command)
+        run(command)
 
 # TLS/SASL
 
-def test_anonymous_tls(session):
-    raise TestSkipped("Certificate verify fails: https://github.com/ssorj/quiver/issues/70")
+@test
+def anonymous_tls():
+    raise PlanoTestSkipped("Certificate verify fails: https://github.com/ssorj/quiver/issues/70")
 
     extra_server_args = []
     extra_server_args.append("--key={}".format(TSERVER_PRIVATE_KEY_PEM))
@@ -292,11 +352,12 @@ def test_anonymous_tls(session):
             if not impl_available(impl):
                 continue
 
-            call("quiver-arrow send {} --impl {} --count 1 --verbose", server.url, impl)
-            call("quiver-arrow receive {} --impl {} --count 1 --verbose", server.url, impl)
+            run(f"quiver-arrow send {server.url} --impl {impl} --count 1 --verbose")
+            run(f"quiver-arrow receive {server.url} --impl {impl} --count 1 --verbose")
 
-def test_clientauth_tls(session):
-    raise TestSkipped("Certificate verify fails: https://github.com/ssorj/quiver/issues/70")
+@test
+def clientauth_tls():
+    raise PlanoTestSkipped("Certificate verify fails: https://github.com/ssorj/quiver/issues/70")
 
     extra_server_args = []
     extra_server_args.append("--key={}".format(TSERVER_PRIVATE_KEY_PEM))
@@ -315,11 +376,13 @@ def test_clientauth_tls(session):
 
             cert = TCLIENT_CERTIFICATE_PEM
             key = TCLIENT_PRIVATE_KEY_PEM
-            call("quiver-arrow send {} --impl {} --count 1 --verbose --cert {} --key {}", server.url, impl, cert, key)
-            call("quiver-arrow receive {} --impl {} --count 1 --verbose --cert {} --key {}", server.url, impl, cert, key)
 
-def test_sasl(session):
-    raise TestSkipped("Failure to authenticate using SASL PLAIN: https://github.com/ssorj/quiver/issues/75")
+            run(f"quiver-arrow send {server.url} --impl {impl} --count 1 --verbose --cert {cert} --key {key}")
+            run(f"quiver-arrow receive {server.url} --impl {impl} --count 1 --verbose --cert {cert} --key {key}")
+
+@test
+def sasl():
+    raise PlanoTestSkipped("Failure to authenticate using SASL PLAIN: https://github.com/ssorj/quiver/issues/75")
 
     sasl_user = "myuser"
     sasl_password = "mypassword"
@@ -341,12 +404,12 @@ def test_sasl(session):
             if not impl_available(impl):
                 continue
 
-            call("quiver-arrow send {} --impl {} --count 1 --verbose", client_url, impl)
-            call("quiver-arrow receive {} --impl {} --count 1 --verbose", client_url, impl)
+            run(f"quiver-arrow send {client_url} --impl {impl} --count 1 --verbose")
+            run(f"quiver-arrow receive {client_url} --impl {impl} --count 1 --verbose")
 
 class _TestServer:
     def __init__(self, impl="builtin", scheme=None, extra_server_args=[], **kwargs):
-        port = random_port()
+        port = get_random_port()
 
         if impl == "activemq":
             port = "5672"
@@ -363,7 +426,7 @@ class _TestServer:
 
         command.extend(extra_server_args)
 
-        self.proc = start_process(command, **kwargs)
+        self.proc = start(command, **kwargs)
         self.proc.url = self.url
 
     def __enter__(self):
@@ -376,58 +439,56 @@ class _TestServer:
         return self.proc
 
     def __exit__(self, exc_type, exc_value, traceback):
-        stop_process(self.proc)
+        stop(self.proc)
         remove(self.ready_file)
 
 def _test_url():
-    return "//localhost:{}/q0".format(random_port())
+    return "//localhost:{}/q0".format(get_random_port())
 
 def _test_command(command):
-    call("{} --help", command)
-    call("{} --version", command)
+    run(f"{command} --help")
+    run(f"{command} --version")
 
 def _test_arrow(impl):
     if not impl_available(impl):
-        raise TestSkipped("Arrow '{}' is unavailable".format(impl))
+        raise PlanoTestSkipped(f"Arrow '{impl}' is unavailable")
 
-    call("quiver-arrow --impl {} --info", impl)
+    run(f"quiver-arrow --impl {impl} --info")
 
     if impl in AMQP_ARROW_IMPLS:
         if impl == "qpid-proton-cpp":
-            raise TestSkipped("Proton C++ timer trouble: https://github.com/ssorj/quiver/issues/51")
+            raise PlanoTestSkipped("Proton C++ timer trouble: https://github.com/ssorj/quiver/issues/51")
 
         with _TestServer() as server:
-            call("quiver-arrow send {} --impl {} --count 1 --verbose", server.url, impl)
-            call("quiver-arrow receive {} --impl {} --count 1 --verbose", server.url, impl)
+            run(f"quiver-arrow send {server.url} --impl {impl} --count 1 --verbose")
+            run(f"quiver-arrow receive {server.url} --impl {impl} --count 1 --verbose")
 
-            call("quiver-arrow send {} --impl {} --duration 1 --rate 100 --verbose", server.url, impl)
-            call("quiver-arrow receive {} --impl {} --duration 1 --rate 100 --verbose", server.url, impl)
+            run(f"quiver-arrow send {server.url} --impl {impl} --duration 1 --rate 100 --verbose")
+            run(f"quiver-arrow receive {server.url} --impl {impl} --duration 1 --rate 100 --verbose")
 
-            call("quiver {} --impl {} --duration 1 --body-size 1 --credit 1 --durable --set-message-id", server.url, impl)
+            run(f"quiver {server.url} --impl {impl} --duration 1 --body-size 1 --credit 1 --durable --set-message-id")
 
 def _test_server(impl):
     if not impl_available(impl):
-        raise TestSkipped("Server '{}' is unavailable".format(impl))
+        raise PlanoTestSkipped("Server '{}' is unavailable".format(impl))
 
-    call("quiver-server --impl {} --info", impl)
+    run(f"quiver-server --impl {impl} --info")
 
     with _TestServer(impl=impl) as server:
-        call("quiver {} --count 1", server.url)
+        run(f"quiver {server.url} --count 1")
 
 def _test_pair(sender_impl, receiver_impl):
     if "qpid-proton-cpp" in (sender_impl, receiver_impl):
-        raise TestSkipped("Proton C++ timer trouble: https://github.com/ssorj/quiver/issues/51")
+        raise PlanoTestSkipped("Proton C++ timer trouble: https://github.com/ssorj/quiver/issues/51")
 
     if not impl_available(sender_impl):
-        raise TestSkipped("Sender '{}' is unavailable".format(sender_impl))
+        raise PlanoTestSkipped(f"Sender '{sender_impl}' is unavailable")
 
     if not impl_available(receiver_impl):
-        raise TestSkipped("Receiver '{}' is unavailable".format(receiver_impl))
+        raise PlanoTestSkipped(f"Receiver '{receiver_impl}' is unavailable")
 
     if receiver_impl in PEER_TO_PEER_ARROW_IMPLS:
-        call("quiver --sender {} --receiver {} --count 1 --verbose",
-             sender_impl, receiver_impl)
+        run(f"quiver --sender {sender_impl} --receiver {receiver_impl} --count 1 --verbose")
 
     with _TestServer() as server:
-        call("quiver --sender {} --receiver {} --count 1 --verbose {}",
-             sender_impl, receiver_impl, server.url)
+        run(f"quiver --sender {sender_impl} --receiver {receiver_impl} --count 1 --verbose {server.url}")

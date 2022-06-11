@@ -339,7 +339,7 @@ class Command(object):
             args, other = parser.parse_known_args(_plano.ARGS)
             impl = require_impl(args.impl)
 
-            _plano.call(impl.file)
+            _plano.run(impl.file)
             _plano.exit(0)
 
     def run(self):

@@ -17,7 +17,6 @@
 # under the License.
 #
 
-import json as _json
 import os as _os
 import plano as _plano
 import shlex as _shlex
@@ -129,38 +128,36 @@ class QuiverPairCommand(Command):
 
         self.start_time = now()
 
-        #_os.environ["DEBUG"] = "*"
-        receiver = _plano.start_process(receiver_args)
-        #del _os.environ["DEBUG"]
+        # with working_env(PN_LOG=frame, DEBUG="*"):
+        receiver = _plano.start(receiver_args)
 
         if self.args.url is None:
-            _plano.wait_for_port(self.port, host=self.host)
+            _plano.await_port(self.port, host=self.host)
 
-        #_os.environ["PN_TRACE_FRM"] = "1"
-        sender = _plano.start_process(sender_args)
-        #del _os.environ["PN_TRACE_FRM"]
+        # with working_env(PN_LOG=frame, DEBUG="*"):
+        sender = _plano.start(sender_args)
 
         try:
             if not self.quiet:
                 self.print_status(sender, receiver)
 
-            _plano.check_process(receiver)
-            _plano.check_process(sender)
-        except _plano.CalledProcessError as e:
+            _plano.wait(receiver, check=True)
+            _plano.wait(sender, check=True)
+        except _plano.PlanoProcessError as e:
             _plano.error(e)
         finally:
-            _plano.stop_process(sender)
-            _plano.stop_process(receiver)
+            _plano.stop(sender)
+            _plano.stop(receiver)
 
-        if (sender.returncode, receiver.returncode) != (0, 0):
+        if (sender.exit_code, receiver.exit_code) != (0, 0):
             _plano.exit(1)
 
         if not self.quiet:
             self.print_summary()
 
     def print_status(self, sender, receiver):
-        sender_snaps = _join(self.output_dir, "sender-snapshots.csv")
-        receiver_snaps = _join(self.output_dir, "receiver-snapshots.csv")
+        sender_snaps = _plano.join(self.output_dir, "sender-snapshots.csv")
+        receiver_snaps = _plano.join(self.output_dir, "receiver-snapshots.csv")
 
         _plano.touch(sender_snaps)
         _plano.touch(receiver_snaps)
@@ -250,11 +247,8 @@ class QuiverPairCommand(Command):
         print(row)
 
     def print_summary(self):
-        with open(_join(self.output_dir, "sender-summary.json")) as f:
-            sender = _json.load(f)
-
-        with open(_join(self.output_dir, "receiver-summary.json")) as f:
-            receiver = _json.load(f)
+        sender = _plano.read_json(_plano.join(self.output_dir, "sender-summary.json"))
+        receiver = _plano.read_json(_plano.join(self.output_dir, "receiver-summary.json"))
 
         print_heading("Configuration")
 
@@ -327,5 +321,3 @@ def _read_line(file_):
         return None
 
     return line[:-1]
-
-_join = _plano.join
