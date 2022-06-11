@@ -23,7 +23,7 @@
 
 var fs = require('fs');
 
-let home = "@quiver_home@";
+let home = "@default_home@";
 
 if (process.env.hasOwnProperty("QUIVER_HOME")) {
     home = process.env.QUIVER_HOME;

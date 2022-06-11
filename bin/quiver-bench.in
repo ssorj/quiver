@@ -21,8 +21,7 @@
 import os
 import sys
 
-default_home = os.path.normpath("@quiver_home@")
-home = os.environ.get("QUIVER_HOME", default_home)
+home = os.environ.get("QUIVER_HOME", "@default_home@")
 sys.path.insert(0, os.path.join(home, "python"))
 
 from quiver.bench import QuiverBenchCommand

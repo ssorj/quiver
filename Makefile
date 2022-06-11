@@ -166,10 +166,10 @@ build/prefix.txt:
 	echo ${PREFIX} > build/prefix.txt
 
 build/bin/%: bin/%.in
-	scripts/configure-file -a quiver_home=${INSTALLED_QUIVER_HOME} $< $@
+	scripts/configure-file -a default_home=${INSTALLED_QUIVER_HOME} $< $@
 
 build/quiver/impls/%: impls/%.in
-	scripts/configure-file -a quiver_home=${INSTALLED_QUIVER_HOME} $< $@
+	scripts/configure-file -a default_home=${INSTALLED_QUIVER_HOME} $< $@
 
 build/quiver/impls/quiver-arrow-qpid-proton-c: impls/quiver-arrow-qpid-proton-c.c
 	@mkdir -p ${@D}
@@ -218,7 +218,7 @@ build/quiver/javascript/%: javascript/%
 
 build/quiver/python/quiver/common.py: python/quiver/common.py.in
 	@mkdir -p ${@D}
-	scripts/configure-file -a version=${VERSION} -a quiver_home=${INSTALLED_QUIVER_HOME} $< $@
+	scripts/configure-file -a version=${VERSION} -a default_home=${INSTALLED_QUIVER_HOME} $< $@
 
 build/quiver/python/quiver/%: python/quiver/% python/pencil.py python/plano.py build/quiver/python/quiver/common.py
 	@mkdir -p ${@D}

@@ -32,13 +32,9 @@ import sys as _sys
 import tempfile as _tempfile
 import time as _time
 
-try:
-    from urllib.parse import urlparse as _urlparse
-except ImportError:
-    from urlparse import urlparse as _urlparse
+from urllib.parse import urlparse as _urlparse
 
-_default_home = "@quiver_home@"
-_home = _os.environ.get("QUIVER_HOME", _default_home)
+_home = _os.environ.get("QUIVER_HOME", "@default_home@")
 
 _impls = []
 _impls_by_name = {}
