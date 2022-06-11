@@ -209,7 +209,7 @@ def test_pair_qpid_protonj2_to_qpid_protonj2(session):
     _test_pair("qpid-protonj2", "qpid-protonj2")
 
 def test_pair_qpid_protonj2_to_rhea(session):
-    raise TestSkipped("Disabled: https://github.com/ssorj/quiver/issues/79")
+    raise TestSkipped("Error reading SendTime property: https://github.com/ssorj/quiver/issues/79")
     _test_pair("qpid-protonj2", "rhea")
 
 def test_pair_qpid_protonj2_to_vertx_proton(session):
@@ -280,7 +280,7 @@ def test_bench(session):
 # TLS/SASL
 
 def test_anonymous_tls(session):
-    raise TestSkipped("Disabled: https://github.com/ssorj/quiver/issues/70")
+    raise TestSkipped("Certificate verify fails: https://github.com/ssorj/quiver/issues/70")
 
     extra_server_args = []
     extra_server_args.append("--key={}".format(TSERVER_PRIVATE_KEY_PEM))
@@ -296,7 +296,7 @@ def test_anonymous_tls(session):
             call("quiver-arrow receive {} --impl {} --count 1 --verbose", server.url, impl)
 
 def test_clientauth_tls(session):
-    raise TestSkipped("Disabled: https://github.com/ssorj/quiver/issues/70")
+    raise TestSkipped("Certificate verify fails: https://github.com/ssorj/quiver/issues/70")
 
     extra_server_args = []
     extra_server_args.append("--key={}".format(TSERVER_PRIVATE_KEY_PEM))
@@ -319,7 +319,7 @@ def test_clientauth_tls(session):
             call("quiver-arrow receive {} --impl {} --count 1 --verbose --cert {} --key {}", server.url, impl, cert, key)
 
 def test_sasl(session):
-    raise TestSkipped("Disabled: https://github.com/ssorj/quiver/issues/75")
+    raise TestSkipped("Failure to authenticate using SASL PLAIN: https://github.com/ssorj/quiver/issues/75")
 
     sasl_user = "myuser"
     sasl_password = "mypassword"
@@ -402,6 +402,8 @@ def _test_arrow(impl):
 
             call("quiver-arrow send {} --impl {} --duration 1 --rate 100 --verbose", server.url, impl)
             call("quiver-arrow receive {} --impl {} --duration 1 --rate 100 --verbose", server.url, impl)
+
+            call("quiver {} --impl {} --duration 1 --body-size 1 --credit 1 --durable --set-message-id", server.url, impl)
 
 def _test_server(impl):
     if not impl_available(impl):
