@@ -43,7 +43,7 @@
     <qpid-jms-version>1.6.0</qpid-jms-version>
     <vertx-proton-version>4.3.1</vertx-proton-version>
     <geronimo.jms.2.spec.version>1.0-alpha-2</geronimo.jms.2.spec.version>
-    <protonj2-client-version>1.0.0-M6</protonj2-client-version>
+    <protonj2-client-version>1.0.0-M7</protonj2-client-version>
 
     <!-- Maven Plugin Versions for this Project -->
     <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
