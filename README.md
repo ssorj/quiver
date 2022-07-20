@@ -248,6 +248,7 @@ arrow implementations:
   qpid-proton-cpp (cpp)
   qpid-proton-python (python, py)
   qpid-protonj2 (java)            Client mode only
+  qpid-proton-dotnet (.NET)       Client mode only
   rhea (javascript, js)
   vertx-proton (java)             Client mode only
 

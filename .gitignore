@@ -23,3 +23,14 @@ java/*/target
 .recommenders/
 eclipse-classes
 # End of Eclipse IDE files
+
+## Visual Studio Code
+dotnet/*/.vscode/*
+#!.vscode/settings.json
+#!.vscode/tasks.json
+#!.vscode/launch.json
+#!.vscode/extensions.json
+
+## .NET build files
+dotnet/*/bin
+dotnet/*/obj
