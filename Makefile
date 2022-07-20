@@ -33,6 +33,8 @@ VERSION := $(shell cat VERSION.txt)
 
 JAVA_ENABLED := \
 	$(shell which mvn 1> /dev/null 2>&1 && echo yes || echo no)
+DOTNET_ENABLED := \
+	$(shell which dotnet 1> /dev/null 2>&1 && echo yes || echo no)
 JAVASCRIPT_ENABLED := \
 	$(shell which node 1> /dev/null 2>&1 && echo yes || echo no)
 QPID_PROTON_C_ENABLED := \
@@ -47,6 +49,7 @@ ifneq (${QPID_PROTON_PYTHON_ENABLED},yes)
 endif
 
 $(info JAVA_ENABLED=${JAVA_ENABLED})
+$(info DOTNET_ENABLED=${DOTNET_ENABLED})
 $(info JAVASCRIPT_ENABLED=${JAVASCRIPT_ENABLED})
 $(info QPID_PROTON_C_ENABLED=${QPID_PROTON_C_ENABLED})
 $(info QPID_PROTON_CPP_ENABLED=${QPID_PROTON_CPP_ENABLED})
@@ -75,6 +78,10 @@ TARGETS += \
 	build/quiver/impls/quiver-arrow-qpid-jms \
 	build/quiver/impls/quiver-arrow-qpid-protonj2 \
 	build/quiver/impls/quiver-arrow-vertx-proton
+endif
+
+ifeq (${DOTNET_ENABLED},yes)
+TARGETS += build/quiver/impls/quiver-arrow-qpid-proton-dotnet
 endif
 
 ifeq (${JAVASCRIPT_ENABLED},yes)
@@ -107,6 +114,7 @@ clean:
 	rm -rf build
 	rm -rf install
 	rm -rf python/__pycache__
+	find dotnet -name bin -type d -exec rm -rf {} +
 	find java -name target -type d -exec rm -rf {} +
 
 .PHONY: build
@@ -198,6 +206,13 @@ build/quiver/java/quiver-qpid-protonj2.jar: java/quiver-protonj2/pom.xml $(shell
 	@mkdir -p build/quiver/java
 	cd java/quiver-protonj2 && mvn -B clean package
 	cp java/quiver-protonj2/target/quiver-protonj2-1.0.0-SNAPSHOT-jar-with-dependencies.jar $@
+
+build/quiver/impls/quiver-arrow-qpid-proton-dotnet: impls/quiver-arrow-qpid-proton-dotnet.in build/quiver/dotnet/quiver-qpid-proton-dotnet
+
+build/quiver/dotnet/quiver-qpid-proton-dotnet: dotnet/quiver-proton-dotnet/quiver-proton-dotnet.csproj $(shell find dotnet/quiver-proton-dotnet -type f)
+	@mkdir -p build/quiver/dotnet/quiver-qpid-proton-dotnet
+	cd dotnet/quiver-proton-dotnet && dotnet restore && dotnet build --configuration Release
+	cp -R dotnet/quiver-proton-dotnet/bin/Release/net6.0/* $@
 
 build/quiver/impls/quiver-arrow-activemq-jms: impls/quiver-arrow-activemq-jms.in build/quiver/java/quiver-activemq-jms.jar
 

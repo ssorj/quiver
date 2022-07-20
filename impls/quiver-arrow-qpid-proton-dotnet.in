@@ -1,0 +1,62 @@
+#!/usr/bin/python3
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+import os
+import shlex
+import sys
+
+home = os.environ.get("QUIVER_HOME", "@default_home@")
+sys.path.insert(0, os.path.join(home, "python"))
+
+from plano import *
+
+# .NET simplest run mechanism is to use the csproj file to eliminate platform executable differences
+# dotnet run connection-mode=CLIENT channel-mode=ACTIVE operation=SENDER host=localhost path=q0 count=100
+
+def main():
+    enable_logging("warn")
+
+    if "QUIVER_VERBOSE" in ENV:
+        enable_logging("notice")
+
+    exe_file = join(home, "dotnet", "quiver-proton-dotnet", "quiver-proton-dotnet")
+
+    if len(ARGS) == 1:
+        run(f"unzip -p {exe_file}")
+        run("dotnet --version")
+        exit()
+
+    args = ["/usr/bin/env", "--", "dotnet"]
+
+    args += [
+        "run", exe_file,
+    ]
+
+    args += ARGS[1:]
+
+    notice("Running '{}'", " ".join(args))
+
+    os.execvp(args[0], args[1:])
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
