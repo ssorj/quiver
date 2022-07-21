@@ -46,14 +46,6 @@ config_template = """
 </configuration>
 """
 
-_info_script = """
-source {}
-echo ARTEMIS_HOME=$ARTEMIS_HOME
-echo ARTEMIS_INSTANCE=$ARTEMIS_INSTANCE
-echo JAVA_ARGS=\\\"$JAVA_ARGS\\\"
-java -version
-"""
-
 def main():
     enable_logging("warn")
 
@@ -61,12 +53,8 @@ def main():
         exit("The 'artemis' command is not on the path")
 
     if len(ARGS) == 1:
-        executable = get_real_path(which("artemis"))
-        profile_file = join(get_parent_dir(get_parent_dir(executable)), "etc", "artemis.profile")
-
-        # XXX Strip and replace is a temp fix
-        run(_info_script.strip().replace("\n", ";").format(profile_file), shell=True)
-
+        run("artemis version")
+        run("java -version")
         exit()
 
     kwargs = parse_keyword_args(ARGS[1:])
