@@ -7,8 +7,16 @@ on:
 jobs:
   ubuntu:
     runs-on: ubuntu-latest
-    container: ubuntu:focal
     steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-java@v3
+      with:
+        distribution: "temurin"
+        java-version: "17"
+        cache: "maven"
+    - uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '6.0.x'
     - run: |
         apt-get -qq update
         apt-get -qq install software-properties-common
@@ -17,15 +25,6 @@ jobs:
         apt-get -qq install build-essential curl make nodejs npm python3 python3-numpy unzip zstd
         apt-get -y install libqpid-proton-cpp12-dev python3-qpid-proton libsasl2-2 libsasl2-dev libsasl2-modules qdrouterd sasl2-bin
         npm -g install rhea
-    - uses: actions/checkout@v3
-    - uses: actions/setup-java@v3
-      with:
-        distribution: "temurin"
-        java-version: "11"
-        cache: "maven"
-    - uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: '6.0.x'
     - run: make install PREFIX=/usr
     - run: quiver-self-test
       env:

@@ -31,10 +31,10 @@ export NODE_PATH := /usr/lib/node_modules:${NODE_PATH}
 
 VERSION := $(shell cat VERSION.txt)
 
-JAVA_ENABLED := \
-	$(shell which mvn 1> /dev/null 2>&1 && echo yes || echo no)
 DOTNET_ENABLED := \
 	$(shell which dotnet 1> /dev/null 2>&1 && echo yes || echo no)
+JAVA_ENABLED := \
+	$(shell which mvn 1> /dev/null 2>&1 && echo yes || echo no)
 JAVASCRIPT_ENABLED := \
 	$(shell which node 1> /dev/null 2>&1 && echo yes || echo no)
 QPID_PROTON_C_ENABLED := \
@@ -48,8 +48,8 @@ ifneq (${QPID_PROTON_PYTHON_ENABLED},yes)
         $(warning Qpid Proton Python is required to build Quiver)
 endif
 
-$(info JAVA_ENABLED=${JAVA_ENABLED})
 $(info DOTNET_ENABLED=${DOTNET_ENABLED})
+$(info JAVA_ENABLED=${JAVA_ENABLED})
 $(info JAVASCRIPT_ENABLED=${JAVASCRIPT_ENABLED})
 $(info QPID_PROTON_C_ENABLED=${QPID_PROTON_C_ENABLED})
 $(info QPID_PROTON_CPP_ENABLED=${QPID_PROTON_CPP_ENABLED})
