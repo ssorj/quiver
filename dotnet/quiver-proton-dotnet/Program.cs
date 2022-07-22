@@ -23,12 +23,12 @@ using System.Text;
 using Apache.Qpid.Proton.Client;
 using Apache.Qpid.Proton.Client.Exceptions;
 
-namespace Qiuver.Driver
+namespace Quiver.Driver
 {
-   enum Role
+   enum Operation
    {
-      SENDER,
-      RECEIVER
+      SEND,
+      RECEIVE
    }
 
    class Program
@@ -69,12 +69,12 @@ namespace Qiuver.Driver
          {
             string[] elems = arg.Split("=", 2);
             kwargs[elems[0]] = elems[1];
-            Console.WriteLine("Arg key=" + elems[0] + " value=" + elems[1]);
+            // Console.Error.WriteLine("Arg key=" + elems[0] + " value=" + elems[1]);
          }
 
          string connectionMode = kwargs.GetValueOrDefault("connection-mode", "").ToLower();
          string channelMode = kwargs.GetValueOrDefault("channel-mode", "").ToLower();
-         Role operation = (Role)Enum.Parse(typeof(Role), kwargs.GetValueOrDefault("operation", "SENDER").ToUpper());
+         Operation operation = (Operation)Enum.Parse(typeof(Operation), kwargs.GetValueOrDefault("operation", "SEND").ToUpper());
          string id = kwargs.GetValueOrDefault("id", "");
          string scheme = kwargs.GetValueOrDefault("scheme", "");
          string host = kwargs.GetValueOrDefault("host", "");
@@ -89,8 +89,8 @@ namespace Qiuver.Driver
          int bodySize = int.Parse(kwargs.GetValueOrDefault("body-size", "0"));
          uint creditWindow = uint.Parse(kwargs.GetValueOrDefault("credit-window", "10"));
          int transactionSize = int.Parse(kwargs.GetValueOrDefault("transaction-size", "0"));
-         bool durable = bool.Parse(kwargs.GetValueOrDefault("durable", "false"));
-         bool setMessageID = bool.Parse(kwargs.GetValueOrDefault("set-message-id", "false"));
+         bool durable = Convert.ToBoolean(int.Parse(kwargs.GetValueOrDefault("durable", "0")));
+         bool setMessageID = Convert.ToBoolean(int.Parse(kwargs.GetValueOrDefault("set-message-id", "0")));
 
          if (!CLIENT.Equals(connectionMode))
          {
@@ -141,7 +141,7 @@ namespace Qiuver.Driver
       {
          private readonly IClient client;
          private readonly ConnectionOptions options;
-         private readonly Role role;
+         private readonly Operation operation;
          private readonly string host;
          private readonly int port;
          private readonly string address;
@@ -153,13 +153,15 @@ namespace Qiuver.Driver
          private readonly bool durable;
          private readonly bool setMessageID;
 
+         private readonly DateTime timeBase = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
          // Tracks actual state of the arrow as it runs
          private uint sent;
          private uint received;
          private volatile bool stopping = false;
 
          public Arrow(IClient client, ConnectionOptions options, string host, int port, string address,
-                      Role role, uint prefetch, int desiredDuration, int desiredCount, int bodySize,
+                      Operation operation, uint prefetch, int desiredDuration, int desiredCount, int bodySize,
                       int transactionSize, bool durable, bool setMessageID)
          {
             this.client = client;
@@ -167,7 +169,7 @@ namespace Qiuver.Driver
             this.host = host;
             this.port = port;
             this.address = address;
-            this.role = role;
+            this.operation = operation;
             this.prefetch = prefetch;
             this.desiredDuration = desiredDuration;
             this.desiredCount = desiredCount;
@@ -190,12 +192,12 @@ namespace Qiuver.Driver
 
             try
             {
-               switch (role)
+               switch (operation)
                {
-                  case Role.RECEIVER:
+                  case Operation.RECEIVE:
                      ReceiveMessages(connection);
                      break;
-                  case Role.SENDER:
+                  case Operation.SEND:
                      SendMessages(connection);
                      break;
                }
@@ -247,7 +249,7 @@ namespace Qiuver.Driver
                   message.MessageId = sent.ToString();
                }
 
-               long sentAt = Environment.TickCount64;
+               long sentAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                message.SetProperty("SendTime", sentAt);
 
                lastSentTracker = sender.Send(message);
@@ -317,7 +319,7 @@ namespace Qiuver.Driver
                }
 
                long sentAt = (long)message.GetProperty("SendTime");
-               long receivedAt = Environment.TickCount64;
+               long receivedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
                line.Clear();
                Console.Write(line.Append(sentAt).Append(',').Append(receivedAt).Append('\n'));

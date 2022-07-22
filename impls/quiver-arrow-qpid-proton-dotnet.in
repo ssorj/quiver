@@ -27,29 +27,22 @@ sys.path.insert(0, os.path.join(home, "python"))
 
 from plano import *
 
-# .NET simplest run mechanism is to use the csproj file to eliminate platform executable differences
-# dotnet run connection-mode=CLIENT channel-mode=ACTIVE operation=SENDER host=localhost path=q0 count=100
-
 def main():
     enable_logging("warn")
 
     if "QUIVER_VERBOSE" in ENV:
         enable_logging("notice")
 
-    exe_file = join(home, "dotnet", "quiver-proton-dotnet", "quiver-proton-dotnet")
-
     if len(ARGS) == 1:
-        run(f"unzip -p {exe_file}")
+        # run(f"unzip -p {exe_file}") # XXX
         run("dotnet --version")
         exit()
 
-    args = ["/usr/bin/env", "--", "dotnet"]
-
-    args += [
-        "run", exe_file,
+    args = [
+        join(home, "dotnet", "quiver-qpid-proton-dotnet", "quiver-proton-dotnet"),
     ]
 
-    args += ARGS[1:]
+    args += ARGS
 
     notice("Running '{}'", " ".join(args))
 

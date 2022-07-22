@@ -76,6 +76,10 @@ def arrow_qpid_proton_cpp():
     _test_arrow("qpid-proton-cpp")
 
 @test
+def arrow_qpid_proton_dotnet():
+    _test_arrow("qpid-proton-dotnet")
+
+@test
 def arrow_qpid_proton_python():
     _test_arrow("qpid-proton-python")
 
@@ -114,12 +118,12 @@ def pair_qpid_jms_to_qpid_jms():
     _test_pair("qpid-jms", "qpid-jms")
 
 @test
-def pair_qpid_jms_to_qpid_proton_cpp():
-    _test_pair("qpid-jms", "qpid-proton-cpp")
-
-@test
 def pair_qpid_jms_to_qpid_proton_c():
     _test_pair("qpid-jms", "qpid-proton-c")
+
+@test
+def pair_qpid_jms_to_qpid_proton_cpp():
+    _test_pair("qpid-jms", "qpid-proton-cpp")
 
 @test
 def pair_qpid_jms_to_qpid_proton_python():
@@ -130,42 +134,16 @@ def pair_qpid_jms_to_qpid_protonj2():
     _test_pair("qpid-jms", "qpid-protonj2")
 
 @test
+def pair_qpid_jms_to_qpid_proton_dotnet():
+    _test_pair("qpid-jms", "qpid-proton-dotnet")
+
+@test
 def pair_qpid_jms_to_rhea():
     _test_pair("qpid-jms", "rhea")
 
 @test
 def pair_qpid_jms_to_vertx_proton():
     _test_pair("qpid-jms", "vertx-proton")
-
-# qpid-proton-cpp
-
-@test
-def pair_qpid_proton_cpp_to_qpid_jms():
-    _test_pair("qpid-proton-cpp", "qpid-jms")
-
-@test
-def pair_qpid_proton_cpp_to_qpid_proton_cpp():
-    _test_pair("qpid-proton-cpp", "qpid-proton-cpp")
-
-@test
-def pair_qpid_proton_cpp_to_qpid_proton_c():
-    _test_pair("qpid-proton-cpp", "qpid-proton-c")
-
-@test
-def pair_qpid_proton_cpp_to_qpid_proton_python():
-    _test_pair("qpid-proton-cpp", "qpid-proton-python")
-
-@test
-def pair_qpid_proton_cpp_to_qpid_protonj2():
-    _test_pair("qpid-proton-cpp", "qpid-protonj2")
-
-@test
-def pair_qpid_proton_cpp_to_rhea():
-    _test_pair("qpid-proton-cpp", "rhea")
-
-@test
-def pair_qpid_proton_cpp_to_vertx_proton():
-    _test_pair("qpid-proton-cpp", "vertx-proton")
 
 # qpid-proton-c
 
@@ -174,12 +152,12 @@ def pair_qpid_proton_c_to_qpid_jms():
     _test_pair("qpid-proton-c", "qpid-jms")
 
 @test
-def pair_qpid_proton_c_to_qpid_proton_cpp():
-    _test_pair("qpid-proton-c", "qpid-proton-cpp")
-
-@test
 def pair_qpid_proton_c_to_qpid_proton_c():
     _test_pair("qpid-proton-c", "qpid-proton-c")
+
+@test
+def pair_qpid_proton_c_to_qpid_proton_cpp():
+    _test_pair("qpid-proton-c", "qpid-proton-cpp")
 
 @test
 def pair_qpid_proton_c_to_qpid_proton_python():
@@ -190,12 +168,50 @@ def pair_qpid_proton_c_to_qpid_protonj2():
     _test_pair("qpid-proton-c", "qpid-protonj2")
 
 @test
+def pair_qpid_proton_c_to_qpid_proton_dotnet():
+    _test_pair("qpid-proton-c", "qpid-proton-dotnet")
+
+@test
 def pair_qpid_proton_c_to_rhea():
     _test_pair("qpid-proton-c", "rhea")
 
 @test
 def pair_qpid_proton_c_to_vertx_proton():
     _test_pair("qpid-proton-c", "vertx-proton")
+
+# qpid-proton-cpp
+
+@test
+def pair_qpid_proton_cpp_to_qpid_jms():
+    _test_pair("qpid-proton-cpp", "qpid-jms")
+
+@test
+def pair_qpid_proton_cpp_to_qpid_proton_c():
+    _test_pair("qpid-proton-cpp", "qpid-proton-c")
+
+@test
+def pair_qpid_proton_cpp_to_qpid_proton_cpp():
+    _test_pair("qpid-proton-cpp", "qpid-proton-cpp")
+
+@test
+def pair_qpid_proton_cpp_to_qpid_proton_python():
+    _test_pair("qpid-proton-cpp", "qpid-proton-python")
+
+@test
+def pair_qpid_proton_cpp_to_qpid_protonj2():
+    _test_pair("qpid-proton-cpp", "qpid-protonj2")
+
+@test
+def pair_qpid_proton_cpp_to_qpid_proton_dotnet():
+    _test_pair("qpid-proton-cpp", "qpid-proton-dotnet")
+
+@test
+def pair_qpid_proton_cpp_to_rhea():
+    _test_pair("qpid-proton-cpp", "rhea")
+
+@test
+def pair_qpid_proton_cpp_to_vertx_proton():
+    _test_pair("qpid-proton-cpp", "vertx-proton")
 
 # qpid-proton-python
 
@@ -204,12 +220,12 @@ def pair_qpid_proton_python_to_qpid_jms():
     _test_pair("qpid-proton-python", "qpid-jms")
 
 @test
-def pair_qpid_proton_python_to_qpid_proton_cpp():
-    _test_pair("qpid-proton-python", "qpid-proton-cpp")
-
-@test
 def pair_qpid_proton_python_to_qpid_proton_c():
     _test_pair("qpid-proton-python", "qpid-proton-c")
+
+@test
+def pair_qpid_proton_python_to_qpid_proton_cpp():
+    _test_pair("qpid-proton-python", "qpid-proton-cpp")
 
 @test
 def pair_qpid_proton_python_to_qpid_proton_python():
@@ -218,6 +234,10 @@ def pair_qpid_proton_python_to_qpid_proton_python():
 @test
 def pair_qpid_proton_python_to_qpid_protonj2():
     _test_pair("qpid-proton-python", "qpid-protonj2")
+
+@test
+def pair_qpid_proton_python_to_qpid_proton_dotnet():
+    _test_pair("qpid-proton-python", "qpid-proton-dotnet")
 
 @test
 def pair_qpid_proton_python_to_rhea():
@@ -234,12 +254,12 @@ def pair_qpid_protonj2_to_qpid_jms():
     _test_pair("qpid-protonj2", "qpid-jms")
 
 @test
-def pair_qpid_protonj2_to_qpid_proton_cpp():
-    _test_pair("qpid-protonj2", "qpid-proton-cpp")
-
-@test
 def pair_qpid_protonj2_to_qpid_proton_c():
     _test_pair("qpid-protonj2", "qpid-proton-c")
+
+@test
+def pair_qpid_protonj2_to_qpid_proton_cpp():
+    _test_pair("qpid-protonj2", "qpid-proton-cpp")
 
 @test
 def pair_qpid_protonj2_to_qpid_proton_python():
@@ -250,13 +270,52 @@ def pair_qpid_protonj2_to_qpid_protonj2():
     _test_pair("qpid-protonj2", "qpid-protonj2")
 
 @test
+def pair_qpid_protonj2_to_qpid_proton_dotnet():
+    _test_pair("qpid-protonj2", "qpid-proton-dotnet")
+
+@test
 def pair_qpid_protonj2_to_rhea():
-    raise PlanoTestSkipped("Error reading SendTime property: https://github.com/ssorj/quiver/issues/79")
+    raise PlanoTestSkipped("Some kind of message encoding interop problem")
     _test_pair("qpid-protonj2", "rhea")
 
 @test
 def pair_qpid_protonj2_to_vertx_proton():
     _test_pair("qpid-protonj2", "vertx-proton")
+
+# qpid-proton-dotnet
+
+@test
+def pair_qpid_proton_dotnet_to_qpid_jms():
+    _test_pair("qpid-proton-dotnet", "qpid-jms")
+
+@test
+def pair_qpid_proton_dotnet_to_qpid_proton_c():
+    _test_pair("qpid-proton-dotnet", "qpid-proton-c")
+
+@test
+def pair_qpid_proton_dotnet_to_qpid_proton_cpp():
+    _test_pair("qpid-proton-dotnet", "qpid-proton-cpp")
+
+@test
+def pair_qpid_proton_dotnet_to_qpid_proton_python():
+    _test_pair("qpid-proton-dotnet", "qpid-proton-python")
+
+@test
+def pair_qpid_proton_dotnet_to_qpid_protonj2():
+    _test_pair("qpid-proton-dotnet", "qpid-protonj2")
+
+@test
+def pair_qpid_proton_dotnet_to_qpid_proton_dotnet():
+    _test_pair("qpid-proton-dotnet", "qpid-proton-dotnet")
+
+@test
+def pair_qpid_proton_dotnet_to_rhea():
+    raise PlanoTestSkipped("Some kind of message encoding interop problem")
+    _test_pair("qpid-proton-dotnet", "rhea")
+
+@test
+def pair_qpid_proton_dotnet_to_vertx_proton():
+    _test_pair("qpid-proton-dotnet", "vertx-proton")
 
 # rhea
 
@@ -265,12 +324,12 @@ def pair_rhea_to_qpid_jms():
     _test_pair("rhea", "qpid-jms")
 
 @test
-def pair_rhea_to_qpid_proton_cpp():
-    _test_pair("rhea", "qpid-proton-cpp")
-
-@test
 def pair_rhea_to_qpid_proton_c():
     _test_pair("rhea", "qpid-proton-c")
+
+@test
+def pair_rhea_to_qpid_proton_cpp():
+    _test_pair("rhea", "qpid-proton-cpp")
 
 @test
 def pair_rhea_to_qpid_proton_python():
@@ -279,6 +338,10 @@ def pair_rhea_to_qpid_proton_python():
 @test
 def pair_rhea_to_qpid_protonj2():
     _test_pair("rhea", "qpid-protonj2")
+
+@test
+def pair_rhea_to_qpid_proton_dotnet():
+    _test_pair("rhea", "qpid-proton-dotnet")
 
 @test
 def pair_rhea_to_rhea():
@@ -295,12 +358,12 @@ def pair_vertx_proton_to_qpid_jms():
     _test_pair("vertx-proton", "qpid-jms")
 
 @test
-def pair_vertx_proton_to_qpid_proton_cpp():
-    _test_pair("vertx-proton", "qpid-proton-cpp")
-
-@test
 def pair_vertx_proton_to_qpid_proton_c():
     _test_pair("vertx-proton", "qpid-proton-c")
+
+@test
+def pair_vertx_proton_to_qpid_proton_cpp():
+    _test_pair("vertx-proton", "qpid-proton-cpp")
 
 @test
 def pair_vertx_proton_to_qpid_proton_python():
@@ -309,6 +372,10 @@ def pair_vertx_proton_to_qpid_proton_python():
 @test
 def pair_vertx_proton_to_qpid_protonj2():
     _test_pair("vertx-proton", "qpid-protonj2")
+
+@test
+def pair_vertx_proton_to_qpid_proton_dotnet():
+    _test_pair("vertx-proton", "qpid-proton-dotnet")
 
 @test
 def pair_vertx_proton_to_rhea():
