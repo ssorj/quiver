@@ -273,9 +273,9 @@ def pair_qpid_protonj2_to_qpid_protonj2():
 def pair_qpid_protonj2_to_qpid_proton_dotnet():
     _test_pair("qpid-protonj2", "qpid-proton-dotnet")
 
-@test
+# Some kind of message encoding interop problem
+@test(disabled=True)
 def pair_qpid_protonj2_to_rhea():
-    raise PlanoTestSkipped("Some kind of message encoding interop problem")
     _test_pair("qpid-protonj2", "rhea")
 
 @test
@@ -308,9 +308,9 @@ def pair_qpid_proton_dotnet_to_qpid_protonj2():
 def pair_qpid_proton_dotnet_to_qpid_proton_dotnet():
     _test_pair("qpid-proton-dotnet", "qpid-proton-dotnet")
 
-@test
+# Some kind of message encoding interop problem
+@test(disabled=True)
 def pair_qpid_proton_dotnet_to_rhea():
-    raise PlanoTestSkipped("Some kind of message encoding interop problem")
     _test_pair("qpid-proton-dotnet", "rhea")
 
 @test
@@ -404,10 +404,9 @@ def bench():
 
 # TLS/SASL
 
-@test
+# Certificate verify fails: https://github.com/ssorj/quiver/issues/70
+@test(disabled=True)
 def anonymous_tls():
-    raise PlanoTestSkipped("Certificate verify fails: https://github.com/ssorj/quiver/issues/70")
-
     extra_server_args = []
     extra_server_args.append("--key={}".format(TSERVER_PRIVATE_KEY_PEM))
     extra_server_args.append("--key-password={}".format("password"))
@@ -421,10 +420,9 @@ def anonymous_tls():
             run(f"quiver-arrow send {server.url} --impl {impl} --count 1 --verbose")
             run(f"quiver-arrow receive {server.url} --impl {impl} --count 1 --verbose")
 
-@test
+# Certificate verify fails: https://github.com/ssorj/quiver/issues/70
+@test(disabled=True)
 def clientauth_tls():
-    raise PlanoTestSkipped("Certificate verify fails: https://github.com/ssorj/quiver/issues/70")
-
     extra_server_args = []
     extra_server_args.append("--key={}".format(TSERVER_PRIVATE_KEY_PEM))
     extra_server_args.append("--key-password={}".format("password"))
@@ -446,10 +444,9 @@ def clientauth_tls():
             run(f"quiver-arrow send {server.url} --impl {impl} --count 1 --verbose --cert {cert} --key {key}")
             run(f"quiver-arrow receive {server.url} --impl {impl} --count 1 --verbose --cert {cert} --key {key}")
 
-@test
+# Failure to authenticate using SASL PLAIN: https://github.com/ssorj/quiver/issues/75
+@test(disabled=True)
 def sasl():
-    raise PlanoTestSkipped("Failure to authenticate using SASL PLAIN: https://github.com/ssorj/quiver/issues/75")
-
     sasl_user = "myuser"
     sasl_password = "mypassword"
 
@@ -522,15 +519,14 @@ def _test_arrow(impl):
     run(f"quiver-arrow --impl {impl} --info")
 
     if impl in AMQP_ARROW_IMPLS:
-        if impl == "qpid-proton-cpp":
-            raise PlanoTestSkipped("Proton C++ timer trouble: https://github.com/ssorj/quiver/issues/51")
-
         with _TestServer() as server:
-            run(f"quiver-arrow send {server.url} --impl {impl} --count 1 --verbose")
-            run(f"quiver-arrow receive {server.url} --impl {impl} --count 1 --verbose")
+            run(f"quiver-arrow send {server.url} --impl {impl} --count 1 --duration 0 --verbose")
+            run(f"quiver-arrow receive {server.url} --impl {impl} --count 1 --duration 0 --verbose")
 
-            run(f"quiver-arrow send {server.url} --impl {impl} --duration 1 --rate 100 --verbose")
-            run(f"quiver-arrow receive {server.url} --impl {impl} --duration 1 --rate 100 --verbose")
+            # Proton C++ timer trouble: https://github.com/ssorj/quiver/issues/51
+            if impl != "qpid-proton-cpp":
+                run(f"quiver-arrow send {server.url} --impl {impl} --duration 1 --rate 100 --verbose")
+                run(f"quiver-arrow receive {server.url} --impl {impl} --duration 1 --rate 100 --verbose")
 
             run(f"quiver {server.url} --impl {impl} --duration 1 --body-size 1 --credit 1 --durable --set-message-id")
 
@@ -544,9 +540,6 @@ def _test_server(impl):
         run(f"quiver {server.url} --count 1")
 
 def _test_pair(sender_impl, receiver_impl):
-    if "qpid-proton-cpp" in (sender_impl, receiver_impl):
-        raise PlanoTestSkipped("Proton C++ timer trouble: https://github.com/ssorj/quiver/issues/51")
-
     if not impl_available(sender_impl):
         raise PlanoTestSkipped(f"Sender '{sender_impl}' is unavailable")
 
@@ -554,7 +547,7 @@ def _test_pair(sender_impl, receiver_impl):
         raise PlanoTestSkipped(f"Receiver '{receiver_impl}' is unavailable")
 
     if receiver_impl in PEER_TO_PEER_ARROW_IMPLS:
-        run(f"quiver --sender {sender_impl} --receiver {receiver_impl} --count 1 --verbose")
+        run(f"quiver --sender {sender_impl} --receiver {receiver_impl} --count 1 --duration 0 --verbose")
 
     with _TestServer() as server:
-        run(f"quiver --sender {sender_impl} --receiver {receiver_impl} --count 1 --verbose {server.url}")
+        run(f"quiver --sender {sender_impl} --receiver {receiver_impl} --count 1 --duration 0 --verbose {server.url}")
