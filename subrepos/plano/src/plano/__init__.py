@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -18,14 +17,5 @@
 # under the License.
 #
 
-from plano import *
-
-if __name__ == "__main__":
-    import plano_tests
-    test_modules = [plano_tests]
-
-    if PYTHON3:
-        import bullseye_tests
-        test_modules.append(bullseye_tests)
-
-    PlanoTestCommand(test_modules).main()
+from .main import *
+from .main import _default_sigterm_handler

@@ -1,12 +1,48 @@
 name: main
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 0 * * 0"
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  main:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        version: [3.7, 3.x]
+    runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
-    - run: make test
-    - run: make install
-    - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-    - run: plano-self-test
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.version }}
+      - run: pip install build wheel
+      - run: python -m build
+      - run: pip install dist/plano-1.0.0-py3-none-any.whl
+      - run: plano-self-test
+  cygwin:
+    runs-on: windows-latest
+    steps:
+      - run: git config --global core.autocrlf input
+      - uses: actions/checkout@v3
+      - uses: cygwin/cygwin-install-action@master
+        with:
+          packages: python3
+      - run: pip install build wheel
+        shell: C:\cygwin\bin\bash.exe -o igncr '{0}'
+      - run: make install
+        shell: C:\cygwin\bin\bash.exe -o igncr '{0}'
+      - run: echo "C:\Users\runneradmin\AppData\Roaming\Python\Python39\Scripts" >> "$GITHUB_PATH"
+        shell: C:\cygwin\bin\bash.exe -o igncr '{0}'
+      - run: plano-self-test
+        shell: C:\cygwin\bin\bash.exe -o igncr '{0}'
+  fedora:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: dnf -y install make pip python python-build python-wheel
+      - run: make install
+      - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: plano-self-test

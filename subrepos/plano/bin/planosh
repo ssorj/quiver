@@ -21,10 +21,11 @@
 import os
 import sys
 
-if os.path.isdir("python"):
-    sys.path.insert(0, "python")
+if os.path.islink(__file__):
+    repo_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    sys.path.insert(0, os.path.join(repo_dir, "src"))
 
-from plano import PlanoShellCommand
+from plano.commands import PlanoShellCommand
 
 if __name__ == "__main__":
     PlanoShellCommand().main()

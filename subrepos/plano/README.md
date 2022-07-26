@@ -4,10 +4,10 @@
 
 Python functions for writing shell-style system scripts.
 
-## Dependencies
+## Installation
 
- - curl
- - make
- - python
- - tar
- - findutils
+To install plano globally for the current user:
+
+```
+make install
+```

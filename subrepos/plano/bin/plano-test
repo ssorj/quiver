@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -17,14 +18,14 @@
 # under the License.
 #
 
-FROM centos:7
+import os
+import sys
 
-RUN yum -q -y update && yum -q clean all
+if os.path.islink(__file__):
+    repo_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    sys.path.insert(0, os.path.join(repo_dir, "src"))
 
-RUN yum -y install epel-release
+from plano.commands import PlanoTestCommand
 
-RUN yum -y install make python2-pyyaml python36 python36-PyYAML
-
-COPY . /root/plano
-WORKDIR /root/plano
-CMD ["make", "clean", "test", "install", "PREFIX=/usr/local"]
+if __name__ == "__main__":
+    PlanoTestCommand().main()

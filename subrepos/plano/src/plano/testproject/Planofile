@@ -1,0 +1,81 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+app.set_default_command("echo", "hello", count=3)
+
+@command
+def base_command(app, alpha, beta, omega="x"):
+    """
+    Base command help
+    """
+
+    print("base", alpha, beta, omega)
+
+@command(name="extended-command", parent=base_command)
+def extended_command(app, alpha, beta, omega="y"):
+    print("extended", alpha, omega)
+    extended_command.parent.function(app, alpha, beta, omega)
+
+@command(args=(CommandArgument("message_", help="The message to print", display_name="message"),
+               CommandArgument("count", help="Print the message COUNT times"),
+               CommandArgument("extra", default=1, short_option="e")))
+def echo(app, message_, count=1, extra=None, trouble=False):
+    """
+    Print a message to the console
+    """
+
+    print("Echoing (message={}, count={})".format(message_, count))
+
+    if trouble:
+        raise Exception("Trouble")
+
+    for i in range(count):
+       print(message_)
+
+@command
+def haberdash(app, first, *middle, last="bowler"):
+    """
+    Habberdash command help
+    """
+
+    data = [first, *middle, last]
+    write_json("haberdash.json", data)
+
+@command(args=(CommandArgument("optional", positional=True),))
+def balderdash(app, required, optional="malarkey", other="rubbish", **extra_kwargs):
+    """
+    Balderdash command help
+    """
+
+    data = [required, optional, other]
+    write_json("balderdash.json", data)
+
+try:
+    @command
+    def missing_app_arg():
+        pass
+except:
+    pass
+
+try:
+    @command
+    def misnamed_app_arg(frootum):
+        pass
+except:
+    pass
