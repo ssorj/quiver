@@ -24,8 +24,8 @@ import sys
 home = os.environ.get("QUIVER_HOME", "@default_home@")
 sys.path.insert(0, os.path.join(home, "python"))
 
-import plano
+import plano.commands
 import quiver.tests
 
 if __name__ == "__main__":
-    plano.PlanoTestCommand(quiver.tests).main()
+    plano.commands.PlanoTestCommand(quiver.tests).main()

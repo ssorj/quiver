@@ -119,7 +119,7 @@ clean:
 
 .PHONY: build
 build: ${TARGETS} build/prefix.txt
-	cp python/plano.py build/quiver/python/plano.py
+	cp -a python/plano/ build/quiver/python/plano
 	scripts/smoke-test
 
 .PHONY: install
@@ -246,13 +246,3 @@ build/quiver/python/%: python/%
 build/quiver/python/quiver/test_tls_certs/%: python/quiver/test_tls_certs/%
 	mkdir -p $(@D)
 	cp $< $@
-
-.PHONY: update-rhea
-update-rhea:
-	rm -rf javascript
-	@mkdir -p javascript
-	npm install rhea --prefix javascript
-
-.PHONY: update-%
-update-%:
-	curl -sfo python/$*.py "https://raw.githubusercontent.com/ssorj/$*/master/python/$*.py"

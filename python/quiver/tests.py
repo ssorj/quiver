@@ -273,9 +273,9 @@ def pair_qpid_protonj2_to_qpid_protonj2():
 def pair_qpid_protonj2_to_qpid_proton_dotnet():
     _test_pair("qpid-protonj2", "qpid-proton-dotnet")
 
-# Some kind of message encoding interop problem
-@test(disabled=True)
+@test
 def pair_qpid_protonj2_to_rhea():
+    skip_test("Some kind of message encoding interop problem")
     _test_pair("qpid-protonj2", "rhea")
 
 @test
@@ -308,9 +308,9 @@ def pair_qpid_proton_dotnet_to_qpid_protonj2():
 def pair_qpid_proton_dotnet_to_qpid_proton_dotnet():
     _test_pair("qpid-proton-dotnet", "qpid-proton-dotnet")
 
-# Some kind of message encoding interop problem
-@test(disabled=True)
+@test
 def pair_qpid_proton_dotnet_to_rhea():
+    skip_test("Some kind of message encoding interop problem")
     _test_pair("qpid-proton-dotnet", "rhea")
 
 @test
@@ -404,9 +404,10 @@ def bench():
 
 # TLS/SASL
 
-# Certificate verify fails: https://github.com/ssorj/quiver/issues/70
-@test(disabled=True)
+@test
 def anonymous_tls():
+    skip_test("Certificate verify fails: https://github.com/ssorj/quiver/issues/70")
+
     extra_server_args = []
     extra_server_args.append("--key={}".format(TSERVER_PRIVATE_KEY_PEM))
     extra_server_args.append("--key-password={}".format("password"))
@@ -420,9 +421,10 @@ def anonymous_tls():
             run(f"quiver-arrow send {server.url} --impl {impl} --count 1 --verbose")
             run(f"quiver-arrow receive {server.url} --impl {impl} --count 1 --verbose")
 
-# Certificate verify fails: https://github.com/ssorj/quiver/issues/70
-@test(disabled=True)
+@test
 def clientauth_tls():
+    skip_test("Certificate verify fails: https://github.com/ssorj/quiver/issues/70")
+
     extra_server_args = []
     extra_server_args.append("--key={}".format(TSERVER_PRIVATE_KEY_PEM))
     extra_server_args.append("--key-password={}".format("password"))
@@ -444,9 +446,10 @@ def clientauth_tls():
             run(f"quiver-arrow send {server.url} --impl {impl} --count 1 --verbose --cert {cert} --key {key}")
             run(f"quiver-arrow receive {server.url} --impl {impl} --count 1 --verbose --cert {cert} --key {key}")
 
-# Failure to authenticate using SASL PLAIN: https://github.com/ssorj/quiver/issues/75
-@test(disabled=True)
+@test
 def sasl():
+    skip_test("Failure to authenticate using SASL PLAIN: https://github.com/ssorj/quiver/issues/75")
+
     sasl_user = "myuser"
     sasl_password = "mypassword"
 
