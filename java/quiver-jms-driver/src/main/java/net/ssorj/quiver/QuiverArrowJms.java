@@ -24,8 +24,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
-import javax.jms.*;
 import javax.naming.*;
+import jakarta.jms.*;
 
 public class QuiverArrowJms {
     public static void main(final String[] args) {

@@ -139,7 +139,7 @@ class QuiverArrowCommand(Command):
         self.init_output_dir()
 
         if _urlparse(self.url).port is None:
-            if self.impl.name in ("activemq-jms", "activemq-artemis-jms"):
+            if self.impl.name in ("activemq-artemis-jms"):
                 self.port = "61616"
 
         self.snapshots_file = _join(self.output_dir, "{}-snapshots.csv".format(self.role))

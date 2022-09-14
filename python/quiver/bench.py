@@ -222,10 +222,7 @@ class QuiverBenchCommand(Command):
         server = None
 
         if server_impl == "activemq":
-            if sender_impl == "activemq-jms" and receiver_impl == "activemq-jms":
-                port = 61616
-            else:
-                port = 5672
+            port = 5672
 
         if peer_to_peer:
             summary = "{} -> {} ".format(sender_impl, receiver_impl)

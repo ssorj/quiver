@@ -60,10 +60,6 @@ def arrow_activemq_artemis_jms():
     _test_arrow("activemq-artemis-jms")
 
 @test
-def arrow_activemq_jms():
-    _test_arrow("activemq-jms")
-
-@test
 def arrow_qpid_jms():
     _test_arrow("qpid-jms")
 

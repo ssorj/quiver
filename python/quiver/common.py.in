@@ -70,7 +70,6 @@ class _Impl(object):
         return True
 
 _Impl("arrow", "activemq-artemis-jms", aliases=["artemis-jms"], protocols=["core"])
-_Impl("arrow", "activemq-jms", protocols=["openwire"])
 _Impl("arrow", "qpid-jms", aliases=["jms"])
 _Impl("arrow", "qpid-proton-c", aliases=["c"], peer_to_peer=True)
 _Impl("arrow", "qpid-proton-cpp", aliases=["cpp"], peer_to_peer=True)
@@ -131,7 +130,6 @@ PEER_TO_PEER_URL = "amqp://localhost:56727/quiver"
 _epilog_arrow_impls = """
 arrow implementations:
   activemq-artemis-jms            Client mode only; requires Artemis server
-  activemq-jms                    Client mode only; ActiveMQ or Artemis server
   qpid-jms (jms)                  Client mode only
   qpid-proton-c (c)               The default implementation
   qpid-proton-cpp (cpp)

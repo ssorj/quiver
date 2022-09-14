@@ -35,7 +35,7 @@ def main():
         enable_logging("notice")
 
     jar_file = join(home, "java", "quiver-activemq-artemis-jms.jar")
-    pom_file = join("META-INF", "maven", "org.apache.activemq", "artemis-jms-client", "pom.properties")
+    pom_file = join("META-INF", "maven", "org.apache.activemq", "artemis-jakarta-client", "pom.properties")
 
     if len(ARGS) == 1:
         run(f"unzip -p {jar_file} {pom_file}")

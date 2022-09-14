@@ -74,7 +74,6 @@ TARGETS := ${BIN_TARGETS} ${PYTHON_TARGETS} ${TESTDATA_TARGETS} \
 ifeq (${JAVA_ENABLED},yes)
 TARGETS += \
 	build/quiver/impls/quiver-arrow-activemq-artemis-jms \
-	build/quiver/impls/quiver-arrow-activemq-jms \
 	build/quiver/impls/quiver-arrow-qpid-jms \
 	build/quiver/impls/quiver-arrow-qpid-protonj2 \
 	build/quiver/impls/quiver-arrow-vertx-proton
@@ -213,8 +212,6 @@ build/quiver/dotnet/quiver-qpid-proton-dotnet: dotnet/quiver-proton-dotnet/quive
 	@mkdir -p build/quiver/dotnet/quiver-qpid-proton-dotnet
 	cd dotnet/quiver-proton-dotnet && dotnet restore && dotnet build --configuration Release
 	cp -R dotnet/quiver-proton-dotnet/bin/Release/net6.0/* $@
-
-build/quiver/impls/quiver-arrow-activemq-jms: impls/quiver-arrow-activemq-jms.in build/quiver/java/quiver-activemq-jms.jar
 
 build/quiver/impls/quiver-arrow-activemq-artemis-jms: impls/quiver-arrow-activemq-artemis-jms.in \
     build/quiver/java/quiver-activemq-artemis-jms.jar

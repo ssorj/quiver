@@ -242,7 +242,6 @@ count format:                     duration format:
 
 arrow implementations:
   activemq-artemis-jms            Client mode only; requires Artemis server
-  activemq-jms                    Client mode only; ActiveMQ or Artemis server
   qpid-jms (jms)                  Client mode only
   qpid-proton-c (c)               The default implementation
   qpid-proton-cpp (cpp)
