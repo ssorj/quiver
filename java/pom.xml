@@ -38,12 +38,11 @@
     <slf4j-version>1.7.36</slf4j-version>
 
     <!-- Client Dependencies for Quiver -->
-    <activemq-version>5.17.1</activemq-version>
-    <artemis-version>2.22.0</artemis-version>
-    <qpid-jms-version>1.6.0</qpid-jms-version>
-    <vertx-proton-version>4.3.1</vertx-proton-version>
-    <geronimo.jms.2.spec.version>1.0-alpha-2</geronimo.jms.2.spec.version>
-    <protonj2-client-version>1.0.0-M7</protonj2-client-version>
+    <artemis-version>2.24.0</artemis-version>
+    <qpid-jms-version>2.0.0</qpid-jms-version>
+    <vertx-proton-version>4.3.2</vertx-proton-version>
+    <protonj2-client-version>1.0.0-M8</protonj2-client-version>
+    <jakarta.jms-api-version>3.1.0</jakarta.jms-api-version>
 
     <!-- Maven Plugin Versions for this Project -->
     <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
@@ -52,10 +51,10 @@
 
     <!--  Client specific version of the netty-tcnative libraries pulled in which
           should be checked when updating the client release to ensure versions match -->
-    <vertx-proton-netty-version>4.1.77.Final</vertx-proton-netty-version>
-    <qpid-jms-netty-version>4.1.77.Final</qpid-jms-netty-version>
-    <protonj2-netty-version>4.1.77.Final</protonj2-netty-version>
-    <artemis-jms-netty-version>4.1.77.Final</artemis-jms-netty-version>
+    <vertx-proton-netty-version>4.1.78.Final</vertx-proton-netty-version>
+    <qpid-jms-netty-version>4.1.78.Final</qpid-jms-netty-version>
+    <protonj2-netty-version>4.1.78.Final</protonj2-netty-version>
+    <artemis-jms-netty-version>4.1.78.Final</artemis-jms-netty-version>
 
     <netty-transport-native-epoll-classifier>linux-x86_64</netty-transport-native-epoll-classifier>
     <netty-transport-native-kqueue-classifier>osx-x86_64</netty-transport-native-kqueue-classifier>
@@ -74,7 +73,6 @@
   </scm>
 
   <modules>
-    <module>quiver-activemq-jms</module>
     <module>quiver-activemq-artemis-jms</module>
     <module>quiver-qpid-jms</module>
     <module>quiver-jms-driver</module>
@@ -96,13 +94,13 @@
       </dependency>
       <dependency>
         <groupId>org.apache.activemq</groupId>
-        <artifactId>activemq-client</artifactId>
-        <version>${activemq-version}</version>
+        <artifactId>artemis-jakarta-client</artifactId>
+        <version>${artemis-version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.activemq</groupId>
-        <artifactId>artemis-jms-client</artifactId>
-        <version>${artemis-version}</version>
+        <groupId>jakarta.jms</groupId>
+        <artifactId>jakarta.jms-api</artifactId>
+        <version>${jakarta.jms-api-version}</version>
       </dependency>
       <dependency>
         <groupId>io.vertx</groupId>
@@ -113,11 +111,6 @@
         <groupId>org.apache.qpid</groupId>
         <artifactId>protonj2-client</artifactId>
         <version>${protonj2-client-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.geronimo.specs</groupId>
-        <artifactId>geronimo-jms_2.0_spec</artifactId>
-        <version>${geronimo.jms.2.spec.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
