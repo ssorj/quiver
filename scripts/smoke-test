@@ -25,7 +25,13 @@ def main():
 
     run("quiver q0 --quiet --init-only", stash=True)
     run("quiver-arrow send //localhost:12345/a/b/c --init-only", stash=True)
-    run("quiver-server q0 --init-only", stash=True)
+
+    try:
+        import proton
+    except ImportError:
+        pass
+    else:
+        run("quiver-server q0 --init-only", stash=True)
 
     with working_dir() as temp_dir:
         run(f"quiver-bench --init-only --output {temp_dir}", stash=True)
