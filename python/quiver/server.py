@@ -17,15 +17,8 @@
 # under the License.
 #
 
-import argparse as _argparse
-import collections as _collections
 import plano as _plano
-import proton as _proton
-import proton.handlers as _handlers
-import proton.reactor as _reactor
 import shlex as _shlex
-import subprocess as _subprocess
-import uuid as _uuid
 
 from .common import *
 from .common import __version__, _epilog_urls, _epilog_server_impls
