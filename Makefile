@@ -22,7 +22,7 @@
 DESTDIR := ""
 PREFIX := /usr/local
 INSTALLED_QUIVER_HOME := ${PREFIX}/lib/quiver
-DOCKER_TAG := docker.io/ssorj/quiver
+DOCKER_TAG := quay.io/ssorj/quiver
 
 export QUIVER_HOME := ${CURDIR}/build/quiver
 export PATH := ${CURDIR}/build/bin:${PATH}
@@ -141,13 +141,13 @@ test-fedora: docker-build docker-test
 
 .PHONY: test-ubuntu
 test-ubuntu:
-	sudo docker build -f scripts/test-ubuntu.dockerfile -t quiver-test-ubuntu .
-	sudo docker run quiver-test-ubuntu
+	docker build -f scripts/test-ubuntu.dockerfile -t quiver-test-ubuntu .
+	docker run quiver-test-ubuntu
 
 .PHONY: test-centos
 test-centos:
-	sudo docker build -f scripts/test-centos.dockerfile -t quiver-test-centos .
-	sudo docker run quiver-test-centos
+	docker build -f scripts/test-centos.dockerfile -t quiver-test-centos .
+	docker run quiver-test-centos
 
 .PHONY: check-dependencies
 check-dependencies:
@@ -155,19 +155,19 @@ check-dependencies:
 
 .PHONY: docker-build
 docker-build:
-	sudo docker build -t ${DOCKER_TAG} .
+	docker build --format docker -t ${DOCKER_TAG} .
 
 .PHONY: docker-test
 docker-test: docker-build
-	sudo docker run -t ${DOCKER_TAG} quiver-self-test
+	docker run -t ${DOCKER_TAG} quiver-self-test
 
 .PHONY: docker-run
 docker-run: docker-build
-	sudo docker run -it ${DOCKER_TAG}
+	docker run -it ${DOCKER_TAG}
 
 .PHONY: docker-push
 docker-push:
-	sudo docker push ${DOCKER_TAG}
+	docker push ${DOCKER_TAG}
 
 build/prefix.txt:
 	echo ${PREFIX} > build/prefix.txt
@@ -180,11 +180,11 @@ build/quiver/impls/%: impls/%.in
 
 build/quiver/impls/quiver-arrow-qpid-proton-c: impls/quiver-arrow-qpid-proton-c.c
 	@mkdir -p ${@D}
-	${CC} $< -o $@ ${CFLAGS} -lqpid-proton -lqpid-proton-proactor
+	${CC} $< -o $@ ${CFLAGS} -lqpid-proton-core -lqpid-proton-proactor
 
 build/quiver/impls/quiver-arrow-qpid-proton-cpp: impls/quiver-arrow-qpid-proton-cpp.cpp
 	@mkdir -p ${@D}
-	${CXX} $< -o $@ ${CCFLAGS} -lqpid-proton -lqpid-proton-cpp
+	${CXX} $< -o $@ ${CCFLAGS} -lqpid-proton-cpp
 
 # XXX Use a template for the java rules
 
