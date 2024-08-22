@@ -23,6 +23,7 @@ DESTDIR := ""
 PREFIX := /usr/local
 INSTALLED_QUIVER_HOME := ${PREFIX}/lib/quiver
 DOCKER_TAG := quay.io/ssorj/quiver
+PLATFORM := linux/amd64,linux/arm64
 
 export QUIVER_HOME := ${CURDIR}/build/quiver
 export PATH := ${CURDIR}/build/bin:${PATH}
@@ -155,7 +156,10 @@ check-dependencies:
 
 .PHONY: docker-build
 docker-build:
-	docker build --format docker -t ${DOCKER_TAG} .
+	# all -o --provenance and --sbom are required so buildx creates a manifest list whose
+	# images' manifests use the docker format (otherwise, it will point to OCI manifests,
+	# following the base image).  This is required for OCP 3.11
+	docker buildx build -o type=docker --provenance false --sbom false --platform $(PLATFORM) -t ${DOCKER_TAG} .
 
 .PHONY: docker-test
 docker-test: docker-build
