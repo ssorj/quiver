@@ -33,7 +33,7 @@ RUN cd /root/quiver && make install PREFIX=/usr/local
 FROM registry.fedoraproject.org/fedora-minimal
 
 RUN microdnf -y install java-17-openjdk-headless nodejs python3-numpy unzip zstd cyrus-sasl cyrus-sasl-md5 \
-    cyrus-sasl-plain python3-qpid-proton qpid-dispatch-router qpid-proton-c qpid-proton-cpp \
+    cyrus-sasl-plain python3-qpid-proton qpid-proton-c qpid-proton-cpp \
     && microdnf -y clean all
 
 COPY --from=build /usr/local /usr/local
