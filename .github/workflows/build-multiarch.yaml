@@ -1,0 +1,35 @@
+name: Build and Push Multi-Arch Image
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code from the repository
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up QEMU for multi-architecture support
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      # Step 3: Set up Buildx for advanced Docker build capabilities
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Step 4: Log in to Quay.io (or any registry you're using)
+      - name: Login to Quay
+        run: |
+          echo "${{ secrets.QUAY_TOKEN }}" | docker login quay.io -u "${{ secrets.QUAY_USER }}" --password-stdin
+
+      # Step 5: Build and Push the multi-architecture Docker image
+      - name: Build and Push Multi-Arch Image
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64,linux/s390x \
+            -t quay.io/ssorj/quiver \
+            --push .

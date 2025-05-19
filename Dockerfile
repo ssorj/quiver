@@ -19,7 +19,7 @@
 
 FROM registry.fedoraproject.org/fedora-minimal AS build
 
-RUN microdnf -y install gcc-c++ java-17-openjdk-devel make maven nodejs npm python3-numpy unzip zstd \
+RUN microdnf -y install gcc-c++ java-21-openjdk-devel make maven nodejs npm python3-numpy unzip zstd \
     cyrus-sasl-devel cyrus-sasl-md5 cyrus-sasl-plain python3-qpid-proton \
     qpid-proton-c-devel qpid-proton-cpp-devel \
     && microdnf -y clean all
@@ -32,7 +32,7 @@ RUN cd /root/quiver && make install PREFIX=/usr/local
 
 FROM registry.fedoraproject.org/fedora-minimal
 
-RUN microdnf -y install java-17-openjdk-headless nodejs python3-numpy unzip zstd cyrus-sasl cyrus-sasl-md5 \
+RUN microdnf -y install java-21-openjdk-headless nodejs python3-numpy unzip zstd cyrus-sasl cyrus-sasl-md5 \
     cyrus-sasl-plain python3-qpid-proton qpid-proton-c qpid-proton-cpp \
     && microdnf -y clean all
 

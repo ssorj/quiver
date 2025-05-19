@@ -23,7 +23,7 @@ DESTDIR := ""
 PREFIX := /usr/local
 INSTALLED_QUIVER_HOME := ${PREFIX}/lib/quiver
 DOCKER_TAG := quay.io/ssorj/quiver
-PLATFORM := linux/amd64,linux/arm64
+PLATFORM := linux/amd64,linux/arm64,linux/s390x
 
 export QUIVER_HOME := ${CURDIR}/build/quiver
 export PATH := ${CURDIR}/build/bin:${PATH}
